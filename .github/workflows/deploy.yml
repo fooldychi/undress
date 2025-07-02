@@ -22,14 +22,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18  # 尝试更新到 Node.js 18
           
       - name: Install Dependencies
         run: npm ci
         
       - name: Build
-        run: npm run build
+        run: |
+          echo "Starting build process..."
+          npm run build --if-present
+          echo "Build completed, checking dist directory..."
+          ls -la dist/
         env:
+          NODE_ENV: production
           VITE_COMFYUI_SERVER_URL: ${{ secrets.VITE_COMFYUI_SERVER_URL || 'https://dzqgp58z0s-8188.cnb.run' }}
           VITE_COMFYUI_CLIENT_ID: ${{ secrets.VITE_COMFYUI_CLIENT_ID || 'abc1373d4ad648a3a81d0587fbe5534b' }}
           VITE_USE_PROXY: ${{ secrets.VITE_USE_PROXY || 'true' }}
@@ -45,4 +50,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
+
+
 

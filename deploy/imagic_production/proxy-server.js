@@ -31,30 +31,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'ComfyUI代理服务器运行正常' });
 });
 
-// 代理GET请求（如system_stats）
-app.get('/api/*', createProxyMiddleware({
-  target: COMFYUI_BASE_URL,
-  changeOrigin: true,
-  timeout: 30000, // 30秒超时
-  proxyTimeout: 30000, // 代理超时
-  pathRewrite: {
-    '^/api': '', // 移除/api前缀
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    console.log(`📡 代理GET请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url.replace('/api', '')}`);
-    // 设置更长的超时时间
-    proxyReq.setTimeout(30000);
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    console.log(`📥 代理响应: ${proxyRes.statusCode} ${req.url}`);
-  },
-  onError: (err, req, res) => {
-    console.error('❌ 代理错误:', err.message);
-    if (!res.headersSent) {
-      res.status(500).json({ error: '代理请求失败', details: err.message });
-    }
-  }
-}));
+
 
 // 特殊处理文件上传
 app.post('/api/upload/image', upload.single('image'), async (req, res) => {
@@ -169,18 +146,17 @@ app.post('/api/prompt', async (req, res) => {
   }
 });
 
-// 代理其他POST请求
-app.post('/api/*', createProxyMiddleware({
+// 代理其他请求（除了特殊处理的upload和prompt）
+app.use('/api', createProxyMiddleware({
   target: COMFYUI_BASE_URL,
   changeOrigin: true,
-  timeout: 30000, // 30秒超时
-  proxyTimeout: 30000, // 代理超时
+  timeout: 30000,
+  proxyTimeout: 30000,
   pathRewrite: {
-    '^/api': '', // 移除/api前缀
+    '^/api': '',
   },
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`📡 代理POST请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url.replace('/api', '')}`);
-    // 设置更长的超时时间
+    console.log(`📡 代理请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url.replace('/api', '')}`);
     proxyReq.setTimeout(30000);
   },
   onProxyRes: (proxyRes, req, res) => {
@@ -195,7 +171,7 @@ app.post('/api/*', createProxyMiddleware({
 }));
 
 // 启动服务器
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`✅ ComfyUI代理服务器启动成功!`);
   console.log(`📡 代理地址: http://localhost:${PORT}`);
   console.log(`🎯 目标服务器: ${COMFYUI_BASE_URL}`);
@@ -208,15 +184,44 @@ app.listen(PORT, () => {
   console.log('🔄 现在可以在前端使用代理地址避免CORS问题');
 });
 
+// 处理服务器错误
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ 端口 ${PORT} 已被占用，请尝试其他端口或关闭占用该端口的程序`);
+  } else {
+    console.error('❌ 服务器启动错误:', error.message);
+  }
+  process.exit(1);
+});
+
+// 全局错误处理
+process.on('uncaughtException', (error) => {
+  console.error('❌ 未捕获的异常:', error.message);
+  console.error('堆栈信息:', error.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ 未处理的Promise拒绝:', reason);
+  console.error('Promise:', promise);
+  process.exit(1);
+});
+
 // 优雅关闭
 process.on('SIGINT', () => {
   console.log('\n🛑 正在关闭代理服务器...');
-  process.exit(0);
+  server.close(() => {
+    console.log('✅ 服务器已关闭');
+    process.exit(0);
+  });
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 正在关闭代理服务器...');
-  process.exit(0);
+  server.close(() => {
+    console.log('✅ 服务器已关闭');
+    process.exit(0);
+  });
 });
 
 

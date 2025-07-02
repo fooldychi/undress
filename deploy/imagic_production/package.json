@@ -2,10 +2,11 @@
   "name": "imagic",
   "version": "1.0.0",
   "description": "Imagic - AI图像处理平台",
-  "main": "proxy-server.js",
+  "main": "proxy-server-simple.js",
   "scripts": {
-    "start": "node proxy-server.js",
-    "proxy": "node proxy-server.js"
+    "start": "node proxy-server-simple.js",
+    "proxy": "node proxy-server-simple.js",
+    "dev": "node proxy-server-simple.js"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -4,8 +4,21 @@ import vue from '@vitejs/plugin-vue'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  base: '/imgic/', // 添加仓库名作为基础路径
-  // 其他配置...
+
+  // 开发服务器配置
+  server: {
+    port: 3001,
+    open: true
+  },
+
+  // 构建配置
+  build: {
+    outDir: 'dist',
+    sourcemap: false
+  },
+
+  // 基础路径配置 - 开发环境使用根路径
+  base: './'
 })
 
 
