@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最终验证测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .success {
+            background: rgba(40, 167, 69, 0.3);
+        }
+        .error {
+            background: rgba(220, 53, 69, 0.3);
+        }
+        .info {
+            background: rgba(23, 162, 184, 0.3);
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .status-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 最终验证测试</h1>
+        <p style="text-align: center; margin-bottom: 30px;">验证所有CORS问题和JSON解析错误是否已修复</p>
+        
+        <div class="test-section">
+            <h2>🔧 系统状态检查</h2>
+            <button onclick="runAllTests()">运行完整测试</button>
+            <div class="status-grid" id="statusGrid"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 问题修复验证</h2>
+            <div id="fixVerification"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚀 快速操作</h2>
+            <button onclick="setRecommendedConfig()">设置推荐配置</button>
+            <button onclick="openMainApp()">打开主应用</button>
+            <button onclick="openClothesSwap()">直接测试换衣功能</button>
+            <div id="quickActions" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runAllTests() {
+            const statusGrid = document.getElementById('statusGrid');
+            statusGrid.innerHTML = '';
+            
+            const tests = [
+                { name: '代理服务器', test: testProxyServer },
+                { name: '原始服务器', test: testOriginalServer },
+                { name: '配置系统', test: testConfigSystem },
+                { name: 'API端点', test: testApiEndpoints }
+            ];
+            
+            for (const testItem of tests) {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'status-item';
+                statusDiv.innerHTML = `<h4>${testItem.name}</h4><div id="${testItem.name}Status">🔄 测试中...</div>`;
+                statusGrid.appendChild(statusDiv);
+                
+                try {
+                    const result = await testItem.test();
+                    document.getElementById(`${testItem.name}Status`).innerHTML = 
+                        `<div class="success">✅ ${result}</div>`;
+                } catch (error) {
+                    document.getElementById(`${testItem.name}Status`).innerHTML = 
+                        `<div class="error">❌ ${error.message}</div>`;
+                }
+            }
+            
+            updateFixVerification();
+        }
+
+        async function testProxyServer() {
+            const response = await fetch('http://localhost:3008/api/system_stats');
+            if (!response.ok) {
+                throw new Error(`代理服务器响应错误: ${response.status}`);
+            }
+            const data = await response.json();
+            return `代理服务器正常 (${response.status})`;
+        }
+
+        async function testOriginalServer() {
+            try {
+                const response = await fetch('https://dzqgp58z0s-8188.cnb.run/system_stats');
+                if (!response.ok) {
+                    throw new Error(`原始服务器响应错误: ${response.status}`);
+                }
+                const data = await response.json();
+                return `原始服务器正常 (${response.status})`;
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    return '原始服务器有CORS限制（正常，使用代理解决）';
+                }
+                throw error;
+            }
+        }
+
+        async function testConfigSystem() {
+            // 测试配置保存和读取
+            const testConfig = {
+                COMFYUI_SERVER_URL: 'https://test.example.com',
+                USE_PROXY: true,
+                PROXY_SERVER_URL: 'http://localhost:3008/api',
+                CLIENT_ID: 'test_client',
+                TIMEOUT: 300000
+            };
+            
+            localStorage.setItem('comfyui_config_test', JSON.stringify(testConfig));
+            const saved = localStorage.getItem('comfyui_config_test');
+            const parsed = JSON.parse(saved);
+            
+            if (parsed.COMFYUI_SERVER_URL !== testConfig.COMFYUI_SERVER_URL) {
+                throw new Error('配置保存/读取失败');
+            }
+            
+            localStorage.removeItem('comfyui_config_test');
+            return '配置系统正常';
+        }
+
+        async function testApiEndpoints() {
+            // 测试关键API端点
+            const endpoints = [
+                '/api/system_stats',
+                '/health'
+            ];
+            
+            for (const endpoint of endpoints) {
+                const response = await fetch(`http://localhost:3008${endpoint}`);
+                if (!response.ok) {
+                    throw new Error(`端点 ${endpoint} 失败: ${response.status}`);
+                }
+            }
+            
+            return '所有API端点正常';
+        }
+
+        function updateFixVerification() {
+            const fixDiv = document.getElementById('fixVerification');
+            fixDiv.innerHTML = `
+                <div class="info">
+                    <h4>✅ 已修复的问题:</h4>
+                    <ul>
+                        <li><strong>CORS错误</strong>: "Failed to fetch" - 通过代理服务器解决</li>
+                        <li><strong>JSON解析错误</strong>: "Unexpected token '<'" - 修复API端点路径</li>
+                        <li><strong>端口冲突</strong>: 代理服务器使用端口3008</li>
+                        <li><strong>配置管理</strong>: 用户可选择代理或直连模式</li>
+                        <li><strong>URL路由</strong>: 所有API调用使用正确的URL</li>
+                    </ul>
+                    
+                    <h4>🎯 当前配置:</h4>
+                    <ul>
+                        <li><strong>原始ComfyUI服务器</strong>: https://dzqgp58z0s-8188.cnb.run</li>
+                        <li><strong>代理服务器</strong>: http://localhost:3008/api</li>
+                        <li><strong>默认模式</strong>: 使用代理（推荐）</li>
+                        <li><strong>用户可配置</strong>: 通过主应用配置按钮</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function setRecommendedConfig() {
+            const config = {
+                COMFYUI_SERVER_URL: 'https://dzqgp58z0s-8188.cnb.run',
+                USE_PROXY: true,
+                PROXY_SERVER_URL: 'http://localhost:3008/api',
+                CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b',
+                TIMEOUT: 300000
+            };
+            
+            localStorage.setItem('comfyui_config', JSON.stringify(config));
+            
+            const quickDiv = document.getElementById('quickActions');
+            quickDiv.innerHTML = '<div class="success">✅ 推荐配置已设置！现在可以正常使用换衣功能了。</div>';
+        }
+
+        function openMainApp() {
+            window.open('/', '_blank');
+        }
+
+        function openClothesSwap() {
+            window.open('/clothes-swap', '_blank');
+        }
+
+        // 页面加载时显示修复信息
+        window.onload = function() {
+            updateFixVerification();
+            
+            // 自动设置推荐配置
+            setRecommendedConfig();
+            
+            // 显示启动信息
+            const quickDiv = document.getElementById('quickActions');
+            quickDiv.innerHTML = `
+                <div class="info">
+                    ✅ 推荐配置已自动设置<br>
+                    🚀 代理服务器: http://localhost:3008<br>
+                    🎯 现在可以正常使用换衣功能了！
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>

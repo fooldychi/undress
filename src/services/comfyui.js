@@ -3,10 +3,12 @@ import undressWorkflow from '../workflows/undress.json'
 
 // API配置 - 支持动态配置
 const DEFAULT_CONFIG = {
-  // 使用独立代理服务器避免CORS问题
-  BASE_URL: 'http://localhost:3006/api',
-  // 原始服务器URL（用于直接连接测试）
-  ORIGINAL_BASE_URL: 'https://dzqgp58z0s-8188.cnb.run',
+  // 原始ComfyUI服务器URL（用户可配置）
+  COMFYUI_SERVER_URL: 'https://dzqgp58z0s-8188.cnb.run',
+  // 是否使用代理服务器（避免CORS问题）
+  USE_PROXY: true,
+  // 代理服务器URL
+  PROXY_SERVER_URL: 'http://localhost:3008/api',
   CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b',
   TIMEOUT: 300000 // 5分钟
 }
@@ -48,6 +50,16 @@ function getCurrentConfig() {
   return getComfyUIConfig()
 }
 
+// 获取实际使用的API基础URL
+function getApiBaseUrl() {
+  const config = getComfyUIConfig()
+  if (config.USE_PROXY) {
+    return config.PROXY_SERVER_URL
+  } else {
+    return config.COMFYUI_SERVER_URL
+  }
+}
+
 // 重置为默认配置
 function resetToDefaultConfig() {
   localStorage.removeItem('comfyui_config')
@@ -63,8 +75,10 @@ function generateClientId() {
 async function uploadImageToComfyUI(base64Image) {
   try {
     const config = getComfyUIConfig()
+    const apiBaseUrl = getApiBaseUrl()
     console.log('🔄 第一步：上传图片到ComfyUI服务器')
-    console.log('📡 API地址:', `${config.BASE_URL}/upload/image`)
+    console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
+    console.log('🔧 使用代理:', config.USE_PROXY ? '是' : '否')
 
     // 验证base64格式
     if (!base64Image || !base64Image.startsWith('data:image/')) {
@@ -105,7 +119,7 @@ async function uploadImageToComfyUI(base64Image) {
           formData.append('subfolder', '')
           formData.append('overwrite', 'false')
 
-          return fetch(`${config.BASE_URL}/upload/image`, {
+          return fetch(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
             body: formData,
             mode: 'cors',
@@ -119,7 +133,7 @@ async function uploadImageToComfyUI(base64Image) {
           const formData = new FormData()
           formData.append('image', blob, filename)
 
-          return fetch(`${config.BASE_URL}/upload/image`, {
+          return fetch(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
             body: formData,
             mode: 'cors',
@@ -227,8 +241,10 @@ function createUndressWorkflowPrompt(uploadedImageName) {
 async function submitWorkflow(workflowPrompt) {
   try {
     const config = getComfyUIConfig()
+    const apiBaseUrl = getApiBaseUrl()
     console.log('🔄 第二步：提交工作流到ComfyUI')
-    console.log('📡 API地址:', `${config.BASE_URL}/prompt`)
+    console.log('📡 API地址:', `${apiBaseUrl}/prompt`)
+    console.log('🔧 使用代理:', config.USE_PROXY ? '是' : '否')
 
     // 构建请求体，按照ComfyUI API文档格式
     const requestBody = {
@@ -244,7 +260,7 @@ async function submitWorkflow(workflowPrompt) {
     })
 
     // 第二步API调用：提交工作流到ComfyUI
-    const promptUrl = `${config.BASE_URL}/prompt`
+    const promptUrl = `${apiBaseUrl}/prompt`
     console.log('🌐 调用工作流API:', promptUrl)
 
     const response = await fetch(promptUrl, {
@@ -285,7 +301,9 @@ async function submitWorkflow(workflowPrompt) {
 async function checkTaskStatus(promptId) {
   try {
     const config = getComfyUIConfig()
-    const response = await fetch(`${config.BASE_URL}/history/${promptId}`)
+    const apiBaseUrl = getApiBaseUrl()
+    console.log('🔍 查询任务状态:', `${apiBaseUrl}/history/${promptId}`)
+    const response = await fetch(`${apiBaseUrl}/history/${promptId}`)
 
     if (!response.ok) {
       throw new Error(`状态查询失败: ${response.status} ${response.statusText}`)
@@ -304,6 +322,7 @@ async function checkTaskStatus(promptId) {
 async function getGeneratedImage(taskResult) {
   try {
     const config = getComfyUIConfig()
+    const apiBaseUrl = getApiBaseUrl()
 
     // 从任务结果中找到输出图片
     const outputs = taskResult.outputs
@@ -339,7 +358,7 @@ async function getGeneratedImage(taskResult) {
       type: imageInfo.type,
       subfolder: imageInfo.subfolder || ''
     })
-    const imageUrl = `${config.BASE_URL}/view?${params.toString()}`
+    const imageUrl = `${apiBaseUrl}/view?${params.toString()}`
 
     console.log('🌐 获取图片URL:', imageUrl)
 
@@ -446,5 +465,6 @@ export {
   updateComfyUIConfig,
   resetToDefaultConfig,
   generateClientId,
+  getApiBaseUrl,
   processUndressImage
 }

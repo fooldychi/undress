@@ -2,55 +2,70 @@
   <div v-if="visible" class="modal-overlay" @click="closeModal">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h2>ComfyUI 配置设置</h2>
+        <h2>ComfyUI 服务器配置</h2>
         <button class="close-btn" @click="closeModal">×</button>
       </div>
-      
+
       <div class="modal-body">
+        <p style="margin-bottom: 20px; color: #666; font-size: 14px;">
+          配置原始ComfyUI服务器地址（如: https://dzqgp58z0s-8188.cnb.run）
+        </p>
         <div class="config-section">
-          <label for="base-url">服务器地址:</label>
-          <input 
-            id="base-url"
-            v-model="localConfig.BASE_URL" 
-            type="url" 
-            placeholder="https://your-comfyui-server.com"
+          <label for="comfyui-url">ComfyUI服务器地址:</label>
+          <input
+            id="comfyui-url"
+            v-model="localConfig.COMFYUI_SERVER_URL"
+            type="url"
+            placeholder="https://dzqgp58z0s-8188.cnb.run"
             class="config-input"
           >
-          <small class="help-text">ComfyUI服务器的完整URL地址</small>
+          <small class="help-text">原始ComfyUI服务器的完整URL地址</small>
         </div>
-        
+
+        <div class="config-section">
+          <label>
+            <input
+              type="checkbox"
+              v-model="localConfig.USE_PROXY"
+              style="margin-right: 8px;"
+            >
+            使用代理服务器（推荐）
+          </label>
+          <small class="help-text">启用代理服务器可以避免CORS跨域问题，提高连接稳定性</small>
+        </div>
+
         <div class="config-section">
           <label for="client-id">客户端ID:</label>
-          <input 
+          <input
             id="client-id"
-            v-model="localConfig.CLIENT_ID" 
-            type="text" 
+            v-model="localConfig.CLIENT_ID"
+            type="text"
             placeholder="abc1373d4ad648a3a81d0587fbe5534b"
             class="config-input"
           >
           <small class="help-text">用于标识客户端的唯一ID</small>
         </div>
-        
+
         <div class="config-section">
           <label for="timeout">请求超时 (秒):</label>
-          <input 
+          <input
             id="timeout"
-            v-model.number="timeoutSeconds" 
-            type="number" 
+            v-model.number="timeoutSeconds"
+            type="number"
             min="30"
             max="600"
             class="config-input"
           >
           <small class="help-text">API请求的超时时间，建议300秒</small>
         </div>
-        
+
         <div class="config-section">
           <h3>连接测试</h3>
           <button @click="testConnection" :disabled="testing" class="test-btn">
             <span v-if="testing" class="loading-spinner"></span>
             {{ testing ? '测试中...' : '测试连接' }}
           </button>
-          
+
           <div v-if="testResult" class="test-result" :class="{ 'success': testResult.success, 'error': !testResult.success }">
             <div class="result-icon">{{ testResult.success ? '✅' : '❌' }}</div>
             <div class="result-text">
@@ -58,7 +73,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="config-section">
           <h3>预设配置</h3>
           <div class="preset-buttons">
@@ -68,7 +83,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
         <button @click="resetConfig" class="btn btn-secondary">重置默认</button>
         <button @click="saveConfig" class="btn btn-primary" :disabled="!isValidConfig">保存配置</button>
@@ -91,7 +106,9 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const localConfig = ref({
-  BASE_URL: '',
+  COMFYUI_SERVER_URL: '',
+  USE_PROXY: true,
+  PROXY_SERVER_URL: 'http://localhost:3008/api',
   CLIENT_ID: '',
   TIMEOUT: 300000
 })
@@ -108,8 +125,8 @@ const testResult = ref(null)
 
 // 验证配置是否有效
 const isValidConfig = computed(() => {
-  return localConfig.value.BASE_URL && 
-         localConfig.value.BASE_URL.startsWith('http') &&
+  return localConfig.value.COMFYUI_SERVER_URL &&
+         localConfig.value.COMFYUI_SERVER_URL.startsWith('http') &&
          localConfig.value.CLIENT_ID &&
          localConfig.value.TIMEOUT > 0
 })
@@ -134,28 +151,35 @@ const testConnection = async () => {
     testResult.value = { success: false, error: '请填写有效的配置信息' }
     return
   }
-  
+
   testing.value = true
   testResult.value = null
-  
+
   try {
-    const response = await fetch(`${localConfig.value.BASE_URL}/api/system_stats`, {
+    // 根据配置选择使用代理还是直连
+    const testUrl = localConfig.value.USE_PROXY
+      ? `${localConfig.value.PROXY_SERVER_URL}/system_stats`
+      : `${localConfig.value.COMFYUI_SERVER_URL}/system_stats`
+
+    console.log('测试连接:', testUrl, '使用代理:', localConfig.value.USE_PROXY)
+
+    const response = await fetch(testUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(10000) // 10秒超时
     })
-    
+
     if (response.ok) {
       const stats = await response.json()
-      testResult.value = { 
-        success: true, 
-        data: stats 
+      testResult.value = {
+        success: true,
+        data: stats
       }
     } else {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
   } catch (error) {
-    testResult.value = { 
-      success: false, 
+    testResult.value = {
+      success: false,
       error: error.message || '连接失败'
     }
   } finally {
@@ -168,21 +192,27 @@ const loadPreset = (preset) => {
   switch (preset) {
     case 'default':
       localConfig.value = {
-        BASE_URL: 'https://w47dwct9xg-8188.cnb.run',
+        COMFYUI_SERVER_URL: 'https://dzqgp58z0s-8188.cnb.run',
+        USE_PROXY: true,
+        PROXY_SERVER_URL: 'http://localhost:3008/api',
         CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b',
         TIMEOUT: 300000
       }
       break
     case 'local':
       localConfig.value = {
-        BASE_URL: 'http://localhost:8188',
+        COMFYUI_SERVER_URL: 'http://localhost:8188',
+        USE_PROXY: false,
+        PROXY_SERVER_URL: 'http://localhost:3008/api',
         CLIENT_ID: 'local_client_id',
         TIMEOUT: 300000
       }
       break
     case 'current':
       localConfig.value = {
-        BASE_URL: 'https://w47dwct9xg-8188.cnb.run',
+        COMFYUI_SERVER_URL: 'https://dzqgp58z0s-8188.cnb.run',
+        USE_PROXY: true,
+        PROXY_SERVER_URL: 'http://localhost:3008/api',
         CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b',
         TIMEOUT: 300000
       }
@@ -194,7 +224,7 @@ const loadPreset = (preset) => {
 // 保存配置
 const saveConfig = () => {
   if (!isValidConfig.value) return
-  
+
   updateComfyUIConfig(localConfig.value)
   emit('saved', localConfig.value)
   closeModal()

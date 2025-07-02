@@ -38,27 +38,17 @@
         <p>&copy; 2024 Imagic. 基于ComfyUI工作流的AI图像处理平台</p>
         <div class="footer-actions">
           <button @click="showConfigModal = !showConfigModal" class="config-btn">⚙️ 配置</button>
-          <button @click="testConnection" class="config-btn">🔗 测试连接</button>
           <router-link v-if="isDev" to="/api-test" class="debug-btn">🧪 API测试</router-link>
           <router-link v-if="isDev" to="/debug" class="debug-btn">🔧 调试</router-link>
         </div>
-        <div v-if="showConfigModal" class="config-notice">
-          <h3>ComfyUI 配置</h3>
-          <p><strong>服务器:</strong> https://w47dwct9xg-8188.cnb.run</p>
-          <p><strong>客户端ID:</strong> abc1373d4ad648a3a81d0587fbe5534b</p>
-          <div style="margin-top: 12px;">
-            <button @click="testConnection" class="config-btn" style="margin-right: 8px;">测试连接</button>
-            <button @click="showConfigModal = false" class="config-btn">关闭</button>
-          </div>
-        </div>
       </footer>
 
-      <!-- 配置模态框 - 暂时禁用 -->
-      <!-- <ConfigModal
+      <!-- 配置模态框 -->
+      <ConfigModal
         :visible="showConfigModal"
         @close="showConfigModal = false"
         @saved="onConfigSaved"
-      /> -->
+      />
     </div>
   </div>
 </template>
@@ -66,7 +56,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { computed, ref } from 'vue'
-// import ConfigModal from '../components/ConfigModal.vue'
+import ConfigModal from '../components/ConfigModal.vue'
 
 const router = useRouter()
 
@@ -93,19 +83,7 @@ const onConfigSaved = (config) => {
   alert('配置已保存')
 }
 
-// 测试连接
-const testConnection = async () => {
-  try {
-    const response = await fetch('https://w47dwct9xg-8188.cnb.run/system_stats')
-    if (response.ok) {
-      alert('✅ 连接成功!')
-    } else {
-      alert('❌ 连接失败: ' + response.status)
-    }
-  } catch (error) {
-    alert('❌ 网络错误: ' + error.message)
-  }
-}
+
 </script>
 
 <style scoped>
@@ -256,18 +234,7 @@ const testConnection = async () => {
   transform: translateY(-2px);
 }
 
-.config-notice {
-  margin-top: 16px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
 
-.config-notice p {
-  margin: 0 0 12px 0;
-  color: rgba(255, 255, 255, 0.9);
-}
 
 @media (max-width: 768px) {
   .title {

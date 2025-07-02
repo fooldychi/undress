@@ -7,7 +7,7 @@ import FormData from 'form-data';
 import fetch from 'node-fetch';
 
 const app = express();
-const PORT = 3006;
+const PORT = 3008;
 
 // 启用CORS
 app.use(cors({
