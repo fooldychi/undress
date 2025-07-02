@@ -5,8 +5,7 @@ const HomePage = () => import('../views/HomePage.vue')
 const ClothesSwap = () => import('../views/ClothesSwap.vue')
 const TextToImage = () => import('../views/TextToImage.vue')
 const FaceSwap = () => import('../views/FaceSwap.vue')
-const DebugPage = () => import('../views/DebugPage.vue')
-const ApiTestPage = () => import('../views/ApiTestPage.vue')
+
 
 const routes = [
   {
@@ -39,22 +38,6 @@ const routes = [
     component: FaceSwap,
     meta: {
       title: '极速换脸 - Imagic'
-    }
-  },
-  {
-    path: '/debug',
-    name: 'Debug',
-    component: DebugPage,
-    meta: {
-      title: 'ComfyUI调试 - Imagic'
-    }
-  },
-  {
-    path: '/api-test',
-    name: 'ApiTest',
-    component: ApiTestPage,
-    meta: {
-      title: 'API测试 - Imagic'
     }
   }
 ]

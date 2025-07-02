@@ -14,7 +14,7 @@
       </header>
 
       <main class="page-content">
-        <div class="upload-section">
+        <div v-if="!resultImage" class="upload-section">
           <div class="upload-card">
             <input
               type="file"
@@ -60,31 +60,78 @@
 
         <div v-if="resultImage" class="result-section">
           <div class="result-card">
-            <h3 class="result-title">处理结果</h3>
-            <div class="result-image-container">
-              <img :src="resultImage" alt="结果图" class="result-image">
+            <h3 class="result-title">拖拽中间线对比效果</h3>
+
+            <!-- 拖拽对比组件 -->
+            <div class="image-comparison-container" ref="comparisonContainer">
+              <div class="comparison-wrapper">
+                <!-- 原图 -->
+                <div class="image-layer original-layer">
+                  <img :src="selectedImage" alt="原图" class="comparison-image">
+                  <div class="image-label original-label">原图</div>
+                </div>
+
+                <!-- 结果图 -->
+                <div class="image-layer result-layer" :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }">
+                  <img :src="resultImage" alt="处理结果" class="comparison-image">
+                  <div class="image-label result-label">处理结果</div>
+                </div>
+
+                <!-- 拖拽滑块 -->
+                <div
+                  class="comparison-slider"
+                  :style="{ left: sliderPosition + '%' }"
+                  @mousedown="startDragging"
+                  @touchstart="startDragging"
+                >
+                  <div class="slider-line"></div>
+                  <div class="slider-handle">
+                    <div class="slider-arrow left">◀</div>
+                    <div class="slider-circle"></div>
+                    <div class="slider-arrow right">▶</div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <!-- 操作按钮 -->
             <div class="result-actions">
-              <a
-                :href="resultImage"
-                download="clothes-swap-result.jpg"
-                class="btn btn-primary download-btn"
-              >
-                下载图片
-              </a>
-              <button @click="resetProcess" class="btn btn-secondary">
-                重新处理
+              <button @click="downloadResult" class="btn btn-primary download-btn">
+                📥 下载处理结果
               </button>
+              <button @click="resetProcess" class="btn btn-secondary">
+                🔄 重新选择图片
+              </button>
+            </div>
+
+            <!-- 处理信息 -->
+            <div class="process-info">
+              <div class="info-item">
+                <span class="info-label">处理时间:</span>
+                <span class="info-value">{{ processingTime || '未知' }}</span>
+              </div>
+              <div v-if="promptId" class="info-item">
+                <span class="info-label">任务ID:</span>
+                <span class="info-value">{{ promptId }}</span>
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
+
+    <!-- Toast提示 -->
+    <div v-if="showToast" class="toast" :class="toastType">
+      <div class="toast-content">
+        <span class="toast-message">{{ toastMessage }}</span>
+        <button @click="showToast = false" class="toast-close">×</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 // 动态导入ComfyUI服务，避免初始加载错误
 let processUndressImage = null
@@ -107,6 +154,18 @@ const resultImage = ref(null)
 const isLoading = ref(false)
 const processingStatus = ref('')
 const promptId = ref('')
+const processingTime = ref('')
+
+// 拖拽对比功能
+const sliderPosition = ref(50) // 滑块位置百分比
+const isDragging = ref(false)
+const comparisonContainer = ref(null)
+const startTime = ref(null)
+
+// Toast提示
+const showToast = ref(false)
+const toastMessage = ref('')
+const toastType = ref('success') // success, error, info
 
 const handleFileChange = (event) => {
   const file = event.target.files[0]
@@ -131,6 +190,7 @@ const processImage = async () => {
 
   isLoading.value = true
   processingStatus.value = '正在加载服务...'
+  startTime.value = Date.now()
 
   try {
     console.log('🚀 开始一键换衣处理')
@@ -152,7 +212,17 @@ const processImage = async () => {
     if (result && result.success) {
       resultImage.value = result.resultImage
       promptId.value = result.promptId || ''
-      processingStatus.value = '✅ 处理完成！'
+      processingStatus.value = ''
+
+      // 计算处理时间
+      if (startTime.value) {
+        const duration = Math.round((Date.now() - startTime.value) / 1000)
+        processingTime.value = `${duration}秒`
+      }
+
+      // 显示成功toast
+      showToastMessage('🎉 处理完成！可以拖拽中间线对比效果', 'success')
+
       console.log('🎉 换衣处理成功')
     } else {
       throw new Error(result?.error || '处理失败')
@@ -182,17 +252,95 @@ const processImage = async () => {
   }
 }
 
+// Toast提示功能
+const showToastMessage = (message, type = 'success') => {
+  toastMessage.value = message
+  toastType.value = type
+  showToast.value = true
+
+  // 3秒后自动隐藏
+  setTimeout(() => {
+    showToast.value = false
+  }, 3000)
+}
+
+// 拖拽对比功能
+const startDragging = (event) => {
+  event.preventDefault()
+  isDragging.value = true
+
+  const moveHandler = (e) => {
+    if (!isDragging.value || !comparisonContainer.value) return
+
+    const rect = comparisonContainer.value.getBoundingClientRect()
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX)
+    const x = clientX - rect.left
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
+
+    sliderPosition.value = percentage
+  }
+
+  const stopDragging = () => {
+    isDragging.value = false
+    document.removeEventListener('mousemove', moveHandler)
+    document.removeEventListener('mouseup', stopDragging)
+    document.removeEventListener('touchmove', moveHandler)
+    document.removeEventListener('touchend', stopDragging)
+  }
+
+  document.addEventListener('mousemove', moveHandler)
+  document.addEventListener('mouseup', stopDragging)
+  document.addEventListener('touchmove', moveHandler)
+  document.addEventListener('touchend', stopDragging)
+}
+
+// 下载结果图片
+const downloadResult = () => {
+  if (!resultImage.value) return
+
+  const link = document.createElement('a')
+  link.href = resultImage.value
+  link.download = `clothes-swap-result-${Date.now()}.jpg`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 const resetProcess = () => {
   selectedImage.value = null
   resultImage.value = null
   processingStatus.value = ''
   promptId.value = ''
+  processingTime.value = ''
+  sliderPosition.value = 50
+  startTime.value = null
+
   // 清除文件输入
   const fileInput = document.getElementById('image-upload')
   if (fileInput) {
     fileInput.value = ''
   }
 }
+
+// 键盘快捷键支持
+const handleKeyPress = (event) => {
+  if (!resultImage.value) return
+
+  if (event.key === 'ArrowLeft') {
+    sliderPosition.value = Math.max(0, sliderPosition.value - 5)
+  } else if (event.key === 'ArrowRight') {
+    sliderPosition.value = Math.min(100, sliderPosition.value + 5)
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyPress)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyPress)
+})
 </script>
 
 <style scoped>
@@ -417,6 +565,173 @@ const resetProcess = () => {
   transform: translateY(-2px);
 }
 
+/* 拖拽对比功能样式 */
+.image-comparison-container {
+  margin: 20px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.comparison-wrapper {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  cursor: col-resize;
+  user-select: none;
+}
+
+.image-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.comparison-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.result-layer {
+  clip-path: inset(0 50% 0 0);
+  transition: clip-path 0.1s ease-out;
+}
+
+.image-label {
+  position: absolute;
+  top: 16px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.original-label {
+  left: 16px;
+}
+
+.result-label {
+  right: 16px;
+}
+
+.comparison-slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: white;
+  cursor: col-resize;
+  z-index: 20;
+  transform: translateX(-2px);
+  transition: left 0.1s ease-out;
+}
+
+.slider-line {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 1),
+    rgba(255, 255, 255, 0.8)
+  );
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: col-resize;
+}
+
+.slider-circle {
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border-radius: 50%;
+}
+
+.slider-arrow {
+  position: absolute;
+  color: #007bff;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.slider-arrow.left {
+  left: 6px;
+}
+
+.slider-arrow.right {
+  right: 6px;
+}
+
+.slider-handle:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* 处理信息样式 */
+.process-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.info-value {
+  color: white;
+  font-weight: 500;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* 按钮样式优化 */
+.btn-outline {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
 @media (max-width: 768px) {
   .page-title {
     font-size: 2rem;
@@ -430,6 +745,106 @@ const resetProcess = () => {
 
   .result-actions {
     flex-direction: column;
+  }
+
+  .comparison-wrapper {
+    height: 400px;
+  }
+
+  .slider-handle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .slider-arrow {
+    font-size: 10px;
+  }
+
+  .process-info {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .toast {
+    right: 20px;
+    top: 20px;
+  }
+
+  .toast-content {
+    padding: 12px 16px;
+  }
+}
+
+/* Toast提示样式 */
+.toast {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  z-index: 1000;
+  max-width: 400px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.toast.success .toast-content {
+  background: rgba(40, 167, 69, 0.9);
+  border-left: 4px solid #28a745;
+}
+
+.toast.error .toast-content {
+  background: rgba(220, 53, 69, 0.9);
+  border-left: 4px solid #dc3545;
+}
+
+.toast.info .toast-content {
+  background: rgba(23, 162, 184, 0.9);
+  border-left: 4px solid #17a2b8;
+}
+
+.toast-message {
+  color: white;
+  font-weight: 500;
+  flex: 1;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin-left: 12px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.toast-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 </style>

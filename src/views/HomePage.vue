@@ -38,8 +38,6 @@
         <p>&copy; 2024 Imagic. 基于ComfyUI工作流的AI图像处理平台</p>
         <div class="footer-actions">
           <button @click="showConfigModal = !showConfigModal" class="config-btn">⚙️ 配置</button>
-          <router-link v-if="isDev" to="/api-test" class="debug-btn">🧪 API测试</router-link>
-          <router-link v-if="isDev" to="/debug" class="debug-btn">🔧 调试</router-link>
         </div>
       </footer>
 
@@ -54,18 +52,16 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { computed, ref } from 'vue'
 import ConfigModal from '../components/ConfigModal.vue'
 
 const router = useRouter()
 
-// 检查是否为开发环境
-const isDev = computed(() => import.meta.env.DEV)
-
 // 配置模态框状态
 const showConfigModal = ref(false)
 
+// 导航函数
 const navigateTo = (path) => {
   try {
     console.log('导航到:', path)
