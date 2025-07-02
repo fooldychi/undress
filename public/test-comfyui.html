@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI服务测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        input[type="file"] {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 ComfyUI服务测试</h1>
+
+    <div class="test-card">
+        <h2>📦 服务导入测试</h2>
+        <p>测试ComfyUI服务模块是否能正常导入</p>
+        <button onclick="testServiceImport()">测试服务导入</button>
+        <div id="importLog" class="log">等待测试...</div>
+    </div>
+
+    <div class="test-card">
+        <h2>🔗 API连接测试</h2>
+        <p>测试ComfyUI服务器连接状态</p>
+        <button onclick="testConnection()">测试连接</button>
+        <div id="connectionLog" class="log">等待测试...</div>
+    </div>
+
+    <div class="test-card">
+        <h2>📤 图片上传测试</h2>
+        <p>测试图片上传功能</p>
+        <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect(event)">
+        <button onclick="testUpload()" id="uploadBtn" disabled>测试上传</button>
+        <div id="uploadLog" class="log">请先选择图片...</div>
+    </div>
+
+    <div class="test-card">
+        <h2>🚀 完整流程测试</h2>
+        <p>测试完整的换衣处理流程</p>
+        <button onclick="testFullProcess()" id="fullProcessBtn" disabled>测试完整流程</button>
+        <div id="fullProcessLog" class="log">请先完成上传测试...</div>
+    </div>
+
+    <script type="module">
+        let selectedFile = null;
+        let comfyUIService = null;
+
+        // 日志函数
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const time = new Date().toLocaleTimeString();
+            const className = type;
+            element.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // 清除日志
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        // 测试服务导入
+        window.testServiceImport = async function() {
+            clearLog('importLog');
+            log('importLog', '开始测试ComfyUI服务导入...', 'info');
+
+            try {
+                log('importLog', '正在导入服务模块...', 'info');
+                const module = await import('/src/services/comfyui.js');
+
+                log('importLog', '✅ 服务模块导入成功', 'success');
+
+                // 检查导出的函数
+                const exports = Object.keys(module);
+                log('importLog', `📋 可用函数: ${exports.join(', ')}`, 'info');
+
+                if (module.processUndressImage) {
+                    log('importLog', '✅ processUndressImage 函数可用', 'success');
+                    comfyUIService = module;
+                } else {
+                    log('importLog', '❌ processUndressImage 函数不可用', 'error');
+                }
+
+                if (module.getCurrentConfig) {
+                    const config = module.getCurrentConfig();
+                    log('importLog', `📋 当前配置: ${JSON.stringify(config, null, 2)}`, 'info');
+                } else {
+                    log('importLog', '❌ getCurrentConfig 函数不可用', 'error');
+                }
+
+            } catch (error) {
+                log('importLog', `❌ 服务导入失败: ${error.message}`, 'error');
+                console.error('服务导入错误:', error);
+            }
+        };
+
+        // 测试连接
+        window.testConnection = async function() {
+            clearLog('connectionLog');
+            log('connectionLog', '开始测试ComfyUI连接...', 'info');
+
+            try {
+                const baseUrl = 'https://dzqgp58z0s-8188.cnb.run';
+                log('connectionLog', `连接到: ${baseUrl}`, 'info');
+
+                const response = await fetch(`${baseUrl}/system_stats`);
+
+                if (response.ok) {
+                    const stats = await response.json();
+                    log('connectionLog', '✅ 连接成功', 'success');
+                    log('connectionLog', `📊 系统状态: ${JSON.stringify(stats, null, 2)}`, 'info');
+                } else {
+                    log('connectionLog', `❌ 连接失败: HTTP ${response.status}`, 'error');
+                }
+
+            } catch (error) {
+                log('connectionLog', `❌ 连接错误: ${error.message}`, 'error');
+            }
+        };
+
+        // 处理文件选择
+        window.handleFileSelect = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('uploadBtn').disabled = false;
+                log('uploadLog', `选择了文件: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+            }
+        };
+
+        // 测试上传
+        window.testUpload = async function() {
+            if (!selectedFile) return;
+
+            clearLog('uploadLog');
+            log('uploadLog', '开始测试图片上传...', 'info');
+
+            try {
+                // 将文件转换为base64
+                log('uploadLog', '转换图片为base64...', 'info');
+                const base64 = await fileToBase64(selectedFile);
+                log('uploadLog', `✅ 图片转换完成 (${base64.length} 字符)`, 'success');
+
+                // 测试上传API
+                const baseUrl = 'https://dzqgp58z0s-8188.cnb.run';
+                const formData = new FormData();
+                const filename = `test_${Date.now()}.${selectedFile.name.split('.').pop()}`;
+
+                formData.append('image', selectedFile, filename);
+                formData.append('type', 'input');
+                formData.append('subfolder', '');
+                formData.append('overwrite', 'false');
+
+                log('uploadLog', `上传到: ${baseUrl}/upload/image`, 'info');
+
+                const response = await fetch(`${baseUrl}/upload/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log('uploadLog', '✅ 上传成功', 'success');
+                    log('uploadLog', `📁 文件名: ${result.name}`, 'info');
+
+                    // 启用完整流程测试
+                    document.getElementById('fullProcessBtn').disabled = false;
+                    clearLog('fullProcessLog');
+                    log('fullProcessLog', '✅ 可以开始完整流程测试', 'success');
+
+                } else {
+                    const errorText = await response.text();
+                    log('uploadLog', `❌ 上传失败: ${response.status} ${errorText}`, 'error');
+                }
+
+            } catch (error) {
+                log('uploadLog', `❌ 上传错误: ${error.message}`, 'error');
+            }
+        };
+
+        // 测试完整流程
+        window.testFullProcess = async function() {
+            if (!selectedFile || !comfyUIService) {
+                log('fullProcessLog', '❌ 请先完成服务导入和图片选择', 'error');
+                return;
+            }
+
+            clearLog('fullProcessLog');
+            log('fullProcessLog', '开始测试完整换衣流程...', 'info');
+
+            try {
+                // 将文件转换为base64
+                log('fullProcessLog', '转换图片为base64...', 'info');
+                const base64 = await fileToBase64(selectedFile);
+
+                // 调用完整的处理流程
+                log('fullProcessLog', '调用 processUndressImage...', 'info');
+                const result = await comfyUIService.processUndressImage(base64);
+
+                if (result.success) {
+                    log('fullProcessLog', '🎉 完整流程测试成功!', 'success');
+                    log('fullProcessLog', `📋 结果: ${JSON.stringify({
+                        success: result.success,
+                        promptId: result.promptId,
+                        uploadedImageName: result.uploadedImageName,
+                        message: result.message
+                    }, null, 2)}`, 'info');
+
+                    if (result.resultImage) {
+                        log('fullProcessLog', '✅ 生成图片已返回', 'success');
+                        // 可以在这里显示结果图片
+                    }
+                } else {
+                    log('fullProcessLog', `❌ 处理失败: ${result.error}`, 'error');
+                }
+
+            } catch (error) {
+                log('fullProcessLog', `❌ 流程错误: ${error.message}`, 'error');
+                console.error('完整流程错误:', error);
+            }
+        };
+
+        // 工具函数：文件转base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 页面加载完成后自动测试服务导入
+        window.onload = function() {
+            log('importLog', '页面加载完成，可以开始测试', 'info');
+            setTimeout(() => {
+                testServiceImport();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

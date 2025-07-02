@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代理测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        input[type="file"] {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 代理功能测试</h1>
+    <p>测试Vite代理是否能解决CORS问题</p>
+
+    <div class="test-card">
+        <h2>1. 代理连接测试</h2>
+        <p>测试通过代理访问ComfyUI</p>
+        <button onclick="testProxyConnection()">测试代理连接</button>
+        <div id="proxyLog" class="log">等待测试...</div>
+    </div>
+
+    <div class="test-card">
+        <h2>2. 直连对比测试</h2>
+        <p>对比直连和代理的差异</p>
+        <button onclick="testDirectConnection()">测试直连</button>
+        <button onclick="compareConnections()">对比测试</button>
+        <div id="compareLog" class="log">等待测试...</div>
+    </div>
+
+    <div class="test-card">
+        <h2>3. 代理上传测试</h2>
+        <p>测试通过代理上传文件</p>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+        <button onclick="testProxyUpload()" id="uploadBtn" disabled>通过代理上传</button>
+        <div id="uploadLog" class="log">请先选择文件...</div>
+    </div>
+
+    <script>
+        const PROXY_URL = '/api/comfyui';
+        const DIRECT_URL = 'https://dzqgp58z0s-8188.cnb.run';
+        let selectedFile = null;
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const time = new Date().toLocaleTimeString();
+            const className = type;
+            element.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        // 测试代理连接
+        async function testProxyConnection() {
+            clearLog('proxyLog');
+            log('proxyLog', '开始测试代理连接...', 'info');
+
+            try {
+                log('proxyLog', `代理URL: ${PROXY_URL}/system_stats`, 'info');
+
+                const response = await fetch(`${PROXY_URL}/system_stats`);
+                log('proxyLog', `响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('proxyLog', '✅ 代理连接成功!', 'success');
+                    log('proxyLog', `系统信息: ${JSON.stringify(data.system, null, 2)}`, 'info');
+                } else {
+                    const errorText = await response.text();
+                    log('proxyLog', `❌ 代理连接失败: ${errorText}`, 'error');
+                }
+
+            } catch (error) {
+                log('proxyLog', `❌ 代理连接错误: ${error.message}`, 'error');
+
+                if (error.message.includes('Failed to fetch')) {
+                    log('proxyLog', '这可能是代理配置问题', 'warning');
+                    log('proxyLog', '请检查vite.config.js中的代理设置', 'warning');
+                }
+            }
+        }
+
+        // 测试直连
+        async function testDirectConnection() {
+            clearLog('compareLog');
+            log('compareLog', '开始测试直连...', 'info');
+
+            try {
+                log('compareLog', `直连URL: ${DIRECT_URL}/system_stats`, 'info');
+
+                const response = await fetch(`${DIRECT_URL}/system_stats`);
+                log('compareLog', `直连响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    log('compareLog', '✅ 直连成功 (但可能有CORS限制)', 'success');
+                } else {
+                    log('compareLog', '❌ 直连失败', 'error');
+                }
+
+            } catch (error) {
+                log('compareLog', `❌ 直连错误: ${error.message}`, 'error');
+
+                if (error.message.includes('CORS')) {
+                    log('compareLog', '确认: 这是CORS错误，需要使用代理', 'warning');
+                }
+            }
+        }
+
+        // 对比测试
+        async function compareConnections() {
+            clearLog('compareLog');
+            log('compareLog', '开始对比测试...', 'info');
+
+            // 测试代理
+            try {
+                log('compareLog', '测试代理连接...', 'info');
+                const proxyResponse = await fetch(`${PROXY_URL}/system_stats`);
+                log('compareLog', `代理: ${proxyResponse.status} ${proxyResponse.statusText}`, proxyResponse.ok ? 'success' : 'error');
+            } catch (error) {
+                log('compareLog', `代理错误: ${error.message}`, 'error');
+            }
+
+            // 测试直连
+            try {
+                log('compareLog', '测试直连...', 'info');
+                const directResponse = await fetch(`${DIRECT_URL}/system_stats`);
+                log('compareLog', `直连: ${directResponse.status} ${directResponse.statusText}`, directResponse.ok ? 'success' : 'error');
+            } catch (error) {
+                log('compareLog', `直连错误: ${error.message}`, 'error');
+            }
+
+            log('compareLog', '对比完成', 'info');
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('uploadBtn').disabled = false;
+                log('uploadLog', `选择了文件: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+            }
+        }
+
+        // 测试代理上传
+        async function testProxyUpload() {
+            if (!selectedFile) {
+                log('uploadLog', '❌ 请先选择文件', 'error');
+                return;
+            }
+
+            clearLog('uploadLog');
+            log('uploadLog', '开始测试代理上传...', 'info');
+
+            try {
+                const formData = new FormData();
+                const filename = `proxy_test_${Date.now()}.${selectedFile.name.split('.').pop()}`;
+
+                formData.append('image', selectedFile, filename);
+                formData.append('type', 'input');
+                formData.append('subfolder', '');
+                formData.append('overwrite', 'false');
+
+                log('uploadLog', `上传URL: ${PROXY_URL}/upload/image`, 'info');
+                log('uploadLog', `文件名: ${filename}`, 'info');
+
+                const response = await fetch(`${PROXY_URL}/upload/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log('uploadLog', `响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                const responseText = await response.text();
+                log('uploadLog', `响应内容: ${responseText}`, 'info');
+
+                if (response.ok) {
+                    try {
+                        const result = JSON.parse(responseText);
+                        log('uploadLog', '🎉 代理上传成功!', 'success');
+                        log('uploadLog', `服务器文件名: ${result.name}`, 'success');
+                    } catch (e) {
+                        log('uploadLog', '⚠️ 上传可能成功，但响应格式异常', 'warning');
+                    }
+                } else {
+                    log('uploadLog', '❌ 代理上传失败', 'error');
+                }
+
+            } catch (error) {
+                log('uploadLog', `❌ 代理上传错误: ${error.message}`, 'error');
+
+                if (error.message.includes('Failed to fetch')) {
+                    log('uploadLog', '代理配置可能有问题', 'warning');
+                } else {
+                    log('uploadLog', '这可能是服务器端问题', 'warning');
+                }
+            }
+        }
+
+        // 页面加载时自动测试代理
+        window.onload = function() {
+            log('proxyLog', '页面加载完成，开始自动测试...', 'info');
+            setTimeout(() => {
+                testProxyConnection();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

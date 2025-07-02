@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单上传测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        input[type="file"] {
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px dashed #dee2e6;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 ComfyUI上传简单测试</h1>
+        <p>这个页面用于快速测试ComfyUI图片上传功能</p>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div>
+            <h3>1. 选择图片</h3>
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+            <div id="fileInfo"></div>
+        </div>
+        
+        <div>
+            <h3>2. 测试上传</h3>
+            <button onclick="testUpload()" id="uploadBtn" disabled>上传到ComfyUI</button>
+            <button onclick="clearLog()">清除日志</button>
+        </div>
+        
+        <div>
+            <h3>3. 日志输出</h3>
+            <div id="log" class="log">等待操作...</div>
+        </div>
+    </div>
+
+    <script>
+        const COMFYUI_URL = 'https://w47dwct9xg-8188.cnb.run';
+        let selectedFile = null;
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${time}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '日志已清除';
+        }
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const fileInfo = document.getElementById('fileInfo');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (file) {
+                selectedFile = file;
+                uploadBtn.disabled = false;
+                
+                fileInfo.innerHTML = `
+                    <p><strong>文件名:</strong> ${file.name}</p>
+                    <p><strong>大小:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+                    <p><strong>类型:</strong> ${file.type}</p>
+                `;
+                
+                log(`选择了文件: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+                showStatus('文件选择成功，可以开始上传', 'success');
+            } else {
+                selectedFile = null;
+                uploadBtn.disabled = true;
+                fileInfo.innerHTML = '';
+            }
+        }
+        
+        async function testUpload() {
+            if (!selectedFile) {
+                showStatus('请先选择文件', 'error');
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '上传中...';
+            
+            try {
+                log('开始上传测试...', 'info');
+                showStatus('正在上传...', 'warning');
+                
+                // 创建FormData
+                const formData = new FormData();
+                const filename = `upload_${Date.now()}.${selectedFile.name.split('.').pop()}`;
+                
+                formData.append('image', selectedFile, filename);
+                formData.append('type', 'input');
+                formData.append('subfolder', '');
+                formData.append('overwrite', 'false');
+                
+                log(`准备上传文件: ${filename}`, 'info');
+                log(`上传URL: ${COMFYUI_URL}/upload/image`, 'info');
+                
+                // 发送请求
+                const response = await fetch(`${COMFYUI_URL}/upload/image`, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'cors'
+                });
+                
+                log(`响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                // 读取响应
+                const responseText = await response.text();
+                log(`响应内容: ${responseText}`, 'info');
+                
+                if (response.ok) {
+                    try {
+                        const result = JSON.parse(responseText);
+                        log('✅ 上传成功!', 'success');
+                        log(`返回的文件名: ${result.name}`, 'success');
+                        showStatus('上传成功!', 'success');
+                        
+                        // 显示成功信息
+                        document.getElementById('fileInfo').innerHTML += `
+                            <p style="color: green;"><strong>上传成功!</strong></p>
+                            <p><strong>服务器文件名:</strong> ${result.name}</p>
+                        `;
+                        
+                    } catch (e) {
+                        log('响应不是有效的JSON格式', 'warning');
+                        log(`JSON解析错误: ${e.message}`, 'error');
+                        showStatus('上传可能成功，但响应格式异常', 'warning');
+                    }
+                } else {
+                    log('❌ 上传失败', 'error');
+                    showStatus(`上传失败: ${response.status} ${response.statusText}`, 'error');
+                    
+                    // 尝试解析错误信息
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        log(`错误详情: ${JSON.stringify(errorData, null, 2)}`, 'error');
+                    } catch (e) {
+                        log(`错误响应: ${responseText}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ 请求失败: ${error.message}`, 'error');
+                showStatus(`请求失败: ${error.message}`, 'error');
+                
+                // 详细错误信息
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    log('这可能是网络连接问题或CORS问题', 'error');
+                    log('请检查:', 'info');
+                    log('1. ComfyUI服务器是否正在运行', 'info');
+                    log('2. 服务器是否设置了正确的CORS头', 'info');
+                    log('3. 网络连接是否正常', 'info');
+                }
+                
+                console.error('上传错误详情:', error);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '上传到ComfyUI';
+            }
+        }
+        
+        // 页面加载时测试连接
+        window.onload = async function() {
+            log('页面加载完成', 'info');
+            
+            try {
+                log('测试ComfyUI服务器连接...', 'info');
+                const response = await fetch(`${COMFYUI_URL}/system_stats`);
+                
+                if (response.ok) {
+                    log('✅ ComfyUI服务器连接正常', 'success');
+                    showStatus('ComfyUI服务器连接正常', 'success');
+                } else {
+                    log(`⚠️ ComfyUI服务器响应异常: ${response.status}`, 'warning');
+                    showStatus('ComfyUI服务器响应异常', 'warning');
+                }
+            } catch (error) {
+                log(`❌ 无法连接到ComfyUI服务器: ${error.message}`, 'error');
+                showStatus('无法连接到ComfyUI服务器', 'error');
+            }
+        };
+    </script>
+</body>
+</html>
