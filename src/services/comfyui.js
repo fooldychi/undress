@@ -161,18 +161,29 @@ function getApiBaseUrl() {
   // 根据CORS模式决定使用哪个URL
   const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
 
+  let baseUrl
   switch (corsMode) {
     case 'proxy':
       console.log('📡 使用代理服务器:', config.PROXY_SERVER_URL)
-      return config.PROXY_SERVER_URL
+      baseUrl = config.PROXY_SERVER_URL
+      break
     case 'cors-proxy':
       console.log('🌐 使用CORS代理模式，原始URL:', config.COMFYUI_SERVER_URL)
-      return config.COMFYUI_SERVER_URL // CORS代理在fetchWithRetry中处理
+      baseUrl = config.COMFYUI_SERVER_URL // CORS代理在fetchWithRetry中处理
+      break
     case 'direct':
     default:
       console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
-      return config.COMFYUI_SERVER_URL
+      baseUrl = config.COMFYUI_SERVER_URL
+      break
   }
+
+  // 确保URL格式正确，移除末尾的斜杠
+  if (baseUrl && baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1)
+  }
+
+  return baseUrl
 }
 
 // 重置为默认配置
@@ -261,7 +272,7 @@ async function uploadImageToComfyUI(base64Image) {
           formData.append('image', blob, filename)
           formData.append('type', 'input')
 
-          return fetch(`${config.BASE_URL}/upload/image`, {
+          return fetch(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
             body: formData,
             mode: 'no-cors'

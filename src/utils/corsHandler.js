@@ -5,10 +5,21 @@
 
 // 公共 CORS 代理服务列表（按优先级排序）
 const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://thingproxy.freeboard.io/fetch/',
-  'https://api.codetabs.com/v1/proxy?quest='
+  {
+    name: 'allorigins',
+    url: 'https://api.allorigins.win/get?url=',
+    needsUnwrap: true // 需要从响应中提取 contents
+  },
+  {
+    name: 'thingproxy',
+    url: 'https://thingproxy.freeboard.io/fetch/',
+    needsUnwrap: false
+  },
+  {
+    name: 'cors-anywhere',
+    url: 'https://cors-anywhere.herokuapp.com/',
+    needsUnwrap: false
+  }
 ]
 
 // 检测是否支持 CORS
@@ -43,14 +54,23 @@ export function needsCORS(url) {
 }
 
 // 获取可用的 CORS 代理
-export function getCORSProxy(originalUrl, corsMode = 'cors-proxy') {
+export function getCORSProxy(originalUrl, corsMode = 'cors-proxy', proxyIndex = 0) {
   // 只有在 cors-proxy 模式下才使用代理
-  if (corsMode === 'cors-proxy') {
-    return `${CORS_PROXIES[0]}${encodeURIComponent(originalUrl)}`
+  if (corsMode === 'cors-proxy' && proxyIndex < CORS_PROXIES.length) {
+    const proxy = CORS_PROXIES[proxyIndex]
+    return {
+      url: `${proxy.url}${encodeURIComponent(originalUrl)}`,
+      needsUnwrap: proxy.needsUnwrap,
+      name: proxy.name
+    }
   }
 
   // 其他模式直接返回原 URL
-  return originalUrl
+  return {
+    url: originalUrl,
+    needsUnwrap: false,
+    name: 'direct'
+  }
 }
 
 // 检查是否应该使用 CORS 代理
@@ -58,8 +78,35 @@ export function shouldUseCORSProxy(corsMode) {
   return corsMode === 'cors-proxy'
 }
 
+// 处理代理响应
+export async function unwrapProxyResponse(response, needsUnwrap) {
+  if (!needsUnwrap) {
+    return response
+  }
+
+  // 对于 allorigins，需要从 JSON 响应中提取 contents
+  try {
+    const data = await response.json()
+    if (data.contents) {
+      // 创建一个新的响应对象，包含原始内容
+      return new Response(data.contents, {
+        status: data.status?.http_code || 200,
+        statusText: 'OK',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+    } else {
+      throw new Error('代理响应格式错误')
+    }
+  } catch (error) {
+    console.error('解析代理响应失败:', error)
+    throw new Error('代理响应解析失败')
+  }
+}
+
 // 创建带有重试机制的 fetch 函数
-export async function fetchWithRetry(url, options = {}, maxRetries = 3, corsMode = 'direct') {
+export async function fetchWithRetry(url, options = {}, maxRetries = 5, corsMode = 'direct') {
   let lastError
   const originalUrl = url
 
@@ -67,14 +114,19 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3, corsMode
     try {
       let requestUrl = url
       let requestOptions = { ...options }
+      let needsUnwrap = false
+      let proxyName = 'direct'
 
       // 根据 CORS 模式和重试次数决定策略
       if (needsCORS(url)) {
         if (corsMode === 'cors-proxy') {
-          // CORS 代理模式：优先使用代理
-          if (i === 0) {
-            requestUrl = getCORSProxy(originalUrl, corsMode)
-            console.log(`🔄 尝试CORS代理: ${requestUrl}`)
+          // CORS 代理模式：尝试不同的代理服务
+          if (i < CORS_PROXIES.length) {
+            const proxyInfo = getCORSProxy(originalUrl, corsMode, i)
+            requestUrl = proxyInfo.url
+            needsUnwrap = proxyInfo.needsUnwrap
+            proxyName = proxyInfo.name
+            console.log(`🔄 尝试CORS代理 (${proxyName}): ${requestUrl}`)
             requestOptions = {
               ...options,
               mode: 'cors',
@@ -83,8 +135,8 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3, corsMode
                 ...options.headers
               }
             }
-          } else if (i === 1) {
-            // 备用：直接请求
+          } else if (i === CORS_PROXIES.length) {
+            // 所有代理都试过了，尝试直接请求
             console.log(`🔄 尝试直接请求: ${url}`)
             requestOptions = createCORSConfig(url, options)
           } else {
@@ -109,8 +161,12 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3, corsMode
               headers: {}
             }
           } else {
-            requestUrl = getCORSProxy(originalUrl, 'cors-proxy')
-            console.log(`🔄 尝试CORS代理: ${requestUrl}`)
+            // 备用：尝试第一个代理
+            const proxyInfo = getCORSProxy(originalUrl, 'cors-proxy', 0)
+            requestUrl = proxyInfo.url
+            needsUnwrap = proxyInfo.needsUnwrap
+            proxyName = proxyInfo.name
+            console.log(`🔄 尝试CORS代理 (${proxyName}): ${requestUrl}`)
             requestOptions = {
               ...options,
               mode: 'cors',
@@ -123,7 +179,7 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3, corsMode
         }
       }
 
-      const response = await fetch(requestUrl, requestOptions)
+      let response = await fetch(requestUrl, requestOptions)
 
       // 对于 no-cors 模式，无法检查状态码
       if (requestOptions.mode === 'no-cors') {
@@ -138,6 +194,12 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3, corsMode
       if (!response.ok) {
         const errorText = await response.text().catch(() => response.statusText)
         throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      // 如果使用了需要解包的代理，处理响应
+      if (needsUnwrap) {
+        console.log(`🔄 解包代理响应 (${proxyName})`)
+        response = await unwrapProxyResponse(response, needsUnwrap)
       }
 
       console.log(`✅ 请求成功: ${requestUrl}`)
