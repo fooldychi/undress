@@ -7,7 +7,89 @@
     <title>Imagic - AI图像处理应用</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div style="
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        text-align: center;
+      ">
+        <div>
+          <h1>🔄 正在加载 Imagic...</h1>
+          <p>如果页面长时间没有加载，请检查浏览器控制台</p>
+          <div style="margin-top: 20px;">
+            <a href="/undress/test.html" style="
+              color: white;
+              text-decoration: none;
+              background: rgba(255,255,255,0.2);
+              padding: 10px 20px;
+              border-radius: 8px;
+              display: inline-block;
+            ">诊断页面</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // GitHub Pages SPA 路由处理
+      (function() {
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        if (redirect) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+
+      // 添加加载超时检测
+      setTimeout(function() {
+        const app = document.getElementById('app');
+        if (app && app.innerHTML.includes('正在加载')) {
+          console.error('应用加载超时');
+          app.innerHTML = `
+            <div style="
+              min-height: 100vh;
+              background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              color: white;
+              text-align: center;
+              padding: 20px;
+            ">
+              <div>
+                <h1>⚠️ 加载失败</h1>
+                <p>应用未能在预期时间内加载完成</p>
+                <div style="margin: 20px 0;">
+                  <button onclick="location.reload()" style="
+                    background: #fff;
+                    color: #ee5a24;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    margin-right: 10px;
+                  ">重新加载</button>
+                  <a href="/undress/test.html" style="
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    text-decoration: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    display: inline-block;
+                    font-weight: bold;
+                  ">诊断页面</a>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }, 10000); // 10秒超时
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

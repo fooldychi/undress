@@ -17,11 +17,17 @@ export default defineConfig(({ command, mode }) => {
       outDir: 'dist',
       sourcemap: false,
       // 确保资源路径正确
-      assetsDir: 'assets'
+      assetsDir: 'assets',
+      // 确保模块预加载
+      rollupOptions: {
+        output: {
+          manualChunks: undefined
+        }
+      }
     },
 
-    // 基础路径配置
-    base: mode === 'production' ? '/undress/' : './',
+    // 基础路径配置 - 确保在生产环境使用正确的基础路径
+    base: mode === 'production' ? '/undress/' : '/',
 
     // 环境变量配置
     define: {
