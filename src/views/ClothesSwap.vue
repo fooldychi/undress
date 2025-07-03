@@ -2,159 +2,106 @@
   <div class="feature-page">
     <div class="container">
       <header class="page-header">
-        <router-link to="/" class="back-btn">
-          <span class="back-icon">←</span>
+        <van-button
+          @click="$router.push('/')"
+          type="default"
+          size="small"
+          plain
+          round
+          icon="arrow-left"
+          class="back-btn"
+        >
           返回首页
-        </router-link>
+        </van-button>
         <h1 class="page-title">
-          <span class="page-icon">👔</span>
-          一键换衣
+          <UndressWomanIcon :size="32" color="var(--primary-color)" class="page-icon" />
+          一键褪衣
         </h1>
-        <p class="page-description">上传人物照片，AI将为您智能更换服装</p>
+        <p class="page-description">上传人物照片，AI将为您智能移除服装</p>
       </header>
 
       <main class="page-content">
         <div v-if="!resultImage" class="upload-section">
-          <div class="upload-card">
-            <input
-              type="file"
-              accept="image/*"
-              @change="handleFileChange"
-              id="image-upload"
-              class="hidden"
-            >
-            <label for="image-upload" class="upload-area">
-              <div v-if="!selectedImage" class="upload-placeholder">
-                <div class="upload-icon">📷</div>
-                <h3>选择图片</h3>
-                <p>支持 JPG、PNG 格式，建议尺寸 512x512 以上</p>
-              </div>
-              <div v-else class="image-preview">
-                <img :src="selectedImage" alt="预览图" class="preview-image">
-                <div class="image-overlay">
-                  <span>点击更换图片</span>
-                </div>
-              </div>
-            </label>
+          <div class="target-image-section">
+            <h3 class="section-title">
+              <UndressWomanIcon :size="20" color="var(--primary-color)" class="section-icon" />
+              上传人物照片
+            </h3>
+            <!-- <p class="section-description">上传需要换衣的人物照片</p> -->
+
+            <ImageUpload
+              v-model="selectedImage"
+              title="选择人物照片"
+              description="支持 JPG、PNG 格式，建议尺寸 512x512 以上"
+              icon="Image"
+              :icon-size="48"
+              :min-height="300"
+              :disabled="isLoading"
+              @change="handleImageChange"
+            />
           </div>
 
           <div v-if="selectedImage" class="action-section">
-            <button
+            <!-- 处理按钮 -->
+            <van-button
+              v-if="!isLoading && !resultImage"
               @click="processImage"
-              :disabled="isLoading"
-              class="btn btn-primary process-btn"
+              type="primary"
+              size="large"
+              round
+              block
+              class="process-btn"
             >
-              <span v-if="isLoading" class="loading"></span>
-              {{ isLoading ? '处理中...' : '开始换衣' }}
-            </button>
-
-            <div v-if="processingStatus" class="status-message" :class="{ 'error': processingStatus.includes('失败') }">
-              {{ processingStatus }}
-            </div>
-
-            <div v-if="promptId" class="prompt-id">
-              <small>任务ID: {{ promptId }}</small>
-            </div>
+              <Shirt :size="20" color="white" class="btn-icon" />
+              开始换衣
+            </van-button>
           </div>
         </div>
 
-        <div v-if="resultImage" class="result-section">
-          <div class="result-card">
-            <h3 class="result-title">拖拽中间线对比效果</h3>
+        <!-- 处理状态 -->
+        <ProcessingStatus
+          v-if="isLoading"
+          status="loading"
+          title="正在处理换衣..."
+          description="请耐心等待，处理时间可能需要几分钟"
+          :progress="progressPercent"
+          :prompt-id="promptId"
+          :processing-time="processingTime"
+        />
 
-            <!-- 拖拽对比组件 -->
-            <div class="image-comparison-container" ref="comparisonContainer">
-              <div class="comparison-wrapper">
-                <!-- 原图 -->
-                <div class="image-layer original-layer">
-                  <img :src="selectedImage" alt="原图" class="comparison-image">
-                  <div class="image-label original-label">原图</div>
-                </div>
-
-                <!-- 结果图 -->
-                <div class="image-layer result-layer" :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }">
-                  <img :src="resultImage" alt="处理结果" class="comparison-image">
-                  <div class="image-label result-label">处理结果</div>
-                </div>
-
-                <!-- 拖拽滑块 -->
-                <div
-                  class="comparison-slider"
-                  :style="{ left: sliderPosition + '%' }"
-                  @mousedown="startDragging"
-                  @touchstart="startDragging"
-                >
-                  <div class="slider-line"></div>
-                  <div class="slider-handle">
-                    <div class="slider-arrow left">◀</div>
-                    <div class="slider-circle"></div>
-                    <div class="slider-arrow right">▶</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div class="result-actions">
-              <button @click="downloadResult" class="btn btn-primary download-btn">
-                📥 下载处理结果
-              </button>
-              <button @click="resetProcess" class="btn btn-secondary">
-                🔄 重新选择图片
-              </button>
-            </div>
-
-            <!-- 处理信息 -->
-            <div class="process-info">
-              <div class="info-item">
-                <span class="info-label">处理时间:</span>
-                <span class="info-value">{{ processingTime || '未知' }}</span>
-              </div>
-              <div v-if="promptId" class="info-item">
-                <span class="info-label">任务ID:</span>
-                <span class="info-value">{{ promptId }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- 结果展示 -->
+        <ImageComparison
+          v-if="resultImage"
+          :original-image="originalImageForComparison || selectedImage"
+          :result-image="resultImage"
+          @reset="resetProcess"
+        />
       </main>
-    </div>
-
-    <!-- Toast提示 -->
-    <div v-if="showToast" class="toast" :class="toastType">
-      <div class="toast-content">
-        <span class="toast-message">{{ toastMessage }}</span>
-        <button @click="showToast = false" class="toast-close">×</button>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { Toast } from 'vant'
+import ImageUpload from '../components/ImageUpload.vue'
+import ProcessingStatus from '../components/ProcessingStatus.vue'
+import ImageComparison from '../components/ImageComparison.vue'
+import { UndressWomanIcon } from '../components/icons'
 
-// 动态导入ComfyUI服务，避免初始加载错误
-let processUndressImage = null
+// 静态导入ComfyUI服务
+import { processUndressImage } from '../services/comfyui.js'
 
-// 异步加载ComfyUI服务
-const loadComfyUIService = async () => {
-  try {
-    const module = await import('../services/comfyui.js')
-    processUndressImage = module.processUndressImage
-    console.log('ComfyUI服务加载成功')
-    return true
-  } catch (error) {
-    console.error('ComfyUI服务加载失败:', error)
-    return false
-  }
-}
+console.log('ClothesSwap组件已加载，ComfyUI服务已导入')
 
 const selectedImage = ref(null)
+const originalImageForComparison = ref(null) // 新增：用于对比的原图（节点49）
 const resultImage = ref(null)
 const isLoading = ref(false)
 const processingStatus = ref('')
 const promptId = ref('')
 const processingTime = ref('')
+const progressPercent = ref(0) // 新增：处理进度百分比
 
 // 拖拽对比功能
 const sliderPosition = ref(50) // 滑块位置百分比
@@ -162,27 +109,12 @@ const isDragging = ref(false)
 const comparisonContainer = ref(null)
 const startTime = ref(null)
 
-// Toast提示
-const showToast = ref(false)
-const toastMessage = ref('')
-const toastType = ref('success') // success, error, info
+// 使用VantUI Toast系统
 
-const handleFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // 验证文件大小（限制为10MB）
-    if (file.size > 10 * 1024 * 1024) {
-      alert('文件大小不能超过10MB')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      selectedImage.value = e.target.result
-      resultImage.value = null // 清除之前的结果
-    }
-    reader.readAsDataURL(file)
-  }
+const handleImageChange = (imageData, file) => {
+  selectedImage.value = imageData
+  resultImage.value = null // 清除之前的结果
+  // 不再自动处理，等待用户点击按钮
 }
 
 const processImage = async () => {
@@ -190,29 +122,31 @@ const processImage = async () => {
 
   isLoading.value = true
   processingStatus.value = '正在加载服务...'
+  progressPercent.value = 10
   startTime.value = Date.now()
 
   try {
     console.log('🚀 开始一键换衣处理')
 
-    // 确保ComfyUI服务已加载
-    if (!processUndressImage) {
-      processingStatus.value = '正在加载ComfyUI服务...'
-      const loaded = await loadComfyUIService()
-      if (!loaded) {
-        throw new Error('ComfyUI服务加载失败')
-      }
-    }
+    // ComfyUI服务已静态导入，无需动态加载
 
     processingStatus.value = '开始处理图片...'
+    progressPercent.value = 30
 
     // 调用真实的ComfyUI API
+    processingStatus.value = '正在处理图片...'
+    progressPercent.value = 50
+
     const result = await processUndressImage(selectedImage.value)
+    progressPercent.value = 90
 
     if (result && result.success) {
       resultImage.value = result.resultImage
+      // 设置用于对比的原图（优先使用节点49的图片，否则使用用户上传的图片）
+      originalImageForComparison.value = result.originalImage || selectedImage.value
       promptId.value = result.promptId || ''
-      processingStatus.value = ''
+      processingStatus.value = '处理完成！'
+      progressPercent.value = 100
 
       // 计算处理时间
       if (startTime.value) {
@@ -221,7 +155,7 @@ const processImage = async () => {
       }
 
       // 显示成功toast
-      showToastMessage('🎉 处理完成！可以拖拽中间线对比效果', 'success')
+      Toast.success('🎉 处理完成！可以拖拽中间线对比效果')
 
       console.log('🎉 换衣处理成功')
     } else {
@@ -231,6 +165,7 @@ const processImage = async () => {
   } catch (error) {
     console.error('❌ 处理失败:', error)
     processingStatus.value = `❌ 处理失败: ${error.message}`
+    progressPercent.value = 0
 
     // 显示用户友好的错误信息
     let errorMessage = '处理失败，请重试'
@@ -246,23 +181,14 @@ const processImage = async () => {
       errorMessage = '服务加载失败，请刷新页面重试'
     }
 
-    alert(errorMessage)
+    Toast.fail(errorMessage)
   } finally {
     isLoading.value = false
+    progressPercent.value = 0
   }
 }
 
-// Toast提示功能
-const showToastMessage = (message, type = 'success') => {
-  toastMessage.value = message
-  toastType.value = type
-  showToast.value = true
-
-  // 3秒后自动隐藏
-  setTimeout(() => {
-    showToast.value = false
-  }, 3000)
-}
+// Toast功能已移至useToast组合式函数
 
 // 拖拽对比功能
 const startDragging = (event) => {
@@ -347,7 +273,7 @@ onUnmounted(() => {
 .feature-page {
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 
 .container {
@@ -360,35 +286,26 @@ onUnmounted(() => {
   margin-bottom: 40px;
 }
 
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: none;
-  font-size: 1rem;
-  margin-bottom: 20px;
-  transition: var(--transition);
-}
-
-.back-btn:hover {
-  color: white;
-  transform: translateX(-4px);
-}
-
-.back-icon {
-  font-size: 1.2rem;
-}
-
 .page-title {
-  font-size: 3rem;
-  color: white;
-  margin-bottom: 16px;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  color: var(--text-color);
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 
 .page-icon {
-  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.page-description {
+  color: var(--text-light);
+  font-size: 1.1rem;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .page-description {
@@ -405,16 +322,46 @@ onUnmounted(() => {
 .upload-section {
   display: flex;
   flex-direction: column;
+  gap: 40px;
+}
+
+/* 目标图片区域样式 - 与换脸页面保持一致 */
+.target-image-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.section-title {
+  display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.section-icon {
+  flex-shrink: 0;
+}
+
+.section-description {
+  margin: 0 0 24px 0;
+  color: var(--text-light);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .upload-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  color: var(--text-color);
 }
 
 .hidden {
@@ -424,7 +371,7 @@ onUnmounted(() => {
 .upload-area {
   display: block;
   cursor: pointer;
-  border: 3px dashed #ddd;
+  border: 3px dashed var(--border-color);
   border-radius: 16px;
   padding: 40px;
   text-align: center;
@@ -462,12 +409,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.preview-image {
-  max-width: 100%;
-  max-height: 400px;
-  border-radius: 12px;
-  display: block;
-}
+/* 移除预览图片的高度限制，让ImageUpload组件自己控制 */
 
 .image-overlay {
   position: absolute;
@@ -511,11 +453,7 @@ onUnmounted(() => {
   color: #c62828;
 }
 
-.prompt-id {
-  margin-top: 8px;
-  text-align: center;
-  color: var(--text-light);
-}
+/* prompt-id样式已移至 shared.css */
 
 .result-section {
   display: flex;
@@ -523,12 +461,12 @@ onUnmounted(() => {
 }
 
 .result-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 32px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   max-width: 600px;
 }
 
@@ -576,10 +514,11 @@ onUnmounted(() => {
 .comparison-wrapper {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: 600px;
   overflow: hidden;
   cursor: col-resize;
   user-select: none;
+  background: #000000; /* 改为黑色背景，避免白色间距 */
 }
 
 .image-layer {
@@ -588,12 +527,16 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .comparison-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* 改为cover，充满整个区域 */
+  object-position: center;
   display: block;
 }
 
@@ -720,17 +663,7 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-/* 按钮样式优化 */
-.btn-outline {
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
-}
-
-.btn-outline:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-}
+/* 按钮样式已移至AppButton组件 */
 
 @media (max-width: 768px) {
   .page-title {
@@ -748,7 +681,7 @@ onUnmounted(() => {
   }
 
   .comparison-wrapper {
-    height: 400px;
+    height: 500px;
   }
 
   .slider-handle {
@@ -775,76 +708,52 @@ onUnmounted(() => {
   }
 }
 
-/* Toast提示样式 */
-.toast {
-  position: fixed;
-  top: 80px;
-  right: 30px;
-  z-index: 1000;
-  max-width: 400px;
-  animation: slideInRight 0.3s ease-out;
+/* VantUI组件样式覆盖 */
+.processing-status {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
 }
 
-.toast-content {
+.status-info {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.status-text {
+  color: var(--text-color);
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.process-details {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  justify-content: center;
+  gap: 20px;
+  font-size: 14px;
+  color: var(--text-light);
 }
 
-.toast.success .toast-content {
-  background: rgba(40, 167, 69, 0.9);
-  border-left: 4px solid #28a745;
+.action-section {
+  text-align: center;
 }
 
-.toast.error .toast-content {
-  background: rgba(220, 53, 69, 0.9);
-  border-left: 4px solid #dc3545;
+.process-btn {
+  margin-top: 24px;
 }
 
-.toast.info .toast-content {
-  background: rgba(23, 162, 184, 0.9);
-  border-left: 4px solid #17a2b8;
-}
-
-.toast-message {
-  color: white;
-  font-weight: 500;
-  flex: 1;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  margin-left: 12px;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+.process-btn .van-button__content {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  gap: 8px;
 }
 
-.toast-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+.btn-icon {
+  flex-shrink: 0;
 }
 
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
+/* 动画已移至 shared.css */
 </style>

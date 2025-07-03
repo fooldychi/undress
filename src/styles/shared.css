@@ -1,0 +1,190 @@
+/* 共享样式 - 统一应用中的提示性组件样式 */
+
+/* 处理状态样式 */
+.processing-status {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.status-text {
+  color: white;
+  margin-bottom: 12px;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), #4ecdc4);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Toast提示样式 - 统一风格 */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  min-width: 300px;
+  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast.success {
+  background: rgba(40, 167, 69, 0.9);
+  border-left: 4px solid #28a745;
+}
+
+.toast.error {
+  background: rgba(220, 53, 69, 0.9);
+  border-left: 4px solid #dc3545;
+}
+
+.toast.info {
+  background: rgba(23, 162, 184, 0.9);
+  border-left: 4px solid #17a2b8;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  color: white;
+}
+
+.toast-message {
+  flex: 1;
+  font-weight: 500;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 16px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 统一的滑入动画 */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 上传提示样式 */
+.upload-tips {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.tip-icon {
+  font-size: 1.3rem;
+}
+
+/* 处理信息样式 */
+.process-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.info-item {
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: var(--text-light);
+  margin-right: 8px;
+}
+
+.info-value {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+/* 任务ID样式 */
+.prompt-id {
+  margin-top: 8px;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .toast {
+    right: 10px;
+    top: 10px;
+    min-width: 280px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .toast-content {
+    padding: 12px 16px;
+  }
+
+  .processing-status {
+    margin-top: 16px;
+  }
+
+  .upload-tips {
+    padding: 16px;
+  }
+
+  .tip-item {
+    font-size: 1rem;
+  }
+}

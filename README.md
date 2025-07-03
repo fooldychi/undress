@@ -4,7 +4,7 @@
 
 ## 🌟 功能特性
 
-- **一键换衣** 👔 - 智能识别人物轮廓，快速更换照片中的服装款式
+- **一键褪衣** 👤 - 智能识别人物轮廓，快速移除照片中的服装
 - **文生图** 🖼️ - 通过自然语言描述，AI生成高质量的创意图像
 - **极速换脸** 😀 - 精准面部识别技术，实现自然的人脸替换效果
 
@@ -59,27 +59,55 @@ const API_CONFIG = {
 ```
 imagic/
 ├── src/
+│   ├── components/      # Vue组件
+│   │   ├── icons/       # 自定义图标组件
+│   │   │   ├── UndressWomanIcon.vue # 褪衣图标
+│   │   │   ├── FaceSwapIcon.vue     # 换脸图标
+│   │   │   └── index.js             # 图标管理
+│   │   ├── ImageUpload.vue          # 图片上传组件
+│   │   ├── ProcessingStatus.vue     # 处理状态组件
+│   │   └── ImageComparison.vue      # 图片对比组件
 │   ├── views/           # 页面组件
 │   │   ├── HomePage.vue     # 主页
-│   │   ├── ClothesSwap.vue  # 一键换衣
+│   │   ├── ClothesSwap.vue  # 一键褪衣
 │   │   ├── TextToImage.vue  # 文生图
 │   │   └── FaceSwap.vue     # 极速换脸
-│   ├── router/          # 路由配置
 │   ├── services/        # API服务
+│   │   ├── api.js       # 通用API
+│   │   └── comfyui.js   # ComfyUI API
+│   ├── workflows/       # ComfyUI工作流
+│   │   ├── undress.json # 褪衣工作流
+│   │   └── faceswap2.0.json # 换脸工作流
+│   ├── router/          # 路由配置
 │   ├── App.vue          # 根组件
 │   ├── main.js          # 入口文件
 │   └── style.css        # 全局样式
+├── docs/                # 文档目录
+│   └── archive/         # 历史文档归档
 ├── public/              # 静态资源
+├── proxy-server.js      # 代理服务器
 ├── package.json         # 项目配置
 └── vite.config.js       # Vite配置
 ```
+
+## 📚 文档归档
+
+项目的历史文档和修复记录已归档到 `docs/archive/` 目录中，包括：
+- 关键问题修复总结
+- UI组件迁移文档
+- 部署和构建文档
+- 技术决策记录
+
+这些文档对于了解项目历史、问题排查和新开发者了解项目具有重要价值。
 
 ## 🎨 技术栈
 
 - **前端框架**: Vue 3 (Composition API)
 - **构建工具**: Vite
 - **路由**: Vue Router 4
-- **样式**: 原生CSS + CSS变量
+- **UI组件库**: Vant UI (移动端优化)
+- **图标**: Lucide Vue Next + 自定义SVG图标
+- **样式**: 原生CSS + CSS变量 + 暗色主题
 - **AI后端**: ComfyUI
 
 ## 🔌 ComfyUI集成

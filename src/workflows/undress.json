@@ -19,7 +19,7 @@
   },
   "49": {
     "inputs": {
-      "image": "3094c87b9fe9c00f76146f32f36c3beb4839.jpeg"
+      "image": "u=1798547219,2610197229&fm=253&fmt=auto&app=138&f=JPEG.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -488,7 +488,7 @@
     "inputs": {
       "directory": "/workspace/input",
       "image_load_cap": 1,
-      "skip_first_images": 54,
+      "skip_first_images": 53,
       "select_every_nth": 1
     },
     "class_type": "VHS_LoadImagesPath",
@@ -1164,18 +1164,6 @@
       "title": "应用ControlNet（旧版高级）"
     }
   },
-  "710": {
-    "inputs": {
-      "images": [
-        "573",
-        0
-      ]
-    },
-    "class_type": "PreviewImage",
-    "_meta": {
-      "title": "预览图像"
-    }
-  },
   "713": {
     "inputs": {
       "rgthree_comparer": {
@@ -1183,12 +1171,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_dgmxs_00001_.png&type=temp&subfolder=&rand=0.18539012641484653"
+            "url": "/api/view?filename=rgthree.compare._temp_sjcjo_00003_.png&type=temp&subfolder=&rand=0.49747606989196824"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_dgmxs_00002_.png&type=temp&subfolder=&rand=0.04662468838155842"
+            "url": "/api/view?filename=rgthree.compare._temp_sjcjo_00004_.png&type=temp&subfolder=&rand=0.6886429887287118"
           }
         ]
       },
@@ -1288,6 +1276,19 @@
     "class_type": "SAMModelLoader (segment anything)",
     "_meta": {
       "title": "SAM模型加载器"
+    }
+  },
+  "730": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "573",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
     }
   }
 }

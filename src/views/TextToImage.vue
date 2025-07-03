@@ -2,12 +2,19 @@
   <div class="feature-page">
     <div class="container">
       <header class="page-header">
-        <router-link to="/" class="back-btn">
-          <span class="back-icon">←</span>
+        <van-button
+          @click="$router.push('/')"
+          type="default"
+          size="small"
+          plain
+          round
+          icon="arrow-left"
+          class="back-btn"
+        >
           返回首页
-        </router-link>
+        </van-button>
         <h1 class="page-title">
-          <span class="page-icon">🖼️</span>
+          <van-icon name="photo-o" size="32" color="#07c160" class="page-icon" />
           文生图
         </h1>
         <p class="page-description">输入文字描述，AI为您生成精美图像</p>
@@ -62,14 +69,18 @@
               </div>
             </div>
 
-            <button
+            <van-button
               @click="generateImage"
               :disabled="isLoading || !prompt.trim()"
-              class="btn btn-primary generate-btn"
+              type="primary"
+              size="large"
+              round
+              :loading="isLoading"
+              icon="photo-o"
+              class="generate-btn"
             >
-              <span v-if="isLoading" class="loading"></span>
               {{ isLoading ? '生成中...' : '生成图像' }}
-            </button>
+            </van-button>
           </div>
         </div>
 

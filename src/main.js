@@ -1,7 +1,14 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+
+// 引入Vant UI
+import Vant, { Toast } from 'vant'
+import 'vant/lib/index.css'
+
+// 引入自定义样式（包含暗黑主题）
 import './style.css'
+import './styles/vant-theme.css'
 
 console.log('🚀 开始初始化Vue应用...')
 
@@ -22,6 +29,9 @@ function initApp() {
 
     console.log('🔧 配置路由...')
     app.use(router)
+
+    console.log('🎨 配置Vant UI...')
+    app.use(Vant)
 
     // 添加Vue错误处理
     app.config.errorHandler = (err, vm, info) => {

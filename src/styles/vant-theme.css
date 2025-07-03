@@ -1,0 +1,267 @@
+/* VantUI 暗黑主题定制 */
+
+/* 覆盖VantUI默认变量 */
+:root {
+  /* 主色调 */
+  --van-primary-color: #1989fa;
+  --van-success-color: #07c160;
+  --van-warning-color: #ff976a;
+  --van-danger-color: #ee0a24;
+  --van-info-color: #1989fa;
+  
+  /* 文字颜色 */
+  --van-text-color: #f7f8fa;
+  --van-text-color-2: #969799;
+  --van-text-color-3: #646566;
+  
+  /* 背景颜色 */
+  --van-background-color: #000000;
+  --van-background-color-light: #1a1a1a;
+  --van-background-2: #2d2d2d;
+  
+  /* 边框颜色 */
+  --van-border-color: #323233;
+  --van-border-width-base: 1px;
+  
+  /* 激活状态 */
+  --van-active-color: #f2f3f5;
+  --van-active-opacity: 0.1;
+  
+  /* 禁用状态 */
+  --van-disabled-opacity: 0.5;
+  
+  /* 阴影 */
+  --van-shadow-1: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --van-shadow-2: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --van-shadow-3: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Button 组件暗黑主题 */
+.van-button {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.van-button--primary {
+  background: linear-gradient(135deg, var(--van-primary-color), #0066cc);
+  border: none;
+  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.3);
+}
+
+.van-button--primary:hover {
+  box-shadow: 0 6px 16px rgba(25, 137, 250, 0.4);
+}
+
+.van-button--default {
+  background: var(--van-background-2);
+  border: 1px solid var(--van-border-color);
+  color: var(--van-text-color);
+}
+
+.van-button--default:hover {
+  background: #3a3a3a;
+  border-color: var(--van-primary-color);
+}
+
+.van-button--success {
+  background: linear-gradient(135deg, var(--van-success-color), #059652);
+  border: none;
+  box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
+}
+
+/* Card 组件暗黑主题 */
+.van-card {
+  background: var(--van-background-2);
+  border: 1px solid var(--van-border-color);
+  border-radius: 12px;
+  box-shadow: var(--van-shadow-1);
+}
+
+.van-card__header {
+  background: transparent;
+  border-bottom: 1px solid var(--van-border-color);
+}
+
+.van-card__title {
+  color: var(--van-text-color);
+  font-weight: 600;
+}
+
+.van-card__desc {
+  color: var(--van-text-color-2);
+}
+
+.van-card__content {
+  background: transparent;
+}
+
+.van-card__footer {
+  background: transparent;
+  border-top: 1px solid var(--van-border-color);
+}
+
+/* Progress 组件暗黑主题 */
+.van-progress {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.van-progress__portion {
+  border-radius: 4px;
+}
+
+.van-progress__pivot {
+  background: var(--van-primary-color);
+  color: white;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+/* Toast 组件暗黑主题 */
+.van-toast {
+  background: var(--van-background-2);
+  border: 1px solid var(--van-border-color);
+  color: var(--van-text-color);
+  box-shadow: var(--van-shadow-2);
+}
+
+.van-toast--success {
+  background: var(--van-success-color);
+  color: white;
+}
+
+.van-toast--fail {
+  background: var(--van-danger-color);
+  color: white;
+}
+
+.van-toast--loading {
+  background: var(--van-background-2);
+  color: var(--van-text-color);
+}
+
+/* Loading 组件暗黑主题 */
+.van-loading__spinner {
+  color: var(--van-primary-color);
+}
+
+.van-loading__text {
+  color: var(--van-text-color);
+}
+
+/* Field 组件暗黑主题 */
+.van-field {
+  background: var(--van-background-2);
+  border: 1px solid var(--van-border-color);
+  border-radius: 8px;
+}
+
+.van-field__control {
+  color: var(--van-text-color);
+  background: transparent;
+}
+
+.van-field__control::placeholder {
+  color: var(--van-text-color-3);
+}
+
+.van-field__label {
+  color: var(--van-text-color-2);
+}
+
+/* Cell 组件暗黑主题 */
+.van-cell {
+  background: var(--van-background-2);
+  border-bottom: 1px solid var(--van-border-color);
+}
+
+.van-cell__title {
+  color: var(--van-text-color);
+}
+
+.van-cell__value {
+  color: var(--van-text-color-2);
+}
+
+/* Dialog 组件暗黑主题 */
+.van-dialog {
+  background: var(--van-background-2);
+  border: 1px solid var(--van-border-color);
+  box-shadow: var(--van-shadow-3);
+}
+
+.van-dialog__header {
+  color: var(--van-text-color);
+}
+
+.van-dialog__content {
+  color: var(--van-text-color-2);
+}
+
+/* Popup 组件暗黑主题 */
+.van-popup {
+  background: var(--van-background-2);
+  border: 1px solid var(--van-border-color);
+}
+
+/* Overlay 组件暗黑主题 */
+.van-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* 自定义动画效果 */
+.van-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.van-button:active {
+  transform: scale(0.98);
+}
+
+.van-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.van-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--van-shadow-2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .van-button--large {
+    height: 44px;
+    font-size: 16px;
+  }
+  
+  .van-card {
+    margin: 8px;
+    border-radius: 8px;
+  }
+  
+  .van-toast {
+    max-width: 90%;
+  }
+}
+
+/* 滚动条样式 */
+.van-popup::-webkit-scrollbar,
+.van-dialog::-webkit-scrollbar {
+  width: 6px;
+}
+
+.van-popup::-webkit-scrollbar-track,
+.van-dialog::-webkit-scrollbar-track {
+  background: var(--van-background-color);
+}
+
+.van-popup::-webkit-scrollbar-thumb,
+.van-dialog::-webkit-scrollbar-thumb {
+  background: var(--van-border-color);
+  border-radius: 3px;
+}
+
+.van-popup::-webkit-scrollbar-thumb:hover,
+.van-dialog::-webkit-scrollbar-thumb:hover {
+  background: var(--van-text-color-3);
+}

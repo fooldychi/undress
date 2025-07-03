@@ -1,11 +1,12 @@
 <template>
   <div class="app">
     <router-view />
+    <!-- VantUI Toast 会自动处理，无需手动添加容器 -->
   </div>
 </template>
 
 <script setup>
-// 这里可以添加全局逻辑
+// VantUI Toast 无需导入容器组件
 </script>
 
 <style>
@@ -15,11 +16,7 @@
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-}
+/* body样式已移至style.css */
 
 .app {
   min-height: 100vh;

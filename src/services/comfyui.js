@@ -1,10 +1,11 @@
 // ComfyUI工作流服务
 import undressWorkflow from '../workflows/undress.json'
+import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 
 // API配置 - 支持动态配置
 const DEFAULT_CONFIG = {
   // 原始ComfyUI服务器URL（用户可配置）
-  COMFYUI_SERVER_URL: 'https://dzqgp58z0s-8188.cnb.run',
+  COMFYUI_SERVER_URL: 'https://hwf0p724ub-8188.cnb.run',
   // 是否使用代理服务器（避免CORS问题）
   USE_PROXY: true,
   // 代理服务器URL
@@ -37,12 +38,59 @@ function saveComfyUIConfig(config) {
   }
 }
 
+// 更新代理服务器配置
+async function updateProxyServerConfig(config) {
+  try {
+    // 只有在使用代理时才更新代理服务器配置
+    if (!config.USE_PROXY) {
+      console.log('🔧 不使用代理，跳过代理服务器配置更新')
+      return { success: true, message: '不使用代理模式' }
+    }
+
+    const proxyConfigUrl = config.PROXY_SERVER_URL.replace('/api', '/api/config')
+    console.log('🔧 更新代理服务器配置:', proxyConfigUrl)
+
+    const response = await fetch(proxyConfigUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        COMFYUI_SERVER_URL: config.COMFYUI_SERVER_URL,
+        CLIENT_ID: config.CLIENT_ID
+      }),
+      timeout: 10000
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('✅ 代理服务器配置更新成功:', result)
+      return { success: true, message: '代理服务器配置更新成功' }
+    } else {
+      console.warn('⚠️ 代理服务器配置更新失败:', response.status)
+      return { success: false, message: `代理服务器响应错误: ${response.status}` }
+    }
+  } catch (error) {
+    console.warn('⚠️ 无法连接到代理服务器，可能代理服务器未启动:', error.message)
+    return { success: false, message: '无法连接到代理服务器' }
+  }
+}
+
 // 更新配置
-function updateComfyUIConfig(newConfig) {
+async function updateComfyUIConfig(newConfig) {
   const currentConfig = getComfyUIConfig()
   const updatedConfig = { ...currentConfig, ...newConfig }
+
+  // 保存到localStorage
   saveComfyUIConfig(updatedConfig)
-  return updatedConfig
+
+  // 同时更新代理服务器配置
+  const proxyUpdateResult = await updateProxyServerConfig(updatedConfig)
+
+  return {
+    config: updatedConfig,
+    proxyUpdate: proxyUpdateResult
+  }
 }
 
 // 获取当前配置
@@ -196,9 +244,15 @@ async function uploadImageToComfyUI(base64Image) {
   } catch (error) {
     console.error('❌ 图片上传失败:', error)
 
-    // 提供更详细的错误信息
+    // 提供更详细的错误信息和解决建议
     if (error.message.includes('CORS')) {
       throw new Error(`图片上传失败: CORS错误 - ComfyUI服务器可能没有设置正确的跨域头`)
+    } else if (error.message.includes('网络连接中断') || error.message.includes('EPIPE') || error.message.includes('ECONNRESET')) {
+      throw new Error(`图片上传失败: 网络连接不稳定 - 请检查网络连接或稍后重试`)
+    } else if (error.message.includes('超时')) {
+      throw new Error(`图片上传失败: 上传超时 - 文件可能过大或网络较慢`)
+    } else if (error.message.includes('500')) {
+      throw new Error(`图片上传失败: ComfyUI服务器内部错误 - 服务器可能过载，请稍后重试`)
     } else if (error.message.includes('network')) {
       throw new Error(`图片上传失败: 网络错误 - 请检查ComfyUI服务器是否运行正常`)
     } else {
@@ -328,13 +382,29 @@ async function getGeneratedImage(taskResult) {
     const outputs = taskResult.outputs
     let imageInfo = null
 
-    // 优先查找节点710的输出图片（最终处理结果）
-    if (outputs['710'] && outputs['710'].images && outputs['710'].images.length > 0) {
+    // 优先查找节点730的输出图片（一键换衣处理结果）
+    if (outputs['730'] && outputs['730'].images && outputs['730'].images.length > 0) {
+      imageInfo = outputs['730'].images[0]
+      console.log('📷 找到节点730的一键换衣处理结果图片:', imageInfo)
+    } else if (outputs['812'] && outputs['812'].images && outputs['812'].images.length > 0) {
+      // 备用：查找节点812的输出图片（换脸处理结果）
+      imageInfo = outputs['812'].images[0]
+      console.log('📷 找到节点812的换脸处理结果图片:', imageInfo)
+    } else if (outputs['813'] && outputs['813'].images && outputs['813'].images.length > 0) {
+      // 备用：查找节点813的输出图片（旧版换脸结果）
+      imageInfo = outputs['813'].images[0]
+      console.log('📷 找到节点813的换脸处理结果图片:', imageInfo)
+    } else if (outputs['746'] && outputs['746'].images && outputs['746'].images.length > 0) {
+      // 备用：查找节点746的输出图片（更旧版换脸结果）
+      imageInfo = outputs['746'].images[0]
+      console.log('📷 找到节点746的换脸处理结果图片:', imageInfo)
+    } else if (outputs['710'] && outputs['710'].images && outputs['710'].images.length > 0) {
+      // 备用：查找节点710的输出图片（换衣处理结果）
       imageInfo = outputs['710'].images[0]
       console.log('📷 找到节点710的处理结果图片:', imageInfo)
     } else {
-      // 如果节点710没有输出，则查找其他节点的输出图片
-      console.log('⚠️ 节点710无输出，查找其他节点...')
+      // 如果主要节点都没有输出，则查找其他节点的输出图片
+      console.log('⚠️ 节点812、813、746和710都无输出，查找其他节点...')
       for (const nodeId in outputs) {
         const nodeOutput = outputs[nodeId]
         if (nodeOutput.images && nodeOutput.images.length > 0) {
@@ -441,9 +511,27 @@ async function processUndressImage(base64Image) {
     const resultImage = await getGeneratedImage(taskResult)
     console.log('🎉 换衣处理完全成功！')
 
+    // 获取节点49的原图用于对比
+    let originalImage = null
+    try {
+      // 构建节点49原图的URL
+      const params = new URLSearchParams({
+        filename: uploadedImageName,
+        type: 'input',
+        subfolder: ''
+      })
+      const config = getComfyUIConfig()
+      const apiBaseUrl = getApiBaseUrl()
+      originalImage = `${apiBaseUrl}/view?${params.toString()}`
+      console.log('📷 获取节点49原图URL:', originalImage)
+    } catch (error) {
+      console.warn('⚠️ 获取节点49原图失败，使用用户上传的图片:', error)
+    }
+
     return {
       success: true,
       resultImage: resultImage,
+      originalImage: originalImage, // 新增：节点49的原图
       promptId: promptId,
       uploadedImageName: uploadedImageName,
       message: '换衣处理完成'
@@ -459,6 +547,158 @@ async function processUndressImage(base64Image) {
   }
 }
 
+// 检查ComfyUI服务器状态
+async function checkComfyUIServerStatus() {
+  try {
+    const apiBaseUrl = getApiBaseUrl()
+    console.log('🔍 检查ComfyUI服务器状态:', apiBaseUrl)
+
+    const response = await fetch(`${apiBaseUrl}/system_stats`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10000) // 10秒超时
+    })
+
+    if (response.ok) {
+      const stats = await response.json()
+      console.log('✅ ComfyUI服务器状态正常:', stats)
+      return { status: 'ok', stats }
+    } else {
+      console.warn('⚠️ ComfyUI服务器响应异常:', response.status)
+      return { status: 'error', code: response.status }
+    }
+  } catch (error) {
+    console.error('❌ ComfyUI服务器连接失败:', error)
+    return { status: 'error', error: error.message }
+  }
+}
+
+// 换脸处理函数
+async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
+  try {
+    console.log('🚀 开始换脸处理')
+
+    if (onProgress) onProgress('正在检查服务器状态...', 5)
+
+    // 检查ComfyUI服务器状态
+    const serverStatus = await checkComfyUIServerStatus()
+    if (serverStatus.status === 'error') {
+      throw new Error(`ComfyUI服务器不可用: ${serverStatus.error || serverStatus.code}`)
+    }
+
+    if (onProgress) onProgress('正在准备工作流...', 10)
+
+    // 验证输入
+    if (!facePhotos || facePhotos.length !== 4) {
+      throw new Error('需要提供4张人脸照片')
+    }
+
+    if (!targetImage) {
+      throw new Error('需要提供目标图片')
+    }
+
+    // 检查是否所有人脸照片都已上传
+    const validFacePhotos = facePhotos.filter(photo => photo !== null)
+    if (validFacePhotos.length !== 4) {
+      throw new Error('请上传4张人脸照片')
+    }
+
+    if (onProgress) onProgress('正在上传人脸照片...', 20)
+
+    // 上传4张人脸照片
+    const uploadedFacePhotos = []
+    for (let i = 0; i < facePhotos.length; i++) {
+      const photo = facePhotos[i]
+      if (onProgress) onProgress(`正在上传人脸照片 ${i + 1}/4...`, 20 + (i * 10))
+
+      const uploadedFilename = await uploadImageToComfyUI(photo)
+      uploadedFacePhotos.push(uploadedFilename)
+    }
+
+    if (onProgress) onProgress('正在上传目标图片...', 60)
+
+    // 上传目标图片
+    const targetUploadedFilename = await uploadImageToComfyUI(targetImage)
+
+    if (onProgress) onProgress('正在准备换脸工作流...', 70)
+
+    // 准备工作流
+    const workflow = JSON.parse(JSON.stringify(faceSwapWorkflow))
+
+    // 更新工作流中的图片节点
+    // 根据最新工作流，正确的节点映射：
+    // 节点670: 第一张人脸照片
+    // 节点662: 第二张人脸照片
+    // 节点658: 第三张人脸照片
+    // 节点655: 第四张人脸照片
+    // 节点737: 目标图片
+    // 节点812: 处理结果输出（最新）
+
+    if (workflow['670']) {
+      workflow['670'].inputs.image = uploadedFacePhotos[0]
+      console.log('✅ 节点670设置第一张人脸照片:', uploadedFacePhotos[0])
+    }
+    if (workflow['662']) {
+      workflow['662'].inputs.image = uploadedFacePhotos[1]
+      console.log('✅ 节点662设置第二张人脸照片:', uploadedFacePhotos[1])
+    }
+    if (workflow['658']) {
+      workflow['658'].inputs.image = uploadedFacePhotos[2]
+      console.log('✅ 节点658设置第三张人脸照片:', uploadedFacePhotos[2])
+    }
+    if (workflow['655']) {
+      workflow['655'].inputs.image = uploadedFacePhotos[3]
+      console.log('✅ 节点655设置第四张人脸照片:', uploadedFacePhotos[3])
+    }
+    if (workflow['737']) {
+      workflow['737'].inputs.image = targetUploadedFilename
+      console.log('✅ 节点737设置目标图片:', targetUploadedFilename)
+    }
+
+    if (onProgress) onProgress('正在提交换脸任务...', 80)
+
+    // 提交工作流
+    const promptId = await submitWorkflow(workflow)
+
+    if (onProgress) onProgress('正在处理换脸...', 85)
+
+    // 等待任务完成 - 换脸需要更长时间，设置10分钟超时
+    const maxWaitTime = 600000 // 10分钟
+    console.log(`⏳ 开始等待换脸任务完成，任务ID: ${promptId}，最大等待时间: ${maxWaitTime/1000}秒`)
+
+    const taskResult = await waitForTaskCompletion(promptId, maxWaitTime)
+    console.log('✅ 换脸任务处理完成，结果:', taskResult)
+
+    if (onProgress) onProgress('正在获取处理结果...', 95)
+
+    // 获取结果图片
+    // 根据最新工作流，最终结果应该在节点812的输出
+    console.log('📥 开始获取换脸结果图片，查找节点812的输出...')
+    console.log('🔍 任务结果结构:', JSON.stringify(taskResult, null, 2))
+
+    const imageUrl = await getGeneratedImage(taskResult)
+    console.log('🖼️ 成功获取换脸结果图片URL')
+
+    if (onProgress) onProgress('换脸完成！', 100)
+
+    console.log('✅ 换脸处理完成')
+    return {
+      success: true,
+      imageUrl: imageUrl,
+      targetImageUrl: targetImage, // 返回目标图像用于对比
+      promptId: promptId,
+      message: '换脸处理完成'
+    }
+
+  } catch (error) {
+    console.error('❌ 换脸处理失败:', error)
+    return {
+      success: false,
+      error: error.message,
+      message: '换脸处理失败'
+    }
+  }
+}
+
 // 导出所有公共函数
 export {
   getCurrentConfig,
@@ -466,5 +706,6 @@ export {
   resetToDefaultConfig,
   generateClientId,
   getApiBaseUrl,
-  processUndressImage
+  processUndressImage,
+  processFaceSwapImage
 }

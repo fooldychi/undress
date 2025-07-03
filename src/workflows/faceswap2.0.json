@@ -1,0 +1,955 @@
+{
+  "501": {
+    "inputs": {
+      "crop_box": [
+        "507",
+        2
+      ]
+    },
+    "class_type": "LayerUtility: CropBoxResolve",
+    "_meta": {
+      "title": "裁剪框分析"
+    }
+  },
+  "502": {
+    "inputs": {
+      "text": "young woman",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "619",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "503": {
+    "inputs": {
+      "text": "text,watermark",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "619",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "504": {
+    "inputs": {
+      "seed": 521273381478727,
+      "steps": 40,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "sgm_uniform",
+      "denoise": 0.5,
+      "model": [
+        "624",
+        0
+      ],
+      "positive": [
+        "794",
+        0
+      ],
+      "negative": [
+        "794",
+        1
+      ],
+      "latent_image": [
+        "759",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "505": {
+    "inputs": {
+      "samples": [
+        "504",
+        0
+      ],
+      "vae": [
+        "619",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "507": {
+    "inputs": {
+      "invert_mask": false,
+      "detect": "mask_area",
+      "top_reserve": 96,
+      "bottom_reserve": 96,
+      "left_reserve": 96,
+      "right_reserve": 96,
+      "image": [
+        "737",
+        0
+      ],
+      "mask_for_crop": [
+        "512",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: CropByMask",
+    "_meta": {
+      "title": "遮罩裁剪"
+    }
+  },
+  "511": {
+    "inputs": {
+      "x": [
+        "501",
+        0
+      ],
+      "y": [
+        "501",
+        1
+      ],
+      "offset_x": 0,
+      "offset_y": 0,
+      "destination": [
+        "737",
+        0
+      ],
+      "source": [
+        "536",
+        0
+      ],
+      "mask": [
+        "767",
+        0
+      ]
+    },
+    "class_type": "ImageComposite+",
+    "_meta": {
+      "title": "图像合成"
+    }
+  },
+  "512": {
+    "inputs": {
+      "method": "human_parsing_lip",
+      "confidence": 0.4,
+      "crop_multi": 0,
+      "mask_components": "13",
+      "image": [
+        "737",
+        0
+      ]
+    },
+    "class_type": "easy humanSegmentation",
+    "_meta": {
+      "title": "人体Segmentation"
+    }
+  },
+  "533": {
+    "inputs": {
+      "upscale_model": "4xFaceUpDAT.pth",
+      "mode": "resize",
+      "rescale_factor": 2,
+      "resize_width": 1024,
+      "resampling_method": "lanczos",
+      "supersample": "true",
+      "rounding_modulus": 8,
+      "image": [
+        "507",
+        0
+      ]
+    },
+    "class_type": "CR Upscale Image",
+    "_meta": {
+      "title": "放大图像"
+    }
+  },
+  "535": {
+    "inputs": {
+      "image": [
+        "507",
+        0
+      ]
+    },
+    "class_type": "GetImageSize+",
+    "_meta": {
+      "title": "获取图像尺寸"
+    }
+  },
+  "536": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": [
+        "535",
+        0
+      ],
+      "height": [
+        "535",
+        1
+      ],
+      "crop": "disabled",
+      "image": [
+        "744",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "619": {
+    "inputs": {
+      "ckpt_name": "juggernautXL_ragnarokBy.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "624": {
+    "inputs": {
+      "weight": 1,
+      "start_at": 0,
+      "end_at": 1,
+      "instantid": [
+        "625",
+        0
+      ],
+      "insightface": [
+        "626",
+        0
+      ],
+      "control_net": [
+        "627",
+        0
+      ],
+      "image": [
+        "646",
+        0
+      ],
+      "model": [
+        "619",
+        0
+      ],
+      "positive": [
+        "502",
+        0
+      ],
+      "negative": [
+        "503",
+        0
+      ],
+      "image_kps": [
+        "738",
+        0
+      ]
+    },
+    "class_type": "ApplyInstantID",
+    "_meta": {
+      "title": "应用InstantID"
+    }
+  },
+  "625": {
+    "inputs": {
+      "instantid_file": "ip-adapter_instant_id.bin"
+    },
+    "class_type": "InstantIDModelLoader",
+    "_meta": {
+      "title": "InstnatID模型加载器"
+    }
+  },
+  "626": {
+    "inputs": {
+      "provider": "CUDA"
+    },
+    "class_type": "InstantIDFaceAnalysis",
+    "_meta": {
+      "title": "InstantID面部分析"
+    }
+  },
+  "627": {
+    "inputs": {
+      "control_net_name": "control_instant_id_sdxl.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "加载ControlNet模型"
+    }
+  },
+  "646": {
+    "inputs": {
+      "images_a": [
+        "669",
+        0
+      ],
+      "images_b": [
+        "665",
+        0
+      ],
+      "images_c": [
+        "661",
+        0
+      ],
+      "images_d": [
+        "657",
+        0
+      ]
+    },
+    "class_type": "Image Batch",
+    "_meta": {
+      "title": "图像组合批次"
+    }
+  },
+  "651": {
+    "inputs": {
+      "images": [
+        "646",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "653": {
+    "inputs": {
+      "method": "selfie_multiclass_256x256",
+      "confidence": 0.4,
+      "crop_multi": 0,
+      "mask_components": "3",
+      "image": [
+        "655",
+        0
+      ]
+    },
+    "class_type": "easy humanSegmentation",
+    "_meta": {
+      "title": "人体Segmentation"
+    }
+  },
+  "654": {
+    "inputs": {
+      "invert_mask": false,
+      "detect": "mask_area",
+      "top_reserve": 64,
+      "bottom_reserve": 64,
+      "left_reserve": 64,
+      "right_reserve": 64,
+      "image": [
+        "655",
+        0
+      ],
+      "mask_for_crop": [
+        "653",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: CropByMask",
+    "_meta": {
+      "title": "遮罩裁剪"
+    }
+  },
+  "655": {
+    "inputs": {
+      "image": "472309f790529822720e1637dc926ccb0a46f31f7eb5.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "657": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 512,
+      "crop": "center",
+      "image": [
+        "654",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "658": {
+    "inputs": {
+      "image": "3094c87b9fe9c00f76146f32f36c3beb4839.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "659": {
+    "inputs": {
+      "method": "selfie_multiclass_256x256",
+      "confidence": 0.4,
+      "crop_multi": 0,
+      "mask_components": "3",
+      "image": [
+        "658",
+        0
+      ]
+    },
+    "class_type": "easy humanSegmentation",
+    "_meta": {
+      "title": "人体Segmentation"
+    }
+  },
+  "660": {
+    "inputs": {
+      "invert_mask": false,
+      "detect": "mask_area",
+      "top_reserve": 64,
+      "bottom_reserve": 64,
+      "left_reserve": 64,
+      "right_reserve": 64,
+      "image": [
+        "658",
+        0
+      ],
+      "mask_for_crop": [
+        "659",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: CropByMask",
+    "_meta": {
+      "title": "遮罩裁剪"
+    }
+  },
+  "661": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 512,
+      "crop": "center",
+      "image": [
+        "660",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "662": {
+    "inputs": {
+      "image": "3094c87b9fe9c00f76146f32f36c3beb4839.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "663": {
+    "inputs": {
+      "method": "selfie_multiclass_256x256",
+      "confidence": 0.4,
+      "crop_multi": 0,
+      "mask_components": "3",
+      "image": [
+        "662",
+        0
+      ]
+    },
+    "class_type": "easy humanSegmentation",
+    "_meta": {
+      "title": "人体Segmentation"
+    }
+  },
+  "664": {
+    "inputs": {
+      "invert_mask": false,
+      "detect": "mask_area",
+      "top_reserve": 64,
+      "bottom_reserve": 64,
+      "left_reserve": 64,
+      "right_reserve": 64,
+      "image": [
+        "662",
+        0
+      ],
+      "mask_for_crop": [
+        "663",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: CropByMask",
+    "_meta": {
+      "title": "遮罩裁剪"
+    }
+  },
+  "665": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 512,
+      "crop": "center",
+      "image": [
+        "664",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "668": {
+    "inputs": {
+      "method": "selfie_multiclass_256x256",
+      "confidence": 0.4,
+      "crop_multi": 0,
+      "mask_components": "3",
+      "image": [
+        "670",
+        0
+      ]
+    },
+    "class_type": "easy humanSegmentation",
+    "_meta": {
+      "title": "人体Segmentation"
+    }
+  },
+  "669": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 512,
+      "crop": "center",
+      "image": [
+        "671",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "670": {
+    "inputs": {
+      "image": "IhacWExRy8myl12Sm_ShTw066125e9ca85145244740d2ce5dc2a4b.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "671": {
+    "inputs": {
+      "invert_mask": false,
+      "detect": "mask_area",
+      "top_reserve": 64,
+      "bottom_reserve": 64,
+      "left_reserve": 64,
+      "right_reserve": 64,
+      "image": [
+        "670",
+        0
+      ],
+      "mask_for_crop": [
+        "668",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: CropByMask",
+    "_meta": {
+      "title": "遮罩裁剪"
+    }
+  },
+  "737": {
+    "inputs": {
+      "image": "clothes-swap-result-1751462849273.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "738": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "mirror": "None",
+      "scale": 0.71,
+      "aspect_ratio": 1,
+      "rotate": [
+        "758",
+        0
+      ],
+      "transform_method": "lanczos",
+      "anti_aliasing": 0,
+      "image": [
+        "739",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: LayerImageTransform",
+    "_meta": {
+      "title": "图像变换"
+    }
+  },
+  "739": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "scale_by": 1.41,
+      "image": [
+        "533",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "缩放图像（比例）"
+    }
+  },
+  "741": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "mirror": "None",
+      "scale": 1.41,
+      "aspect_ratio": 1,
+      "rotate": [
+        "755",
+        0
+      ],
+      "transform_method": "lanczos",
+      "anti_aliasing": 0,
+      "image": [
+        "505",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: LayerImageTransform",
+    "_meta": {
+      "title": "图像变换"
+    }
+  },
+  "743": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "scale_by": 0.71,
+      "image": [
+        "741",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "缩放图像（比例）"
+    }
+  },
+  "744": {
+    "inputs": {
+      "method": "adain",
+      "image_output": "Preview",
+      "save_prefix": "ComfyUI",
+      "image_ref": [
+        "533",
+        0
+      ],
+      "image_target": [
+        "743",
+        0
+      ]
+    },
+    "class_type": "easy imageColorMatch",
+    "_meta": {
+      "title": "图像颜色匹配"
+    }
+  },
+  "748": {
+    "inputs": {
+      "pixels": [
+        "738",
+        0
+      ],
+      "vae": [
+        "619",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "753": {
+    "inputs": {
+      "a": 0
+    },
+    "class_type": "CM_IntToNumber",
+    "_meta": {
+      "title": "整数到数字"
+    }
+  },
+  "754": {
+    "inputs": {
+      "op": "Neg",
+      "a": [
+        "753",
+        0
+      ]
+    },
+    "class_type": "CM_NumberUnaryOperation",
+    "_meta": {
+      "title": "数字运算(单值)"
+    }
+  },
+  "755": {
+    "inputs": {
+      "a": [
+        "756",
+        0
+      ]
+    },
+    "class_type": "CM_IntToFloat",
+    "_meta": {
+      "title": "整数到浮点"
+    }
+  },
+  "756": {
+    "inputs": {
+      "a": [
+        "754",
+        0
+      ]
+    },
+    "class_type": "CM_NumberToInt",
+    "_meta": {
+      "title": "数字到整数"
+    }
+  },
+  "757": {
+    "inputs": {
+      "a": [
+        "753",
+        0
+      ]
+    },
+    "class_type": "CM_NumberToInt",
+    "_meta": {
+      "title": "数字到整数"
+    }
+  },
+  "758": {
+    "inputs": {
+      "a": [
+        "757",
+        0
+      ]
+    },
+    "class_type": "CM_IntToFloat",
+    "_meta": {
+      "title": "整数到浮点"
+    }
+  },
+  "759": {
+    "inputs": {
+      "samples": [
+        "748",
+        0
+      ],
+      "mask": [
+        "765",
+        0
+      ]
+    },
+    "class_type": "SetLatentNoiseMask",
+    "_meta": {
+      "title": "设置Latent噪波遮罩"
+    }
+  },
+  "760": {
+    "inputs": {
+      "method": "selfie_multiclass_256x256",
+      "confidence": 0.4,
+      "crop_multi": 0,
+      "mask_components": "3",
+      "image": [
+        "738",
+        0
+      ]
+    },
+    "class_type": "easy humanSegmentation",
+    "_meta": {
+      "title": "人体Segmentation"
+    }
+  },
+  "765": {
+    "inputs": {
+      "invert_mask": false,
+      "grow": 48,
+      "blur": 16,
+      "mask": [
+        "760",
+        1
+      ]
+    },
+    "class_type": "LayerMask: MaskGrow",
+    "_meta": {
+      "title": "遮罩扩张"
+    }
+  },
+  "767": {
+    "inputs": {
+      "invert_mask": false,
+      "grow": 96,
+      "blur": 8,
+      "mask": [
+        "507",
+        1
+      ]
+    },
+    "class_type": "LayerMask: MaskGrow",
+    "_meta": {
+      "title": "遮罩扩张"
+    }
+  },
+  "769": {
+    "inputs": {
+      "mask": [
+        "507",
+        1
+      ]
+    },
+    "class_type": "MaskPreview+",
+    "_meta": {
+      "title": "遮罩预览"
+    }
+  },
+  "783": {
+    "inputs": {
+      "images": [
+        "512",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "794": {
+    "inputs": {
+      "strength": 0.1,
+      "start_percent": 0,
+      "end_percent": 0.5,
+      "positive": [
+        "624",
+        1
+      ],
+      "negative": [
+        "624",
+        2
+      ],
+      "control_net": [
+        "795",
+        0
+      ],
+      "image": [
+        "738",
+        0
+      ],
+      "vae": [
+        "619",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "应用ControlNet（旧版高级）"
+    }
+  },
+  "795": {
+    "inputs": {
+      "control_net_name": "TTPLANET_Controlnet_Tile_realistic_v2_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "加载ControlNet模型"
+    }
+  },
+  "809": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_itzmp_00005_.png&type=temp&subfolder=&rand=0.7077054503766803"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_itzmp_00006_.png&type=temp&subfolder=&rand=0.05246611075824492"
+          }
+        ]
+      },
+      "image_a": [
+        "511",
+        0
+      ],
+      "image_b": [
+        "737",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "图像比较器"
+    }
+  },
+  "810": {
+    "inputs": {
+      "images": [
+        "507",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "812": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "511",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  }
+}
