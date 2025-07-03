@@ -60,11 +60,11 @@
       </div>
 
       <div class="modal-footer">
-        <van-button @click="openGuide" type="primary" size="normal" round>
-          查看详细解决方案
+        <van-button @click="openSolutions" type="primary" size="normal" round>
+          选择解决方案
         </van-button>
-        <van-button @click="openConfig" type="default" size="normal" round>
-          打开配置
+        <van-button @click="openGuide" type="default" size="normal" round>
+          详细教程
         </van-button>
         <van-button @click="$emit('close')" type="default" size="normal" round>
           关闭
@@ -100,6 +100,11 @@ const emit = defineEmits(['close', 'open-config'])
 
 const openConfig = () => {
   emit('open-config')
+  emit('close')
+}
+
+const openSolutions = () => {
+  router.push('/solutions')
   emit('close')
 }
 

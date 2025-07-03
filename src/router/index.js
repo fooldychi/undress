@@ -6,6 +6,7 @@ const ClothesSwap = () => import('../views/ClothesSwap.vue')
 const TextToImage = () => import('../views/TextToImage.vue')
 const FaceSwap = () => import('../views/FaceSwap.vue')
 const CORSGuide = () => import('../views/CORSGuide.vue')
+const SolutionSelector = () => import('../views/SolutionSelector.vue')
 
 
 const routes = [
@@ -47,6 +48,14 @@ const routes = [
     component: CORSGuide,
     meta: {
       title: 'CORS解决方案 - Imagic'
+    }
+  },
+  {
+    path: '/solutions',
+    name: 'SolutionSelector',
+    component: SolutionSelector,
+    meta: {
+      title: '选择解决方案 - Imagic'
     }
   }
 ]

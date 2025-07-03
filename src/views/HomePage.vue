@@ -10,6 +10,20 @@
       </header>
 
       <main class="main">
+        <!-- CORS 问题通知 -->
+        <div class="cors-notice">
+          <div class="notice-content">
+            <div class="notice-icon">⚠️</div>
+            <div class="notice-text">
+              <h3>重要提示</h3>
+              <p>由于浏览器CORS限制，需要配置ComfyUI服务器或选择其他解决方案才能正常使用。</p>
+            </div>
+            <van-button @click="$router.push('/solutions')" type="primary" size="small" round>
+              查看解决方案
+            </van-button>
+          </div>
+        </div>
+
         <div class="features">
           <div class="feature-card" @click="navigateTo('/clothes-swap')">
             <div class="feature-content">
@@ -156,6 +170,45 @@ const onConfigSaved = (config) => {
 
 .main {
   margin-bottom: 60px;
+}
+
+.cors-notice {
+  width: 100%;
+  max-width: 800px;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+}
+
+.notice-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.notice-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.notice-text {
+  flex: 1;
+}
+
+.notice-text h3 {
+  color: var(--warning-color);
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.notice-text p {
+  color: var(--text-light);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .features {
