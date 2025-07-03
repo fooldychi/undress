@@ -1,16 +1,18 @@
 // ComfyUI工作流服务
 import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
+import comfyUIConfig from '../config/comfyui.config.js'
+import { fetchWithRetry, createCORSConfig, getCORSErrorMessage } from '../utils/corsHandler.js'
 
 // API配置 - 支持动态配置
 const DEFAULT_CONFIG = {
   // 原始ComfyUI服务器URL（用户可配置）
-  COMFYUI_SERVER_URL: 'https://hwf0p724ub-8188.cnb.run',
+  COMFYUI_SERVER_URL: comfyUIConfig.BASE_URL,
   // 是否使用代理服务器（避免CORS问题）
-  USE_PROXY: true,
+  USE_PROXY: comfyUIConfig.USE_PROXY,
   // 代理服务器URL
-  PROXY_SERVER_URL: 'http://localhost:3008/api',
-  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b',
+  PROXY_SERVER_URL: comfyUIConfig.DEV_PROXY_URL,
+  CLIENT_ID: comfyUIConfig.CLIENT_ID,
   TIMEOUT: 300000 // 5分钟
 }
 
@@ -100,6 +102,13 @@ function getCurrentConfig() {
 
 // 获取实际使用的API基础URL
 function getApiBaseUrl() {
+  // 优先使用新的配置系统
+  const configUrl = comfyUIConfig.getApiUrl()
+  if (configUrl) {
+    return configUrl
+  }
+
+  // 回退到旧的配置系统
   const config = getComfyUIConfig()
   if (config.USE_PROXY) {
     return config.PROXY_SERVER_URL
@@ -167,11 +176,9 @@ async function uploadImageToComfyUI(base64Image) {
           formData.append('subfolder', '')
           formData.append('overwrite', 'false')
 
-          return fetch(`${apiBaseUrl}/upload/image`, {
+          return fetchWithRetry(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
-            body: formData,
-            mode: 'cors',
-            credentials: 'omit'
+            body: formData
           })
         }
       },
@@ -181,11 +188,9 @@ async function uploadImageToComfyUI(base64Image) {
           const formData = new FormData()
           formData.append('image', blob, filename)
 
-          return fetch(`${apiBaseUrl}/upload/image`, {
+          return fetchWithRetry(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
-            body: formData,
-            mode: 'cors',
-            credentials: 'omit'
+            body: formData
           })
         }
       },

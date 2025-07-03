@@ -155,6 +155,51 @@ imagic/
 4. 点击"开始换脸"
 5. 下载换脸结果
 
+## 🚀 快速开始
+
+### 📋 环境要求
+
+- Node.js 16+
+- npm 或 yarn
+
+### 🔧 安装依赖
+
+```bash
+npm install
+```
+
+### 🏃‍♂️ 启动开发服务器
+
+```bash
+# 启动前端开发服务器
+npm run dev
+
+# 启动代理服务器（解决CORS问题）
+npm run proxy
+
+# 同时启动前端和代理服务器（推荐）
+npm run dev:full
+```
+
+## 🌐 部署
+
+### GitHub Pages 部署
+
+项目已配置好 GitHub Pages 自动部署：
+
+```bash
+# 推送到 main 分支自动部署
+git push origin main
+
+# 手动构建和部署
+npm run build:github
+npm run deploy
+```
+
+**在线访问**：https://fooldychi.github.io/undress/
+
+详细部署指南请查看：[GITHUB_PAGES_SETUP.md](./GITHUB_PAGES_SETUP.md)
+
 ## 🛠️ 开发指南
 
 ### 添加新功能
