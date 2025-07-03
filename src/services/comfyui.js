@@ -330,7 +330,10 @@ async function uploadImageToComfyUI(base64Image) {
 
     // 使用新的 CORS 错误处理
     if (isCORSError(error)) {
-      throw handleCORSError(error, '图片上传失败')
+      const errorInfo = getCORSErrorMessage(error)
+      const corsError = new Error(`图片上传失败: ${errorInfo.message}`)
+      corsError.corsInfo = errorInfo
+      throw corsError
     } else if (error.message.includes('网络连接中断') || error.message.includes('EPIPE') || error.message.includes('ECONNRESET')) {
       throw new Error(`图片上传失败: 网络连接不稳定 - 请检查网络连接或稍后重试`)
     } else if (error.message.includes('超时')) {

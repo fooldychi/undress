@@ -5,6 +5,7 @@ const HomePage = () => import('../views/HomePage.vue')
 const ClothesSwap = () => import('../views/ClothesSwap.vue')
 const TextToImage = () => import('../views/TextToImage.vue')
 const FaceSwap = () => import('../views/FaceSwap.vue')
+const CORSGuide = () => import('../views/CORSGuide.vue')
 
 
 const routes = [
@@ -38,6 +39,14 @@ const routes = [
     component: FaceSwap,
     meta: {
       title: '极速换脸 - Imagic'
+    }
+  },
+  {
+    path: '/cors-guide',
+    name: 'CORSGuide',
+    component: CORSGuide,
+    meta: {
+      title: 'CORS解决方案 - Imagic'
     }
   }
 ]

@@ -78,6 +78,14 @@
         />
       </main>
     </div>
+
+    <!-- CORS错误模态框 -->
+    <CORSErrorModal
+      :visible="showCORSErrorModal"
+      :error-info="corsErrorInfo"
+      @close="showCORSErrorModal = false"
+      @open-config="handleOpenConfig"
+    />
   </div>
 </template>
 
@@ -87,6 +95,7 @@ import { Toast } from 'vant'
 import ImageUpload from '../components/ImageUpload.vue'
 import ProcessingStatus from '../components/ProcessingStatus.vue'
 import ImageComparison from '../components/ImageComparison.vue'
+import CORSErrorModal from '../components/CORSErrorModal.vue'
 import { UndressWomanIcon } from '../components/icons'
 
 // 静态导入ComfyUI服务
@@ -108,6 +117,22 @@ const sliderPosition = ref(50) // 滑块位置百分比
 const isDragging = ref(false)
 const comparisonContainer = ref(null)
 const startTime = ref(null)
+
+// CORS错误处理
+const showCORSErrorModal = ref(false)
+const corsErrorInfo = ref(null)
+
+// CORS错误处理函数
+const showCORSError = (errorInfo) => {
+  corsErrorInfo.value = errorInfo
+  showCORSErrorModal.value = true
+}
+
+const handleOpenConfig = () => {
+  // 这里可以触发配置模态框的显示
+  // 或者导航到配置页面
+  console.log('打开配置')
+}
 
 // 使用VantUI Toast系统
 
@@ -167,21 +192,27 @@ const processImage = async () => {
     processingStatus.value = `❌ 处理失败: ${error.message}`
     progressPercent.value = 0
 
-    // 显示用户友好的错误信息
-    let errorMessage = '处理失败，请重试'
-    if (error.message.includes('上传')) {
-      errorMessage = '图片上传失败，请检查网络连接'
-    } else if (error.message.includes('超时')) {
-      errorMessage = '处理超时，请稍后重试'
-    } else if (error.message.includes('工作流')) {
-      errorMessage = '服务器处理失败，请稍后重试'
-    } else if (error.message.includes('网络')) {
-      errorMessage = '网络连接失败，请检查网络'
-    } else if (error.message.includes('加载')) {
-      errorMessage = '服务加载失败，请刷新页面重试'
-    }
+    // 检查是否为CORS错误
+    if (error.corsInfo) {
+      // 显示CORS错误模态框
+      showCORSError(error.corsInfo)
+    } else {
+      // 显示用户友好的错误信息
+      let errorMessage = '处理失败，请重试'
+      if (error.message.includes('上传')) {
+        errorMessage = '图片上传失败，请检查网络连接'
+      } else if (error.message.includes('超时')) {
+        errorMessage = '处理超时，请稍后重试'
+      } else if (error.message.includes('工作流')) {
+        errorMessage = '服务器处理失败，请稍后重试'
+      } else if (error.message.includes('网络')) {
+        errorMessage = '网络连接失败，请检查网络'
+      } else if (error.message.includes('加载')) {
+        errorMessage = '服务加载失败，请刷新页面重试'
+      }
 
-    Toast.fail(errorMessage)
+      Toast.fail(errorMessage)
+    }
   } finally {
     isLoading.value = false
     progressPercent.value = 0

@@ -237,26 +237,79 @@ export function getCORSErrorMessage(error) {
   const message = error?.message || '未知错误'
 
   if (message.includes('CORS') || message.includes('cross-origin')) {
-    return 'CORS错误 - ComfyUI服务器可能没有设置正确的跨域头'
+    return {
+      type: 'cors',
+      message: 'CORS跨域错误',
+      details: 'ComfyUI服务器没有设置正确的跨域头，无法从浏览器直接访问',
+      solutions: [
+        '在ComfyUI服务器上配置CORS头',
+        '使用支持CORS的代理服务器',
+        '部署自己的后端API服务'
+      ]
+    }
   }
 
   if (message.includes('Failed to fetch')) {
-    return 'CORS错误 - ComfyUI服务器可能没有设置正确的跨域头'
+    return {
+      type: 'cors',
+      message: 'CORS跨域错误',
+      details: 'ComfyUI服务器没有设置正确的跨域头，无法从浏览器直接访问',
+      solutions: [
+        '在ComfyUI服务器上配置CORS头',
+        '使用支持CORS的代理服务器',
+        '部署自己的后端API服务'
+      ]
+    }
   }
 
   if (message.includes('405')) {
-    return '无CORS模式上传 失败: 405  - ComfyUI服务器不支持此请求方法'
+    return {
+      type: 'method',
+      message: '请求方法不支持',
+      details: 'ComfyUI服务器不支持此请求方法',
+      solutions: [
+        '检查API端点是否正确',
+        '确认ComfyUI服务器版本兼容性'
+      ]
+    }
   }
 
   if (message.includes('404')) {
-    return 'API端点不存在 - 请检查ComfyUI服务器地址和API路径'
+    return {
+      type: 'notfound',
+      message: 'API端点不存在',
+      details: '请检查ComfyUI服务器地址和API路径',
+      solutions: [
+        '确认ComfyUI服务器地址正确',
+        '检查服务器是否正在运行',
+        '验证API路径是否正确'
+      ]
+    }
   }
 
   if (message.includes('500')) {
-    return 'ComfyUI服务器内部错误 - 请检查服务器状态'
+    return {
+      type: 'server',
+      message: 'ComfyUI服务器内部错误',
+      details: '服务器处理请求时发生错误',
+      solutions: [
+        '检查ComfyUI服务器日志',
+        '确认服务器资源充足',
+        '重启ComfyUI服务器'
+      ]
+    }
   }
 
-  return message
+  return {
+    type: 'unknown',
+    message: '未知错误',
+    details: message,
+    solutions: [
+      '检查网络连接',
+      '确认服务器地址正确',
+      '查看浏览器控制台获取更多信息'
+    ]
+  }
 }
 
 // 检查是否为 CORS 相关错误
