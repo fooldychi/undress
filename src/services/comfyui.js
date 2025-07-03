@@ -2,14 +2,16 @@
 import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 import comfyUIConfig from '../config/comfyui.config.js'
-import { fetchWithRetry, createCORSConfig, getCORSErrorMessage } from '../utils/corsHandler.js'
+import { fetchWithRetry, createCORSConfig, getCORSErrorMessage, handleCORSError, isCORSError } from '../utils/corsHandler.js'
 
 // API配置 - 支持动态配置
 const DEFAULT_CONFIG = {
   // 原始ComfyUI服务器URL（用户可配置）
   COMFYUI_SERVER_URL: comfyUIConfig.BASE_URL,
-  // 是否使用代理服务器（避免CORS问题）
+  // 是否使用代理服务器（避免CORS问题）- 保持向后兼容
   USE_PROXY: comfyUIConfig.USE_PROXY,
+  // 新的CORS处理方式
+  CORS_MODE: 'cors-proxy', // 'direct', 'proxy', 'cors-proxy'
   // 代理服务器URL
   PROXY_SERVER_URL: comfyUIConfig.DEV_PROXY_URL,
   CLIENT_ID: comfyUIConfig.CLIENT_ID,
@@ -156,14 +158,20 @@ function getApiBaseUrl() {
 
   console.log('🔧 获取API基础URL，当前配置:', config)
 
-  // 如果用户配置了USE_PROXY，使用代理服务器
-  if (config.USE_PROXY) {
-    console.log('📡 使用代理服务器:', config.PROXY_SERVER_URL)
-    return config.PROXY_SERVER_URL
-  } else {
-    // 否则直接使用用户配置的ComfyUI服务器URL
-    console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
-    return config.COMFYUI_SERVER_URL
+  // 根据CORS模式决定使用哪个URL
+  const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
+
+  switch (corsMode) {
+    case 'proxy':
+      console.log('📡 使用代理服务器:', config.PROXY_SERVER_URL)
+      return config.PROXY_SERVER_URL
+    case 'cors-proxy':
+      console.log('🌐 使用CORS代理模式，原始URL:', config.COMFYUI_SERVER_URL)
+      return config.COMFYUI_SERVER_URL // CORS代理在fetchWithRetry中处理
+    case 'direct':
+    default:
+      console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
+      return config.COMFYUI_SERVER_URL
   }
 }
 
@@ -226,10 +234,11 @@ async function uploadImageToComfyUI(base64Image) {
           formData.append('subfolder', '')
           formData.append('overwrite', 'false')
 
+          const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
           return fetchWithRetry(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
             body: formData
-          })
+          }, 3, corsMode)
         }
       },
       {
@@ -238,10 +247,11 @@ async function uploadImageToComfyUI(base64Image) {
           const formData = new FormData()
           formData.append('image', blob, filename)
 
+          const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
           return fetchWithRetry(`${apiBaseUrl}/upload/image`, {
             method: 'POST',
             body: formData
-          })
+          }, 3, corsMode)
         }
       },
       {
@@ -294,14 +304,22 @@ async function uploadImageToComfyUI(base64Image) {
     }
 
     // 如果所有方法都失败了
-    throw lastError || new Error('所有上传方法都失败了')
+    if (lastError) {
+      if (isCORSError(lastError)) {
+        throw handleCORSError(lastError, '图片上传失败')
+      } else {
+        throw new Error(`图片上传失败: ${lastError.message}`)
+      }
+    } else {
+      throw new Error('所有上传方法都失败了')
+    }
 
   } catch (error) {
     console.error('❌ 图片上传失败:', error)
 
-    // 提供更详细的错误信息和解决建议
-    if (error.message.includes('CORS')) {
-      throw new Error(`图片上传失败: CORS错误 - ComfyUI服务器可能没有设置正确的跨域头`)
+    // 使用新的 CORS 错误处理
+    if (isCORSError(error)) {
+      throw handleCORSError(error, '图片上传失败')
     } else if (error.message.includes('网络连接中断') || error.message.includes('EPIPE') || error.message.includes('ECONNRESET')) {
       throw new Error(`图片上传失败: 网络连接不稳定 - 请检查网络连接或稍后重试`)
     } else if (error.message.includes('超时')) {
