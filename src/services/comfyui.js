@@ -16,24 +16,36 @@ const DEFAULT_CONFIG = {
   TIMEOUT: 300000 // 5分钟
 }
 
+// 配置缓存
+let configCache = null
+
 // 从localStorage获取配置，如果没有则使用默认配置
-function getComfyUIConfig() {
-  const savedConfig = localStorage.getItem('comfyui_config')
-  if (savedConfig) {
-    try {
-      const parsed = JSON.parse(savedConfig)
-      return { ...DEFAULT_CONFIG, ...parsed }
-    } catch (error) {
-      console.warn('解析保存的配置失败，使用默认配置:', error)
+function getComfyUIConfig(forceRefresh = false) {
+  // 如果强制刷新或缓存为空，重新读取配置
+  if (forceRefresh || !configCache) {
+    const savedConfig = localStorage.getItem('comfyui_config')
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig)
+        configCache = { ...DEFAULT_CONFIG, ...parsed }
+        console.log('🔄 配置已刷新:', configCache)
+      } catch (error) {
+        console.warn('解析保存的配置失败，使用默认配置:', error)
+        configCache = { ...DEFAULT_CONFIG }
+      }
+    } else {
+      configCache = { ...DEFAULT_CONFIG }
     }
   }
-  return { ...DEFAULT_CONFIG }
+  return { ...configCache }
 }
 
 // 保存配置到localStorage
 function saveComfyUIConfig(config) {
   try {
     localStorage.setItem('comfyui_config', JSON.stringify(config))
+    // 清除缓存，强制下次读取时重新加载
+    configCache = null
     console.log('ComfyUI配置已保存:', config)
   } catch (error) {
     console.error('保存配置失败:', error)
@@ -78,16 +90,53 @@ async function updateProxyServerConfig(config) {
   }
 }
 
+// 配置变更监听器
+const configChangeListeners = []
+
+// 添加配置变更监听器
+function addConfigChangeListener(listener) {
+  configChangeListeners.push(listener)
+}
+
+// 移除配置变更监听器
+function removeConfigChangeListener(listener) {
+  const index = configChangeListeners.indexOf(listener)
+  if (index > -1) {
+    configChangeListeners.splice(index, 1)
+  }
+}
+
+// 通知配置变更
+function notifyConfigChange(config) {
+  configChangeListeners.forEach(listener => {
+    try {
+      listener(config)
+    } catch (error) {
+      console.error('配置变更监听器执行失败:', error)
+    }
+  })
+}
+
 // 更新配置
 async function updateComfyUIConfig(newConfig) {
-  const currentConfig = getComfyUIConfig()
+  const currentConfig = getComfyUIConfig(true) // 强制刷新当前配置
   const updatedConfig = { ...currentConfig, ...newConfig }
 
-  // 保存到localStorage
+  console.log('🔄 更新配置:', updatedConfig)
+
+  // 保存到localStorage（这会清除缓存）
   saveComfyUIConfig(updatedConfig)
+
+  // 强制刷新配置缓存
+  configCache = null
+
+  // 通知配置变更
+  notifyConfigChange(updatedConfig)
 
   // 同时更新代理服务器配置
   const proxyUpdateResult = await updateProxyServerConfig(updatedConfig)
+
+  console.log('✅ 配置更新完成，新配置已生效')
 
   return {
     config: updatedConfig,
@@ -96,23 +145,24 @@ async function updateComfyUIConfig(newConfig) {
 }
 
 // 获取当前配置
-function getCurrentConfig() {
-  return getComfyUIConfig()
+function getCurrentConfig(forceRefresh = false) {
+  return getComfyUIConfig(forceRefresh)
 }
 
 // 获取实际使用的API基础URL
 function getApiBaseUrl() {
-  // 优先使用新的配置系统
-  const configUrl = comfyUIConfig.getApiUrl()
-  if (configUrl) {
-    return configUrl
-  }
+  // 强制刷新配置，确保获取最新的用户配置
+  const config = getComfyUIConfig(true)
 
-  // 回退到旧的配置系统
-  const config = getComfyUIConfig()
+  console.log('🔧 获取API基础URL，当前配置:', config)
+
+  // 如果用户配置了USE_PROXY，使用代理服务器
   if (config.USE_PROXY) {
+    console.log('📡 使用代理服务器:', config.PROXY_SERVER_URL)
     return config.PROXY_SERVER_URL
   } else {
+    // 否则直接使用用户配置的ComfyUI服务器URL
+    console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
     return config.COMFYUI_SERVER_URL
   }
 }
@@ -711,6 +761,8 @@ export {
   resetToDefaultConfig,
   generateClientId,
   getApiBaseUrl,
+  addConfigChangeListener,
+  removeConfigChangeListener,
   processUndressImage,
   processFaceSwapImage
 }
