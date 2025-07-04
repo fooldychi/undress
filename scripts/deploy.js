@@ -25,6 +25,7 @@ try {
   // 3. 初始化 git 仓库
   console.log('🔧 初始化 Git 仓库...')
   execSync('git init', { stdio: 'inherit' })
+  execSync('git checkout -b main', { stdio: 'inherit' })
   execSync('git add -A', { stdio: 'inherit' })
   execSync('git commit -m "deploy: GitHub Pages"', { stdio: 'inherit' })
 
@@ -33,7 +34,10 @@ try {
   execSync(`git push -f ${REPO_URL} main:${BRANCH}`, { stdio: 'inherit' })
 
   console.log('✅ 部署成功！')
-  console.log('🌐 网站将在几分钟后可用：https://fooldychi.github.io/undress/')
+  console.log('🌐 网站将在几分钟后可用：')
+  console.log('   - 自定义域名: https://undress.icomfy.co/')
+  console.log('   - GitHub Pages: https://fooldychi.github.io/undress/')
+  console.log('   - 域名测试页面: https://undress.icomfy.co/domain-test.html')
 
 } catch (error) {
   console.error('❌ 部署失败:', error.message)
