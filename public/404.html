@@ -7,12 +7,22 @@
     <title>Imagic - AI图像处理应用</title>
     <script>
       // GitHub Pages SPA 路由重定向
-      // 将所有路由重定向到 index.html
+      // 只重定向应用路由，不重定向静态资源
       const path = window.location.pathname;
       const query = window.location.search;
       const hash = window.location.hash;
 
-      if (path !== '/') {
+      // 不重定向静态资源文件
+      const isStaticResource = path.includes('/assets/') ||
+                              path.endsWith('.js') ||
+                              path.endsWith('.css') ||
+                              path.endsWith('.ico') ||
+                              path.endsWith('.png') ||
+                              path.endsWith('.jpg') ||
+                              path.endsWith('.svg') ||
+                              path.endsWith('.html');
+
+      if (path !== '/' && !isStaticResource) {
         window.location.replace('/' + '?redirect=' + encodeURIComponent(path + query + hash));
       }
     </script>
