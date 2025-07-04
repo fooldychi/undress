@@ -26,8 +26,8 @@ export default defineConfig(({ command, mode }) => {
       }
     },
 
-    // 基础路径配置 - 确保在生产环境使用正确的基础路径
-    base: mode === 'production' ? '/undress/' : '/',
+    // 基础路径配置 - 使用自定义域名时基础路径为 '/'
+    base: mode === 'production' ? '/' : '/',
 
     // 环境变量配置
     define: {

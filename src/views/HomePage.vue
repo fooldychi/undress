@@ -1,5 +1,10 @@
 <template>
   <div class="home">
+    <!-- 右上角体验点显示 -->
+    <div class="points-corner">
+      <PointsDisplay :compact="true" />
+    </div>
+
     <div class="container">
       <header class="header">
         <h1 class="title">
@@ -83,6 +88,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Palette, ChevronRight } from 'lucide-vue-next'
 import ConfigModal from '../components/ConfigModal.vue'
+import PointsDisplay from '../components/PointsDisplay.vue'
 import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'
 
 const router = useRouter()
@@ -121,6 +127,15 @@ const onConfigSaved = (config) => {
   justify-content: center;
   padding: 20px;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  position: relative;
+}
+
+/* 右上角体验点显示 */
+.points-corner {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
 }
 
 .container {

@@ -2,18 +2,18 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/x-icon" href="/undress/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imagic - AI图像处理应用</title>
     <script>
       // GitHub Pages SPA 路由重定向
       // 将所有路由重定向到 index.html
-      const path = window.location.pathname.replace('/undress', '');
+      const path = window.location.pathname;
       const query = window.location.search;
       const hash = window.location.hash;
-      
+
       if (path !== '/') {
-        window.location.replace('/undress/' + '?redirect=' + encodeURIComponent(path + query + hash));
+        window.location.replace('/' + '?redirect=' + encodeURIComponent(path + query + hash));
       }
     </script>
   </head>
@@ -32,7 +32,7 @@
         <div>
           <h1>🔄 正在重定向...</h1>
           <p>如果页面没有自动跳转，请点击下方链接：</p>
-          <a href="/undress/" style="color: white; text-decoration: underline;">返回首页</a>
+          <a href="/" style="color: white; text-decoration: underline;">返回首页</a>
         </div>
       </div>
     </div>

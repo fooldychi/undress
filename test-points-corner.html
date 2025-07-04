@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>体验点数右上角显示测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --text-color: #e2e8f0;
+            --text-light: #94a3b8;
+            --border-color: #334155;
+            --error-color: #ef4444;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        .points-corner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .points-compact {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .points-compact:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .compact-main {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .points-icon {
+            font-size: 1rem;
+        }
+
+        .points-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .compact-status {
+            margin-top: 2px;
+            text-align: center;
+        }
+
+        .status-text {
+            font-size: 0.7rem;
+            color: var(--error-color);
+            font-weight: 500;
+        }
+
+        .main-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary-color), #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .demo-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 右上角体验点显示 -->
+    <div class="points-corner">
+        <div class="points-compact" onclick="showDetails()">
+            <div class="compact-main">
+                <span class="points-icon">💎</span>
+                <span class="points-value" id="pointsValue">45</span>
+            </div>
+            <div class="compact-status" id="statusText" style="display: none;">
+                <span class="status-text">点数不足</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <div>
+            <h1 class="title">体验点数右上角显示测试</h1>
+            <p class="subtitle">点击右上角的体验点数查看详情</p>
+            
+            <div class="demo-buttons">
+                <button class="demo-btn" onclick="updatePoints(60)">设置60点</button>
+                <button class="demo-btn" onclick="updatePoints(15)">设置15点（不足）</button>
+                <button class="demo-btn" onclick="updatePoints(120)">设置120点</button>
+                <button class="demo-btn" onclick="consumePoints()">消耗20点</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPoints = 45;
+        const costPerGeneration = 20;
+
+        function updatePoints(points) {
+            currentPoints = points;
+            document.getElementById('pointsValue').textContent = points;
+            
+            const statusElement = document.getElementById('statusText');
+            if (points < costPerGeneration) {
+                statusElement.style.display = 'block';
+            } else {
+                statusElement.style.display = 'none';
+            }
+        }
+
+        function consumePoints() {
+            if (currentPoints >= costPerGeneration) {
+                updatePoints(currentPoints - costPerGeneration);
+                alert(`消耗了${costPerGeneration}点，剩余${currentPoints}点`);
+            } else {
+                alert('点数不足！');
+            }
+        }
+
+        function showDetails() {
+            const dailyRemaining = Math.max(0, 60 - (60 - currentPoints));
+            alert(`当前体验点: ${currentPoints}\n今日免费: ${dailyRemaining}/60\n每次消耗: ${costPerGeneration}点\n\n点击确定关闭详情`);
+        }
+
+        // 初始化显示
+        updatePoints(currentPoints);
+    </script>
+</body>
+</html>

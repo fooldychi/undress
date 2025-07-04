@@ -20,6 +20,9 @@
         <p class="page-description">上传人物照片，AI将为您智能移除服装</p>
       </header>
 
+      <!-- 体验点显示 -->
+      <PointsDisplay ref="pointsDisplayRef" />
+
       <main class="page-content">
         <div v-if="!resultImage" class="upload-section">
           <div class="target-image-section">
@@ -89,6 +92,7 @@ import { Toast } from 'vant'
 import ImageUpload from '../components/ImageUpload.vue'
 import ProcessingStatus from '../components/ProcessingStatus.vue'
 import ImageComparison from '../components/ImageComparison.vue'
+import PointsDisplay from '../components/PointsDisplay.vue'
 
 import { UndressWomanIcon } from '../components/icons'
 
@@ -112,7 +116,8 @@ const isDragging = ref(false)
 const comparisonContainer = ref(null)
 const startTime = ref(null)
 
-
+// 体验点组件引用
+const pointsDisplayRef = ref(null)
 
 // 使用VantUI Toast系统
 
@@ -159,8 +164,14 @@ const processImage = async () => {
         processingTime.value = `${duration}秒`
       }
 
+      // 更新体验点显示
+      if (pointsDisplayRef.value) {
+        pointsDisplayRef.value.updatePointsStatus()
+      }
+
       // 显示成功toast
-      Toast.success('🎉 处理完成！可以拖拽中间线对比效果')
+      const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
+      Toast.success(`🎉 处理完成！${pointsInfo}可以拖拽中间线对比效果`)
 
       console.log('🎉 换衣处理成功')
     } else {

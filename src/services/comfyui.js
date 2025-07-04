@@ -2,6 +2,7 @@
 import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 import comfyUIConfig from '../config/comfyui.config.js'
+import pointsManager from '../utils/pointsManager.js'
 
 // API配置 - 直连模式
 const DEFAULT_CONFIG = {
@@ -461,6 +462,14 @@ async function waitForTaskCompletion(promptId, maxWaitTime = 300000) {
 async function processUndressImage(base64Image) {
   try {
     console.log('🚀 开始处理换衣请求...')
+
+    // 检查体验点
+    console.log('💎 检查体验点...')
+    if (!pointsManager.hasEnoughPoints()) {
+      const status = pointsManager.getPointsStatus()
+      throw new Error(`体验点不足！当前点数: ${status.current}，需要: ${status.generationCost}`)
+    }
+
     console.log('📋 流程：第一步上传图片 → 第二步提交工作流')
 
     // 验证图片数据格式
@@ -493,6 +502,11 @@ async function processUndressImage(base64Image) {
     const resultImage = await getGeneratedImage(taskResult)
     console.log('🎉 换衣处理完全成功！')
 
+    // 消耗体验点
+    console.log('💎 消耗体验点...')
+    const pointsResult = pointsManager.consumePoints()
+    console.log(`✅ 已消耗 ${pointsResult.consumed} 体验点，剩余: ${pointsResult.remaining}`)
+
     // 获取节点49的原图用于对比
     let originalImage = null
     try {
@@ -516,6 +530,8 @@ async function processUndressImage(base64Image) {
       originalImage: originalImage, // 新增：节点49的原图
       promptId: promptId,
       uploadedImageName: uploadedImageName,
+      pointsConsumed: pointsResult.consumed,
+      pointsRemaining: pointsResult.remaining,
       message: '换衣处理完成'
     }
 
@@ -558,6 +574,13 @@ async function checkComfyUIServerStatus() {
 async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
   try {
     console.log('🚀 开始换脸处理')
+
+    // 检查体验点
+    console.log('💎 检查体验点...')
+    if (!pointsManager.hasEnoughPoints()) {
+      const status = pointsManager.getPointsStatus()
+      throw new Error(`体验点不足！当前点数: ${status.current}，需要: ${status.generationCost}`)
+    }
 
     if (onProgress) onProgress('正在检查服务器状态...', 5)
 
@@ -660,6 +683,11 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
     const imageUrl = await getGeneratedImage(taskResult)
     console.log('🖼️ 成功获取换脸结果图片URL')
 
+    // 消耗体验点
+    console.log('💎 消耗体验点...')
+    const pointsResult = pointsManager.consumePoints()
+    console.log(`✅ 已消耗 ${pointsResult.consumed} 体验点，剩余: ${pointsResult.remaining}`)
+
     if (onProgress) onProgress('换脸完成！', 100)
 
     console.log('✅ 换脸处理完成')
@@ -668,6 +696,8 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
       imageUrl: imageUrl,
       targetImageUrl: targetImage, // 返回目标图像用于对比
       promptId: promptId,
+      pointsConsumed: pointsResult.consumed,
+      pointsRemaining: pointsResult.remaining,
       message: '换脸处理完成'
     }
 

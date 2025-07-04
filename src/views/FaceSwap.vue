@@ -20,6 +20,9 @@
         <p class="page-description">上传4张人脸照片和1张目标图片，AI将为您智能换脸</p>
       </header>
 
+      <!-- 体验点显示 -->
+      <PointsDisplay ref="pointsDisplayRef" />
+
       <main class="page-content">
         <div v-if="!resultImage" class="upload-section">
           <!-- 人脸照片上传区域 -->
@@ -116,6 +119,7 @@ import ImageUpload from '../components/ImageUpload.vue'
 import MultiImageUpload from '../components/MultiImageUpload.vue'
 import ProcessingStatus from '../components/ProcessingStatus.vue'
 import ImageComparison from '../components/ImageComparison.vue'
+import PointsDisplay from '../components/PointsDisplay.vue'
 import { FaceSwapIcon } from '../components/icons'
 
 // 静态导入ComfyUI服务
@@ -139,6 +143,9 @@ const sliderPosition = ref(50)
 const isDragging = ref(false)
 const comparisonContainer = ref(null)
 const startTime = ref(null)
+
+// 体验点组件引用
+const pointsDisplayRef = ref(null)
 
 // 使用VantUI Toast系统
 
@@ -207,9 +214,14 @@ const processImages = async () => {
       const duration = Math.round((endTime - startTime.value) / 1000)
       processingTime.value = `${duration}秒`
 
+      // 更新体验点显示
+      if (pointsDisplayRef.value) {
+        pointsDisplayRef.value.updatePointsStatus()
+      }
 
-
-      Toast.success('🎉 换脸完成！可以拖拽中间线对比目标图像和换脸结果')
+      // 显示成功toast
+      const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
+      Toast.success(`🎉 换脸完成！${pointsInfo}可以拖拽中间线对比目标图像和换脸结果`)
       console.log('✅ 换脸处理完成')
     } else {
       throw new Error(result.error || '换脸处理失败')
