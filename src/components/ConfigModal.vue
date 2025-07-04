@@ -22,23 +22,7 @@
           <small class="help-text">原始ComfyUI服务器的完整URL地址</small>
         </div>
 
-        <div class="config-section">
-          <label for="cors-mode">CORS处理方式:</label>
-          <select
-            id="cors-mode"
-            v-model="localConfig.CORS_MODE"
-            class="config-input"
-          >
-            <option value="direct">直接连接（需要服务器支持CORS）</option>
-            <option value="proxy">使用代理服务器</option>
-            <option value="cors-proxy">使用公共CORS代理（推荐）</option>
-          </select>
-          <small class="help-text">
-            <span v-if="localConfig.CORS_MODE === 'direct'">直接连接到ComfyUI服务器，需要服务器配置CORS头</span>
-            <span v-else-if="localConfig.CORS_MODE === 'proxy'">使用本地代理服务器（需要运行proxy-server.js）</span>
-            <span v-else>使用公共CORS代理服务，无需额外配置（推荐用于GitHub Pages）</span>
-          </small>
-        </div>
+        <!-- CORS已在服务端配置，使用直连模式 -->
 
         <div class="config-section">
           <label for="client-id">客户端ID:</label>
@@ -108,9 +92,6 @@ const emit = defineEmits(['close', 'saved'])
 
 const localConfig = ref({
   COMFYUI_SERVER_URL: '',
-  USE_PROXY: false, // 保持向后兼容
-  CORS_MODE: 'cors-proxy', // 新的CORS处理方式
-  PROXY_SERVER_URL: 'http://localhost:3008/api',
   CLIENT_ID: '',
   TIMEOUT: 300000
 })
@@ -129,8 +110,7 @@ const isValidConfig = computed(() => {
   return localConfig.value.COMFYUI_SERVER_URL &&
          localConfig.value.COMFYUI_SERVER_URL.startsWith('http') &&
          localConfig.value.CLIENT_ID &&
-         localConfig.value.TIMEOUT > 0 &&
-         localConfig.value.CORS_MODE
+         localConfig.value.TIMEOUT > 0
 })
 
 // 监听visible变化，加载当前配置

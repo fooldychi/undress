@@ -1,19 +1,12 @@
-// ComfyUI工作流服务
+// ComfyUI工作流服务 - 直连模式
 import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 import comfyUIConfig from '../config/comfyui.config.js'
-import { fetchWithRetry, createCORSConfig, getCORSErrorMessage, handleCORSError, isCORSError } from '../utils/corsHandler.js'
 
-// API配置 - 支持动态配置
+// API配置 - 直连模式
 const DEFAULT_CONFIG = {
-  // 原始ComfyUI服务器URL（用户可配置）
+  // ComfyUI服务器URL（用户可配置）
   COMFYUI_SERVER_URL: comfyUIConfig.BASE_URL,
-  // 是否使用代理服务器（避免CORS问题）- 保持向后兼容
-  USE_PROXY: comfyUIConfig.USE_PROXY,
-  // 新的CORS处理方式
-  CORS_MODE: 'cors-proxy', // 'direct', 'proxy', 'cors-proxy'
-  // 代理服务器URL
-  PROXY_SERVER_URL: comfyUIConfig.DEV_PROXY_URL,
   CLIENT_ID: comfyUIConfig.CLIENT_ID,
   TIMEOUT: 300000 // 5分钟
 }
@@ -151,32 +144,12 @@ function getCurrentConfig(forceRefresh = false) {
   return getComfyUIConfig(forceRefresh)
 }
 
-// 获取实际使用的API基础URL
+// 获取API基础URL - 直连模式
 function getApiBaseUrl() {
-  // 强制刷新配置，确保获取最新的用户配置
   const config = getComfyUIConfig(true)
+  console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
 
-  console.log('🔧 获取API基础URL，当前配置:', config)
-
-  // 根据CORS模式决定使用哪个URL
-  const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
-
-  let baseUrl
-  switch (corsMode) {
-    case 'proxy':
-      console.log('📡 使用代理服务器:', config.PROXY_SERVER_URL)
-      baseUrl = config.PROXY_SERVER_URL
-      break
-    case 'cors-proxy':
-      console.log('🌐 使用CORS代理模式，原始URL:', config.COMFYUI_SERVER_URL)
-      baseUrl = config.COMFYUI_SERVER_URL // CORS代理在fetchWithRetry中处理
-      break
-    case 'direct':
-    default:
-      console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
-      baseUrl = config.COMFYUI_SERVER_URL
-      break
-  }
+  let baseUrl = config.COMFYUI_SERVER_URL
 
   // 确保URL格式正确，移除末尾的斜杠
   if (baseUrl && baseUrl.endsWith('/')) {
@@ -204,7 +177,6 @@ async function uploadImageToComfyUI(base64Image) {
     const apiBaseUrl = getApiBaseUrl()
     console.log('🔄 第一步：上传图片到ComfyUI服务器')
     console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
-    console.log('🔧 使用代理:', config.USE_PROXY ? '是' : '否')
 
     // 验证base64格式
     if (!base64Image || !base64Image.startsWith('data:image/')) {
@@ -234,117 +206,40 @@ async function uploadImageToComfyUI(base64Image) {
       size: `${(blob.size / 1024).toFixed(2)} KB`
     })
 
-    // 尝试多种上传方式
-    const uploadMethods = [
-      {
-        name: '标准FormData上传',
-        method: async () => {
-          const formData = new FormData()
-          formData.append('image', blob, filename)
-          formData.append('type', 'input')
-          formData.append('subfolder', '')
-          formData.append('overwrite', 'false')
+    // 直连上传图片
+    const formData = new FormData()
+    formData.append('image', blob, filename)
+    formData.append('type', 'input')
+    formData.append('subfolder', '')
+    formData.append('overwrite', 'false')
 
-          const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
-          return fetchWithRetry(`${apiBaseUrl}/upload/image`, {
-            method: 'POST',
-            body: formData
-          }, 3, corsMode)
-        }
-      },
-      {
-        name: '简化FormData上传',
-        method: async () => {
-          const formData = new FormData()
-          formData.append('image', blob, filename)
+    console.log('🔄 开始上传图片...')
 
-          const corsMode = config.CORS_MODE || (config.USE_PROXY ? 'proxy' : 'direct')
-          return fetchWithRetry(`${apiBaseUrl}/upload/image`, {
-            method: 'POST',
-            body: formData
-          }, 3, corsMode)
-        }
-      },
-      {
-        name: '无CORS模式上传',
-        method: async () => {
-          const formData = new FormData()
-          formData.append('image', blob, filename)
-          formData.append('type', 'input')
+    const response = await fetch(`${apiBaseUrl}/upload/image`, {
+      method: 'POST',
+      body: formData
+    })
 
-          return fetch(`${apiBaseUrl}/upload/image`, {
-            method: 'POST',
-            body: formData,
-            mode: 'no-cors'
-          })
-        }
-      }
-    ]
+    console.log('📥 上传响应状态:', response.status, response.statusText)
 
-    let lastError = null
-
-    // 尝试不同的上传方法
-    for (const uploadMethod of uploadMethods) {
-      try {
-        console.log(`🔄 尝试: ${uploadMethod.name}`)
-
-        const response = await uploadMethod.method()
-        console.log('📥 上传响应状态:', response.status, response.statusText)
-
-        if (response.ok) {
-          const result = await response.json()
-          console.log('✅ 图片上传成功:', result)
-
-          // 验证返回结果
-          if (!result.name) {
-            throw new Error('上传响应中缺少文件名')
-          }
-
-          return result.name
-        } else if (response.status !== 0) { // no-cors模式会返回status 0
-          const errorText = await response.text()
-          console.error(`❌ ${uploadMethod.name} 失败:`, errorText)
-          lastError = new Error(`${uploadMethod.name} 失败: ${response.status} ${response.statusText} - ${errorText}`)
-        }
-
-      } catch (error) {
-        console.error(`❌ ${uploadMethod.name} 错误:`, error)
-        lastError = error
-        continue
-      }
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText)
+      throw new Error(`上传失败: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
-    // 如果所有方法都失败了
-    if (lastError) {
-      if (isCORSError(lastError)) {
-        throw handleCORSError(lastError, '图片上传失败')
-      } else {
-        throw new Error(`图片上传失败: ${lastError.message}`)
-      }
-    } else {
-      throw new Error('所有上传方法都失败了')
+    const result = await response.json()
+    console.log('✅ 图片上传成功:', result)
+
+    // 验证返回结果
+    if (!result.name) {
+      throw new Error('上传响应中缺少文件名')
     }
+
+    return result.name
 
   } catch (error) {
     console.error('❌ 图片上传失败:', error)
-
-    // 使用新的 CORS 错误处理
-    if (isCORSError(error)) {
-      const errorInfo = getCORSErrorMessage(error)
-      const corsError = new Error(`图片上传失败: ${errorInfo.message}`)
-      corsError.corsInfo = errorInfo
-      throw corsError
-    } else if (error.message.includes('网络连接中断') || error.message.includes('EPIPE') || error.message.includes('ECONNRESET')) {
-      throw new Error(`图片上传失败: 网络连接不稳定 - 请检查网络连接或稍后重试`)
-    } else if (error.message.includes('超时')) {
-      throw new Error(`图片上传失败: 上传超时 - 文件可能过大或网络较慢`)
-    } else if (error.message.includes('500')) {
-      throw new Error(`图片上传失败: ComfyUI服务器内部错误 - 服务器可能过载，请稍后重试`)
-    } else if (error.message.includes('network')) {
-      throw new Error(`图片上传失败: 网络错误 - 请检查ComfyUI服务器是否运行正常`)
-    } else {
-      throw new Error(`图片上传失败: ${error.message}`)
-    }
+    throw new Error(`图片上传失败: ${error.message}`)
   }
 }
 

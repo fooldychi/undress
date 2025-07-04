@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI 直连测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left: 4px solid #dc3545;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: #333;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 ComfyUI 直连测试</h1>
+    
+    <div class="container">
+        <h2>服务器配置</h2>
+        <label>ComfyUI 服务器地址:</label>
+        <input type="text" id="serverUrl" value="https://hwf0p724ub-8188.cnb.run" placeholder="https://your-comfyui-server.com">
+        
+        <label>客户端 ID:</label>
+        <input type="text" id="clientId" value="abc1373d4ad648a3a81d0587fbe5534b" placeholder="client-id">
+    </div>
+
+    <div class="container">
+        <h2>连接测试</h2>
+        <button onclick="testConnection()">🔗 测试连接</button>
+        <button onclick="testUpload()">📤 测试图片上传</button>
+        <button onclick="testWorkflow()">⚙️ 测试工作流</button>
+        <div id="testResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>图片上传测试</h2>
+        <input type="file" id="imageFile" accept="image/*">
+        <button onclick="uploadImage()">上传图片</button>
+        <div id="uploadResult" class="result"></div>
+    </div>
+
+    <script>
+        function log(message, isError = false) {
+            const resultDiv = document.getElementById('testResult');
+            const timestamp = new Date().toLocaleTimeString();
+            resultDiv.textContent += `[${timestamp}] ${message}\n`;
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        function getServerUrl() {
+            return document.getElementById('serverUrl').value.replace(/\/$/, '');
+        }
+
+        function getClientId() {
+            return document.getElementById('clientId').value;
+        }
+
+        async function testConnection() {
+            log('🔄 开始测试连接...');
+            const serverUrl = getServerUrl();
+            
+            try {
+                // 测试基本连接
+                const response = await fetch(`${serverUrl}/system_stats`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ 连接成功！服务器状态: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log(`❌ 连接失败: ${response.status} ${response.statusText}`, true);
+                }
+            } catch (error) {
+                log(`❌ 连接错误: ${error.message}`, true);
+            }
+        }
+
+        async function testUpload() {
+            log('🔄 开始测试上传接口...');
+            const serverUrl = getServerUrl();
+            
+            try {
+                // 创建一个测试图片
+                const canvas = document.createElement('canvas');
+                canvas.width = 100;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, 100, 100);
+                
+                canvas.toBlob(async (blob) => {
+                    const formData = new FormData();
+                    formData.append('image', blob, 'test.png');
+                    formData.append('type', 'input');
+                    formData.append('subfolder', '');
+                    formData.append('overwrite', 'false');
+                    
+                    try {
+                        const response = await fetch(`${serverUrl}/upload/image`, {
+                            method: 'POST',
+                            body: formData,
+                            mode: 'cors'
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            log(`✅ 上传测试成功！返回: ${JSON.stringify(data, null, 2)}`);
+                        } else {
+                            const errorText = await response.text();
+                            log(`❌ 上传测试失败: ${response.status} ${response.statusText}\n${errorText}`, true);
+                        }
+                    } catch (error) {
+                        log(`❌ 上传测试错误: ${error.message}`, true);
+                    }
+                }, 'image/png');
+                
+            } catch (error) {
+                log(`❌ 创建测试图片失败: ${error.message}`, true);
+            }
+        }
+
+        async function testWorkflow() {
+            log('🔄 开始测试工作流接口...');
+            const serverUrl = getServerUrl();
+            const clientId = getClientId();
+            
+            try {
+                const testPrompt = {
+                    "1": {
+                        "inputs": {
+                            "text": "test prompt"
+                        },
+                        "class_type": "CLIPTextEncode"
+                    }
+                };
+                
+                const requestBody = {
+                    client_id: clientId,
+                    prompt: testPrompt
+                };
+                
+                const response = await fetch(`${serverUrl}/prompt`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody),
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ 工作流测试成功！返回: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ 工作流测试失败: ${response.status} ${response.statusText}\n${errorText}`, true);
+                }
+            } catch (error) {
+                log(`❌ 工作流测试错误: ${error.message}`, true);
+            }
+        }
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('imageFile');
+            const resultDiv = document.getElementById('uploadResult');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.textContent = '请先选择一个图片文件';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const serverUrl = getServerUrl();
+            
+            resultDiv.textContent = '🔄 正在上传图片...';
+            resultDiv.className = 'result';
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('type', 'input');
+                formData.append('subfolder', '');
+                formData.append('overwrite', 'false');
+                
+                const response = await fetch(`${serverUrl}/upload/image`, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `✅ 图片上传成功！\n文件名: ${data.name}\n类型: ${data.type || 'input'}\n子文件夹: ${data.subfolder || '无'}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.textContent = `❌ 图片上传失败: ${response.status} ${response.statusText}\n${errorText}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ 上传错误: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        // 页面加载时自动测试连接
+        window.onload = function() {
+            log('🚀 页面加载完成，准备测试...');
+        };
+    </script>
+</body>
+</html>
