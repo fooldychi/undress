@@ -39,7 +39,7 @@ python main.py
    ```
 
 3. **配置服务器地址**
-   
+
    编辑 `src/config/comfyui.config.js`：
    ```javascript
    const config = {
@@ -54,7 +54,7 @@ python main.py
    ```
 
 5. **访问应用**
-   
+
    打开 http://localhost:3001/
 
 ## 🧪 测试连接
@@ -63,7 +63,7 @@ python main.py
 
 测试功能包括：
 - ✅ 基本连接测试
-- ✅ 图片上传测试  
+- ✅ 图片上传测试
 - ✅ 工作流提交测试
 
 ## 📱 应用配置
@@ -138,8 +138,18 @@ git push origin gh-pages
 ## 🔗 相关链接
 
 - **在线版本**: https://fooldychi.github.io/undress/
+- **连接测试页面**: https://fooldychi.github.io/undress/test-direct-connection.html
 - **GitHub仓库**: https://github.com/fooldychi/undress
 - **ComfyUI官网**: https://github.com/comfyanonymous/ComfyUI
+
+## 🎉 部署状态
+
+✅ **已成功部署到GitHub Pages！**
+
+- 主应用: https://fooldychi.github.io/undress/
+- 测试工具: https://fooldychi.github.io/undress/test-direct-connection.html
+- 部署时间: 2025年7月4日
+- 版本: 直连模式 v2.0
 
 ## 📝 注意事项
 
