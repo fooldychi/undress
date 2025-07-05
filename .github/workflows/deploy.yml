@@ -17,39 +17,33 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18  # 尝试更新到 Node.js 18
+          node-version: 18
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
 
       - name: Build
-        run: |
-          echo "Starting build process..."
-          npm run build --if-present
-          echo "Build completed, checking dist directory..."
-          ls -la dist/
+        run: npm run build:github
         env:
           NODE_ENV: production
-          VITE_COMFYUI_SERVER_URL: ${{ secrets.VITE_COMFYUI_SERVER_URL || 'https://dzqgp58z0s-8188.cnb.run' }}
-          VITE_COMFYUI_CLIENT_ID: ${{ secrets.VITE_COMFYUI_CLIENT_ID || 'abc1373d4ad648a3a81d0587fbe5534b' }}
-          VITE_USE_PROXY: ${{ secrets.VITE_USE_PROXY || 'true' }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v2
         with:
           path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
 
 
 
