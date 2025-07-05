@@ -2,93 +2,104 @@
 
 ## 问题描述
 
-使用自定义域名 `https://undress.icomfy.co/` 访问网站时出现"加载失败"错误，页面无法正常显示。
+使用自定义域名 `https://undress.icomfy.co/` 访问网站时出现以下问题：
+1. 初始访问显示"加载失败"错误
+2. 页面空白，JavaScript资源无法加载
+3. 控制台显示404错误：`GET https://undress.icomfy.co/assets/_plugin-vue_export-helper-DlAUqK2U.js net::ERR_ABORTED 404 (Not Found)`
 
-## 问题原因
+## 问题原因分析
 
+### 第一阶段问题（已解决）
 1. **基础路径配置错误**：Vite配置中使用了 `/undress/` 作为基础路径，但自定义域名应该使用 `/`
 2. **资源引用路径错误**：HTML文件中的资源路径仍然包含 `/undress/` 前缀
 3. **缺少CNAME文件**：GitHub Pages需要CNAME文件来配置自定义域名
-4. **404页面路径错误**：404重定向逻辑仍然使用旧的路径结构
+
+### 第二阶段问题（核心问题）
+4. **404页面过度重定向**：404.html页面的重定向逻辑过于激进，将所有请求（包括静态资源）都重定向到首页
+5. **静态资源被拦截**：JavaScript和CSS文件被404页面拦截，导致应用无法正常加载
 
 ## 修复方案
 
-### 1. 更新Vite配置
+### 第一阶段修复（基础配置）
 
+#### 1. 更新Vite配置
 **文件**: `vite.config.js`
-
 ```javascript
 // 修改前
 base: mode === 'production' ? '/undress/' : '/',
-
-// 修改后  
+// 修改后
 base: mode === 'production' ? '/' : '/',
 ```
 
-### 2. 修复HTML文件中的资源路径
-
+#### 2. 修复HTML文件中的资源路径
 **文件**: `index.html`
-
 ```html
 <!-- 修改前 -->
 <a href="/undress/test.html">诊断页面</a>
-
 <!-- 修改后 -->
 <a href="/test.html">诊断页面</a>
 ```
 
-### 3. 创建CNAME文件
-
+#### 3. 创建CNAME文件
 **文件**: `public/CNAME`
-
 ```
 undress.icomfy.co
 ```
 
-### 4. 修复404页面配置
+### 第二阶段修复（解决静态资源404问题）
 
-**文件**: `public/404.html`
+#### 4. 移除404.html文件
+**原因**: 404.html的重定向逻辑无法完美区分静态资源和应用路由，导致静态资源被错误重定向
 
+**解决方案**:
+- 完全移除 `public/404.html` 文件
+- 让GitHub Pages使用默认的404处理
+- 在Vue应用中处理SPA路由重定向
+
+#### 5. 在main.js中添加路由重定向处理
+**文件**: `src/main.js`
 ```javascript
-// 修改前
-const path = window.location.pathname.replace('/undress', '');
-window.location.replace('/undress/' + '?redirect=' + encodeURIComponent(path + query + hash));
-
-// 修改后
-const path = window.location.pathname;
-window.location.replace('/' + '?redirect=' + encodeURIComponent(path + query + hash));
+// 处理GitHub Pages SPA路由重定向
+(function() {
+  const redirect = new URLSearchParams(window.location.search).get('redirect');
+  if (redirect) {
+    console.log('🔄 检测到路由重定向:', redirect);
+    history.replaceState(null, null, redirect);
+  }
+})();
 ```
 
-### 5. 修复部署脚本
+## 当前状态
 
-**文件**: `scripts/deploy.js`
+### 已完成的修复
+- ✅ **基础路径配置**：已更新为 `/`
+- ✅ **CNAME文件**：已创建并配置
+- ✅ **HTML资源路径**：已修复所有引用
+- ✅ **404.html移除**：已完全移除，避免静态资源被拦截
+- ✅ **SPA路由处理**：已在main.js中添加重定向处理
+- ✅ **项目构建**：新版本已构建完成
 
-```javascript
-// 添加分支创建命令
-execSync('git checkout -b main', { stdio: 'inherit' })
-```
+### 待完成的步骤
+- 🔄 **部署到GitHub Pages**：由于网络连接问题，部署暂时中断
+- ⏳ **等待DNS传播**：部署完成后需要等待5-10分钟
 
-## 验证步骤
+### 验证步骤
 
-### 1. 访问测试
+#### 1. 部署完成后的访问测试
+- 🔄 主域名：https://undress.icomfy.co/
+- 🔄 GitHub Pages：https://fooldychi.github.io/undress/
+- 🔄 静态资源：https://undress.icomfy.co/assets/index-SVL8jSQt.js
 
-- ✅ 主域名：https://undress.icomfy.co/
-- ✅ GitHub Pages：https://fooldychi.github.io/undress/
-- ✅ 测试页面：https://undress.icomfy.co/domain-test.html
+#### 2. 功能测试
+- 🔄 页面加载正常
+- 🔄 资源文件加载正常
+- 🔄 路由跳转正常
+- 🔄 API连接正常
 
-### 2. 功能测试
-
-- ✅ 页面加载正常
-- ✅ 资源文件加载正常
-- ✅ 路由跳转正常
-- ✅ API连接正常
-
-### 3. DNS配置验证
-
+#### 3. DNS配置验证
 ```bash
 # 检查DNS解析
 nslookup undress.icomfy.co
-
 # 检查CNAME记录
 dig undress.icomfy.co CNAME
 ```
