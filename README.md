@@ -2,6 +2,11 @@
 
 基于Vue 3和ComfyUI工作流的AI图像处理平台，提供一键换衣、文生图和极速换脸三大核心功能。
 
+## 🚀 在线访问
+
+- **GitHub Pages**: https://fooldychi.github.io/undress/
+- **自定义域名**: https://undress.icomfy.co/
+
 ## 🌟 功能特性
 
 - **一键褪衣** 👤 - 智能识别人物轮廓，快速移除照片中的服装
