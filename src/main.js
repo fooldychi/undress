@@ -10,7 +10,7 @@ import 'vant/lib/index.css'
 import './style.css'
 import './styles/vant-theme.css'
 
-console.log('🚀 开始初始化Vue应用...')
+console.log('🚀 开始初始化Vue应用...');
 
 // 处理GitHub Pages SPA路由重定向
 (function() {
