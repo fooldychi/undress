@@ -9,8 +9,11 @@
     "preview": "vite preview",
     "proxy": "node proxy-server.js",
     "dev:full": "concurrently \"npm run proxy\" \"npm run dev\"",
+    "build:github": "vite build --mode production",
+    "build:custom": "cross-env CUSTOM_DOMAIN=true vite build --mode production",
     "deploy": "node scripts/deploy.js",
-    "build:github": "vite build --mode production"
+    "deploy:github": "npm run build:github && node scripts/deploy.js",
+    "deploy:custom": "npm run build:custom && node scripts/deploy.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -27,6 +30,7 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
     "concurrently": "^7.6.0",
+    "cross-env": "^7.0.3",
     "vite": "^5.0.0"
   }
 }
