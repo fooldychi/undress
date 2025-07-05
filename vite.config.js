@@ -39,8 +39,10 @@ export default defineConfig(({ command, mode }) => {
       }
     },
 
-    // 基础路径配置 - 使用自定义域名时基础路径为 '/'
-    base: mode === 'production' ? '/' : '/',
+    // 基础路径配置 - 根据环境变量决定基础路径
+    // CUSTOM_DOMAIN=true 时使用 '/' (自定义域名)
+    // 默认使用 '/undress/' (GitHub Pages默认域名)
+    base: mode === 'production' ? (process.env.CUSTOM_DOMAIN === 'true' ? '/' : '/undress/') : '/',
 
     // 环境变量配置
     define: {
