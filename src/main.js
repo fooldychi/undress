@@ -12,6 +12,15 @@ import './styles/vant-theme.css'
 
 console.log('🚀 开始初始化Vue应用...')
 
+// 处理GitHub Pages SPA路由重定向
+(function() {
+  const redirect = new URLSearchParams(window.location.search).get('redirect');
+  if (redirect) {
+    console.log('🔄 检测到路由重定向:', redirect);
+    history.replaceState(null, null, redirect);
+  }
+})();
+
 // 添加全局错误处理
 window.addEventListener('error', (event) => {
   console.error('全局JavaScript错误:', event.error)
