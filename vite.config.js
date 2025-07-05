@@ -21,7 +21,20 @@ export default defineConfig(({ command, mode }) => {
       // 确保模块预加载
       rollupOptions: {
         output: {
-          manualChunks: undefined
+          manualChunks: undefined,
+          // 规范化文件名，避免特殊字符
+          entryFileNames: (chunkInfo) => {
+            const name = chunkInfo.name.replace(/[^a-zA-Z0-9]/g, '-');
+            return `assets/${name}-[hash].js`;
+          },
+          chunkFileNames: (chunkInfo) => {
+            const name = chunkInfo.name.replace(/[^a-zA-Z0-9]/g, '-');
+            return `assets/${name}-[hash].js`;
+          },
+          assetFileNames: (assetInfo) => {
+            const name = assetInfo.name.replace(/[^a-zA-Z0-9.]/g, '-');
+            return `assets/${name}-[hash].[ext]`;
+          }
         }
       }
     },
