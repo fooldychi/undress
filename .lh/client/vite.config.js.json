@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752284292222,
@@ -12,6 +12,14 @@
                 {
                     "date": 1752319383518,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       port: 3001,\r\n       open: true,\r\n       proxy: {\r\n         '/api': {\r\n-          target: 'http://localhost:3006',\r\n+          target: 'http://localhost:3007',\r\n           changeOrigin: true,\r\n           secure: false,\r\n           configure: (proxy, options) => {\r\n             proxy.on('error', (err, req, res) => {\r\n"
+                },
+                {
+                    "date": 1752340705793,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,9 +1,11 @@\n-import { defineConfig } from 'vite'\r\n+import { defineConfig, loadEnv } from 'vite'\r\n import vue from '@vitejs/plugin-vue'\r\n \r\n // https://vitejs.dev/config/\r\n export default defineConfig(({ command, mode }) => {\r\n+  const env = loadEnv(mode, process.cwd(), '')\r\n+\r\n   return {\r\n     plugins: [vue()],\r\n \r\n     // 开发服务器配置\r\n"
+                },
+                {
+                    "date": 1752340904756,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,20 +2,25 @@\n import vue from '@vitejs/plugin-vue'\r\n \r\n // https://vitejs.dev/config/\r\n export default defineConfig(({ command, mode }) => {\r\n+  // 加载环境变量\r\n   const env = loadEnv(mode, process.cwd(), '')\r\n \r\n+  // 从环境变量获取端口，如果没有则使用默认值\r\n+  const clientPort = parseInt(env.CLIENT_PORT) || 3001\r\n+  const serverPort = parseInt(env.SERVER_PORT) || 3007\r\n+\r\n   return {\r\n     plugins: [vue()],\r\n \r\n     // 开发服务器配置\r\n     server: {\r\n-      port: 3001,\r\n+      port: clientPort,\r\n       open: true,\r\n       proxy: {\r\n         '/api': {\r\n-          target: 'http://localhost:3007',\r\n+          target: `http://localhost:${serverPort}`,\r\n           changeOrigin: true,\r\n           secure: false,\r\n           configure: (proxy, options) => {\r\n             proxy.on('error', (err, req, res) => {\r\n"
                 }
             ],
             "date": 1752284292222,

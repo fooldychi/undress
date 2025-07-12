@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 22,
+            "activePatchIndex": 23,
             "patches": [
                 {
                     "date": 1752283852248,
@@ -96,6 +96,10 @@
                 {
                     "date": 1752289440000,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -132,9 +132,8 @@\n     // 处理退出登录\n     const handleLogout = () => {\n       authApi.logout()\n       userInfo.value = null\n-      showUserMenu.value = false\n       emit('logout')\n       Toast.success('退出登录成功')\n     }\n \n"
+                },
+                {
+                    "date": 1752341878789,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,8 +134,14 @@\n       authApi.logout()\n       userInfo.value = null\n       emit('logout')\n       Toast.success('退出登录成功')\n+\n+      // 跳转到首页并显示登录模态框\n+      router.push('/')\n+      setTimeout(() => {\n+        showLoginModal()\n+      }, 500) // 延迟显示登录模态框，确保页面跳转完成\n     }\n \n     // 初始化用户信息\n     const initUserInfo = () => {\n"
                 }
             ],
             "date": 1752283852248,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1752288021271,
@@ -20,6 +20,10 @@
                 {
                     "date": 1752334538178,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,18 +98,25 @@\n     }\n   }\n \n   // 消耗积分\n-  async consumePoints(amount, description = '生成图片') {\n+  async consumePoints(amount, description = '生成图片', mediaUrl = null) {\n     if (!this.isLoggedIn()) {\n       throw new Error('请先登录')\n     }\n \n     try {\n+      console.log(`💰 开始消耗积分: ${amount}点, 描述: ${description}`)\n+      if (mediaUrl) {\n+        console.log(`🎬 关联媒体URL: ${mediaUrl}`)\n+      }\n+\n       // 调用后端API消耗积分\n-      const response = await pointsApi.consumePoints(amount, description)\n+      const response = await pointsApi.consumePoints(amount, description, mediaUrl)\n \n       if (response.success) {\n+        console.log(`✅ 积分消耗成功: 消耗${amount}点, 剩余${response.data.remaining_points}点`)\n+\n         // 清除缓存，强制下次获取最新数据\n         this.pointsInfo = null\n         this.lastUpdateTime = 0\n \n"
+                },
+                {
+                    "date": 1752342614789,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -141,8 +141,15 @@\n     this.lastUpdateTime = 0\n     return await this.getPointsStatus()\n   }\n \n+  // 强制清除缓存\n+  clearCache() {\n+    this.pointsInfo = null\n+    this.lastUpdateTime = 0\n+    console.log('🗑️ 积分缓存已清除')\n+  }\n+\n   // 绑定等级卡\n   async bindLevelCard(cardNumber, cardPassword) {\n     if (!this.isLoggedIn()) {\n       throw new Error('请先登录')\n"
                 }
             ],
             "date": 1752288021271,

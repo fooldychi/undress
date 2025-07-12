@@ -9,7 +9,7 @@ router.get('/types', async (req, res, next) => {
   try {
     const cardTypes = await query(`
       SELECT id, name, icon, points, price
-      FROM level_card_types
+      FROM card_types
       ORDER BY points ASC
     `);
 
@@ -43,7 +43,7 @@ router.post('/bind', authenticateToken, async (req, res, next) => {
     const cardResult = await query(`
       SELECT lc.*, ct.name as type_name, ct.icon, ct.points as total_points
       FROM level_cards lc
-      JOIN level_card_types ct ON lc.type_id = ct.id
+      JOIN card_types ct ON lc.type_id = ct.id
       WHERE lc.card_number = ? AND lc.card_password = ?
     `, [cardNumber, cardPassword]);
 
@@ -135,7 +135,7 @@ router.get('/my-cards', authenticateToken, async (req, res, next) => {
       SELECT lc.id, lc.card_number, lc.remaining_points, lc.bound_at,
              ct.name as type_name, ct.icon, ct.points as total_points, ct.price
       FROM level_cards lc
-      JOIN level_card_types ct ON lc.type_id = ct.id
+      JOIN card_types ct ON lc.type_id = ct.id
       WHERE lc.bound_user_id = ?
         AND (
           ct.name != '体验卡' OR
@@ -168,7 +168,7 @@ router.get('/transactions', authenticateToken, async (req, res, next) => {
              lc.card_number, lctype.name as card_type_name, lctype.icon
       FROM level_card_transactions lct
       JOIN level_cards lc ON lct.card_id = lc.id
-      JOIN level_card_types lctype ON lc.type_id = lctype.id
+      JOIN card_types lctype ON lc.type_id = lctype.id
       WHERE lct.user_id = ?
       ORDER BY lct.created_at DESC
       LIMIT ? OFFSET ?

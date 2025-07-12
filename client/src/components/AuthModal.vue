@@ -199,7 +199,12 @@ export default {
 
         if (response.success) {
           console.log('认证成功，响应数据:', response)
-          Toast.success(response.message || (isLogin.value ? '登录成功' : '注册成功'))
+
+          if (isLogin.value) {
+            Toast.success('登录成功，正在加载用户数据...')
+          } else {
+            Toast.success(response.message || '注册成功')
+          }
 
           const successData = {
             type: isLogin.value ? 'login' : 'register',

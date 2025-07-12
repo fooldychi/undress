@@ -1,0 +1,26 @@
+{
+    "sourceFile": "server/start.bat",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1752339108518,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752339267957,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -17,9 +17,9 @@\n     echo.\n )\n \n echo 启动后端服务...\n-echo 服务地址: http://localhost:3007\n+echo 服务地址: http://localhost:3006\n echo 按 Ctrl+C 停止服务\n echo.\n echo ========================================\n npm start\n"
+                },
+                {
+                    "date": 1752339371068,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -17,9 +17,9 @@\n     echo.\n )\n \n echo 启动后端服务...\n-echo 服务地址: http://localhost:3006\n+echo 服务地址: http://localhost:3007\n echo 按 Ctrl+C 停止服务\n echo.\n echo ========================================\n npm start\n"
+                }
+            ],
+            "date": 1752339108518,
+            "name": "Commit-0",
+            "content": "@echo off\necho ========================================\necho    Imagic 后端服务启动脚本 (Windows)\necho ========================================\necho.\n\necho 检查依赖...\nif not exist \"node_modules\" (\n    echo 正在安装依赖...\n    npm install\n    if errorlevel 1 (\n        echo 依赖安装失败！\n        pause\n        exit /b 1\n    )\n    echo 依赖安装完成！\n    echo.\n)\n\necho 启动后端服务...\necho 服务地址: http://localhost:3007\necho 按 Ctrl+C 停止服务\necho.\necho ========================================\nnpm start\n"
+        }
+    ]
+}

@@ -214,8 +214,8 @@ export const comfyApi = {
   }
 }
 
-// 后端API请求函数
-async function makeBackendRequest(endpoint, options = {}) {
+// 后端API请求函数（带重试机制）
+async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
   const url = `${BACKEND_API_CONFIG.BASE_URL}${endpoint}`
 
   const defaultOptions = {
@@ -272,6 +272,26 @@ async function makeBackendRequest(endpoint, options = {}) {
     if (error.name === 'AbortError') {
       throw new Error('请求超时，请稍后重试')
     }
+
+    // 处理网络连接错误 - 尝试重试
+    if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) && retryCount < 2) {
+      console.log(`网络请求失败，正在重试... (${retryCount + 1}/3)`)
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // 递增延迟
+      return makeBackendRequest(endpoint, options, retryCount + 1)
+    }
+
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      throw new Error('网络连接失败，请检查服务器状态')
+    }
+
+    // 处理认证错误
+    if (error.message.includes('认证过程中发生错误') || error.message.includes('401')) {
+      // 清除无效的token
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_info')
+      throw new Error('登录已过期，请重新登录')
+    }
+
     throw new Error(`请求失败: ${error.message}`)
   }
 }
@@ -422,6 +442,22 @@ export const pointsApi = {
       return response
     } catch (error) {
       console.error('消耗积分失败:', error)
+      throw error
+    }
+  }
+}
+
+// 系统API
+export const systemApi = {
+  // 健康检查
+  healthCheck: async () => {
+    try {
+      const response = await makeBackendRequest('/api/level-cards/types', {
+        method: 'GET'
+      })
+      return response
+    } catch (error) {
+      console.error('健康检查失败:', error)
       throw error
     }
   }

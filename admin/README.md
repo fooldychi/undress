@@ -1,6 +1,13 @@
-# AI Magic 后台管理系统
+# AIMagic 后台管理系统
 
-基于 Vue 3 + Element Plus 的现代化后台管理系统，用于管理 AI Magic AI图像处理平台。
+基于 Vue 3 + Element Plus 的现代化后台管理系统，用于管理 AIMagic AI图像处理平台。
+
+## 📚 文档导航
+
+- [📖 开发文档](./docs/README.md) - 完整的开发指南和系统概述
+- [🚀 部署指南](./docs/ADMIN_DEPLOYMENT.md) - 详细的部署和配置说明
+- [🔧 故障排除](./docs/FIXES_AND_TROUBLESHOOTING.md) - 问题修复和故障排除指南
+- [✨ 功能特性](./docs/FEATURES.md) - 详细的功能介绍和特性说明
 
 ## 🚀 功能特色
 
@@ -67,7 +74,7 @@ npm install
 npm run dev
 ```
 
-访问地址: http://localhost:3002
+访问地址: http://localhost:3003
 
 ### 构建生产版本
 ```bash
@@ -89,7 +96,7 @@ npm run build
 
 ### 演示账号
 - 用户名: `admin`
-- 密码: `admin123`
+- 密码: `admin123456`
 
 ## 📊 API接口
 

@@ -1,11 +1,17 @@
 <template>
   <div class="top-navigation">
-    <!-- 积分显示（左边） -->
-    <div class="nav-item nav-points" @click="showPointsModal = true" title="点击查看积分详情">
+    <!-- 积分显示（左边） - 仅在登录时显示 -->
+    <div
+      v-if="isLoggedIn"
+      class="nav-item nav-points"
+      @click="showPointsModal = true"
+      title="点击查看积分详情"
+    >
       <div class="nav-icon">
         <van-icon name="diamond-o" size="18" />
       </div>
-      <span class="nav-text">{{ pointsStatus.current }}</span>
+      <span v-if="!pointsLoading" class="nav-text">{{ pointsStatus.current }}</span>
+      <van-loading v-else size="14" color="var(--primary-color)" />
     </div>
 
     <!-- 用户信息（右边） -->
@@ -61,6 +67,7 @@ const showPointsModal = ref(false)
 const showAuthModal = ref(false)
 const authMode = ref('login')
 const loading = ref(false)
+const pointsLoading = ref(false)
 
 // 用户信息
 const userInfo = ref(null)
@@ -90,6 +97,7 @@ const updatePointsStatus = async () => {
   // 检查登录状态，如果未登录则不发送API请求
   if (!levelCardPointsManager.isLoggedIn() || !isLoggedIn.value) {
     console.log('❌ 未登录，设置默认积分状态')
+    pointsLoading.value = false
     Object.assign(pointsStatus, {
       current: 0,
       total_points: 0,
@@ -102,6 +110,7 @@ const updatePointsStatus = async () => {
   }
 
   try {
+    pointsLoading.value = true
     console.log('🚀 发送积分API请求...')
     const newStatus = await levelCardPointsManager.getPointsStatus()
     console.log('✅ 积分状态更新成功:', newStatus)
@@ -120,6 +129,8 @@ const updatePointsStatus = async () => {
         isLoggedIn: false
       })
     }
+  } finally {
+    pointsLoading.value = false
   }
 }
 
@@ -130,7 +141,7 @@ const showLoginModal = () => {
 }
 
 // 处理认证成功
-const handleAuthSuccess = (data) => {
+const handleAuthSuccess = async (data) => {
   console.log('认证成功，更新用户信息:', data)
 
   // 立即更新用户信息
@@ -147,10 +158,8 @@ const handleAuthSuccess = (data) => {
   // 触发父组件的登录事件
   emit('login', data)
 
-  // 延迟更新积分状态，确保登录状态已同步
-  setTimeout(() => {
-    updatePointsStatus()
-  }, 100)
+  // 立即更新积分状态，显示加载状态
+  await updatePointsStatus()
 
   // 关闭弹窗
   showAuthModal.value = false
@@ -162,8 +171,13 @@ const goToProfile = () => {
 }
 
 // 处理积分更新
-const handlePointsUpdated = () => {
-  updatePointsStatus()
+const handlePointsUpdated = async () => {
+  console.log('🔄 收到积分更新事件，强制刷新积分状态')
+  // 清除levelCardPointsManager的缓存，确保获取最新数据
+  levelCardPointsManager.clearCache()
+
+  // 更新积分状态
+  await updatePointsStatus()
 }
 
 // 初始化用户信息

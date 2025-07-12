@@ -142,6 +142,13 @@ class LevelCardPointsManager {
     return await this.getPointsStatus()
   }
 
+  // 强制清除缓存
+  clearCache() {
+    this.pointsInfo = null
+    this.lastUpdateTime = 0
+    console.log('🗑️ 积分缓存已清除')
+  }
+
   // 绑定等级卡
   async bindLevelCard(cardNumber, cardPassword) {
     if (!this.isLoggedIn()) {

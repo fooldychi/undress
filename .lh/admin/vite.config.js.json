@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 10,
             "patches": [
                 {
                     "date": 1752299827901,
@@ -16,6 +16,38 @@
                 {
                     "date": 1752318745077,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -15,9 +15,9 @@\n     port: 3002,\n     open: true,\n     proxy: {\n       '/api': {\n-        target: 'http://localhost:3006',\n+        target: 'http://localhost:3007',\n         changeOrigin: true,\n         secure: false,\n         configure: (proxy, options) => {\n           proxy.on('error', (err, req, res) => {\n"
+                },
+                {
+                    "date": 1752338338193,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       '@': resolve(__dirname, 'src')\n     }\n   },\n   server: {\n-    port: 3002,\n+    port: 3003,\n     open: true,\n     proxy: {\n       '/api': {\n         target: 'http://localhost:3007',\n"
+                },
+                {
+                    "date": 1752338792556,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       '@': resolve(__dirname, 'src')\n     }\n   },\n   server: {\n-    port: 3003,\n+    port: 3002,\n     open: true,\n     proxy: {\n       '/api': {\n         target: 'http://localhost:3007',\n"
+                },
+                {
+                    "date": 1752338977366,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       '@': resolve(__dirname, 'src')\n     }\n   },\n   server: {\n-    port: 3002,\n+    port: 3003,\n     open: true,\n     proxy: {\n       '/api': {\n         target: 'http://localhost:3007',\n"
+                },
+                {
+                    "date": 1752339267959,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       '@': resolve(__dirname, 'src')\n     }\n   },\n   server: {\n-    port: 3003,\n+    port: 3002,\n     open: true,\n     proxy: {\n       '/api': {\n         target: 'http://localhost:3007',\n"
+                },
+                {
+                    "date": 1752339321699,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       '@': resolve(__dirname, 'src')\n     }\n   },\n   server: {\n-    port: 3002,\n+    port: 3003,\n     open: true,\n     proxy: {\n       '/api': {\n         target: 'http://localhost:3007',\n"
+                },
+                {
+                    "date": 1752339572244,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,15 +1,16 @@\n import { defineConfig } from 'vite'\n import vue from '@vitejs/plugin-vue'\n import { resolve } from 'path'\n+import { fileURLToPath, URL } from 'node:url'\n \n export default defineConfig({\n   plugins: [\n     vue()\n   ],\n   resolve: {\n     alias: {\n-      '@': resolve(__dirname, 'src')\n+      '@': fileURLToPath(new URL('./src', import.meta.url))\n     }\n   },\n   server: {\n     port: 3003,\n"
+                },
+                {
+                    "date": 1752340848323,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,40 +1,48 @@\n-import { defineConfig } from 'vite'\n+import { defineConfig, loadEnv } from 'vite'\n import vue from '@vitejs/plugin-vue'\n import { resolve } from 'path'\n import { fileURLToPath, URL } from 'node:url'\n \n-export default defineConfig({\n-  plugins: [\n-    vue()\n-  ],\n-  resolve: {\n-    alias: {\n-      '@': fileURLToPath(new URL('./src', import.meta.url))\n-    }\n-  },\n-  server: {\n-    port: 3003,\n-    open: true,\n-    proxy: {\n-      '/api': {\n-        target: 'http://localhost:3007',\n-        changeOrigin: true,\n-        secure: false,\n-        configure: (proxy, options) => {\n-          proxy.on('error', (err, req, res) => {\n-            console.log('proxy error', err);\n-          });\n-          proxy.on('proxyReq', (proxyReq, req, res) => {\n-            console.log('Sending Request to the Target:', req.method, req.url);\n-          });\n-          proxy.on('proxyRes', (proxyRes, req, res) => {\n-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);\n-          });\n+export default defineConfig(({ mode }) => {\n+  // 加载环境变量\n+  const env = loadEnv(mode, process.cwd(), '')\n+\n+  // 从环境变量获取端口，如果没有则使用默认值\n+  const adminPort = parseInt(env.ADMIN_PORT) || 3003\n+  const serverPort = parseInt(env.SERVER_PORT) || 3007\n+\n+  return {\n+    plugins: [\n+      vue()\n+    ],\n+    resolve: {\n+      alias: {\n+        '@': fileURLToPath(new URL('./src', import.meta.url))\n+      }\n+    },\n+    server: {\n+      port: adminPort,\n+      open: true,\n+      proxy: {\n+        '/api': {\n+          target: `http://localhost:${serverPort}`,\n+          changeOrigin: true,\n+          secure: false,\n+          configure: (proxy, options) => {\n+            proxy.on('error', (err, req, res) => {\n+              console.log('proxy error', err);\n+            });\n+            proxy.on('proxyReq', (proxyReq, req, res) => {\n+              console.log('Sending Request to the Target:', req.method, req.url);\n+            });\n+            proxy.on('proxyRes', (proxyRes, req, res) => {\n+              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);\n+            });\n+          }\n         }\n       }\n-    }\n-  },\n+    },\n   build: {\n     outDir: 'dist',\n     sourcemap: false\n   }\n"
+                },
+                {
+                    "date": 1752341394385,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -41,9 +41,11 @@\n           }\n         }\n       }\n     },\n-  build: {\n-    outDir: 'dist',\n-    sourcemap: false\n-  }\n+    build: {\n+      outDir: 'dist',\n+      sourcemap: false\n+    }\n+  };\n })\n+\n"
                 }
             ],
             "date": 1752299827901,

@@ -1,18 +1,25 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
+  // 加载环境变量
+  const env = loadEnv(mode, process.cwd(), '')
+
+  // 从环境变量获取端口，如果没有则使用默认值
+  const clientPort = parseInt(env.CLIENT_PORT) || 3001
+  const serverPort = parseInt(env.SERVER_PORT) || 3007
+
   return {
     plugins: [vue()],
 
     // 开发服务器配置
     server: {
-      port: 3001,
+      port: clientPort,
       open: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:3007',
+          target: `http://localhost:${serverPort}`,
           changeOrigin: true,
           secure: false,
           configure: (proxy, options) => {

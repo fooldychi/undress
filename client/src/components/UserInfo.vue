@@ -135,6 +135,12 @@ export default {
       userInfo.value = null
       emit('logout')
       Toast.success('退出登录成功')
+
+      // 跳转到首页并显示登录模态框
+      router.push('/')
+      setTimeout(() => {
+        showLoginModal()
+      }, 500) // 延迟显示登录模态框，确保页面跳转完成
     }
 
     // 初始化用户信息

@@ -1,0 +1,22 @@
+{
+    "sourceFile": "admin/docs/README.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752338021040,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752338110700,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -138,8 +138,9 @@\n - [🚀 部署指南](./ADMIN_DEPLOYMENT.md) - 详细的部署和配置说明\n - [🔧 故障排除](./FIXES_AND_TROUBLESHOOTING.md) - 问题修复和故障排除指南\n - [✨ 功能特性](./FEATURES.md) - 详细的功能介绍和特性说明\n - [📡 API文档](./API.md) - 完整的API接口文档\n+- [📋 文档整理总结](./DOCUMENTATION_SUMMARY.md) - 文档结构和整理说明\n \n ## 📞 技术支持\n \n 如遇到问题，请检查：\n"
+                }
+            ],
+            "date": 1752338021040,
+            "name": "Commit-0",
+            "content": "# AIMagic 后台管理系统开发文档\n\n## 📋 系统概述\n\nAIMagic 后台管理系统是一个基于 Vue3 + Element Plus 的现代化管理界面，用于管理用户、等级卡、积分记录和系统配置。\n\n## 🚀 快速开始\n\n### 环境要求\n- Node.js 16+\n- npm 或 yarn\n- MySQL 数据库\n- 已部署的 AIMagic 后端服务\n\n### 安装和启动\n\n1. **安装依赖**\n```bash\ncd admin\nnpm install\n```\n\n2. **启动开发服务器**\n```bash\nnpm run dev\n# 或使用批处理文件\nstart.bat\n```\n\n3. **访问系统**\n- 地址：http://localhost:3003\n- 管理员账号：admin\n- 管理员密码：admin123456\n\n## 📊 功能模块\n\n### 1. 仪表盘 (Dashboard)\n- 系统统计数据展示\n- 用户数量、等级卡数量、积分统计\n- 今日活跃用户数据\n\n### 2. 用户管理 (Users)\n- 用户列表查看和搜索\n- 用户状态管理（激活/禁用）\n- 用户详细信息查看\n- 用户绑定卡片和积分统计\n\n### 3. 等级卡管理 (Cards)\n- 等级卡列表查看\n- 体验卡生成功能\n- 卡片状态和类型管理\n- 卡片积分信息\n\n### 4. 积分记录 (Points)\n- 积分消费和获得记录\n- 按用户和类型筛选\n- 积分流水详细信息\n\n### 5. 系统配置 (Config)\n- AI 服务配置\n- ComfyUI 配置\n- JWT 配置\n- 数据库连接测试\n\n## 🔧 技术架构\n\n### 前端技术栈\n- **框架**: Vue 3 + Composition API\n- **构建工具**: Vite\n- **UI 组件库**: Element Plus\n- **路由**: Vue Router 4\n- **HTTP 客户端**: Axios\n- **样式**: SCSS\n\n### 后端集成\n- **API 基础路径**: `/api`\n- **认证方式**: JWT Bearer Token\n- **数据格式**: JSON\n- **跨域处理**: CORS 配置\n\n## 📁 项目结构\n\n```\nadmin/\n├── src/\n│   ├── api/           # API 接口定义\n│   │   ├── auth.js    # 认证相关\n│   │   ├── users.js   # 用户管理\n│   │   ├── cards.js   # 等级卡管理\n│   │   ├── points.js  # 积分记录\n│   │   ├── config.js  # 系统配置\n│   │   └── dashboard.js # 仪表盘\n│   ├── views/         # 页面组件\n│   │   ├── Login.vue  # 登录页\n│   │   ├── Layout.vue # 布局组件\n│   │   ├── Dashboard.vue # 仪表盘\n│   │   ├── Users.vue  # 用户管理\n│   │   ├── Cards.vue  # 等级卡管理\n│   │   ├── Points.vue # 积分记录\n│   │   └── Config.vue # 系统配置\n│   ├── utils/         # 工具函数\n│   │   ├── auth.js    # 认证工具\n│   │   └── request.js # HTTP 请求配置\n│   ├── router/        # 路由配置\n│   └── styles/        # 样式文件\n├── docs/              # 开发文档\n├── package.json       # 依赖配置\n├── vite.config.js     # Vite 配置\n└── start.bat          # Windows 启动脚本\n```\n\n## 🔒 安全说明\n\n1. **认证机制**: 使用 JWT Token 进行身份验证\n2. **权限控制**: 管理员权限验证\n3. **CORS 配置**: 限制跨域访问\n4. **密码安全**: 建议修改默认管理员密码\n\n## 🐛 故障排除\n\n### 1. 登录失败\n- 检查后端服务是否正常运行\n- 确认数据库连接正常\n- 验证管理员账户是否存在\n\n### 2. API 调用失败\n- 检查 CORS 配置\n- 确认前端代理设置\n- 验证后端 API 路径\n\n### 3. 页面加载错误\n- 清除浏览器缓存\n- 检查前端服务器状态\n- 查看控制台错误信息\n\n## 📚 相关文档\n\n- [🚀 部署指南](./ADMIN_DEPLOYMENT.md) - 详细的部署和配置说明\n- [🔧 故障排除](./FIXES_AND_TROUBLESHOOTING.md) - 问题修复和故障排除指南\n- [✨ 功能特性](./FEATURES.md) - 详细的功能介绍和特性说明\n- [📡 API文档](./API.md) - 完整的API接口文档\n\n## 📞 技术支持\n\n如遇到问题，请检查：\n1. 后端服务日志\n2. 前端控制台错误\n3. 网络连接状态\n4. 数据库连接状态\n\n---\n\n**部署完成后，您就可以通过现代化的管理界面来管理 AIMagic 系统了！** 🎉\n"
+        }
+    ]
+}

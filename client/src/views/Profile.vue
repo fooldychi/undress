@@ -294,7 +294,6 @@ export default {
       userInfo.value = null
       pointsInfo.value = null
       recentRecords.value = []
-      allRecords.value = []
       router.push('/')
     }
 
@@ -303,6 +302,12 @@ export default {
       authApi.logout()
       handleUserLogout()
       Toast.success('退出登录成功')
+
+      // 跳转到首页并显示登录模态框
+      router.push('/')
+      setTimeout(() => {
+        showLoginModal()
+      }, 500) // 延迟显示登录模态框，确保页面跳转完成
     }
 
     // 刷新用户信息
@@ -389,33 +394,7 @@ export default {
       Toast.fail('功能未开通，敬请期待')
     }
 
-    // 加载更多记录
-    const loadMoreRecords = async () => {
-      if (!isLoggedIn.value || recordsLoading.value || recordsFinished.value) return
 
-      try {
-        recordsLoading.value = true
-        const response = await pointsApi.getPointsHistory(recordsPage.value, 20, false)
-
-        if (response.success) {
-          const newRecords = response.data.logs || []
-          allRecords.value.push(...newRecords)
-
-          if (newRecords.length < 20) {
-            recordsFinished.value = true
-          } else {
-            recordsPage.value++
-          }
-        } else {
-          recordsFinished.value = true
-        }
-      } catch (error) {
-        console.error('加载积分记录失败:', error)
-        recordsFinished.value = true
-      } finally {
-        recordsLoading.value = false
-      }
-    }
 
     // 初始化数据
     const initializeData = async () => {

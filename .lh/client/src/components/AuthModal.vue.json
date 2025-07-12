@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 5,
             "patches": [
                 {
                     "date": 1752285564155,
@@ -24,6 +24,10 @@
                 {
                     "date": 1752290107389,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -283,8 +283,29 @@\n .auth-actions {\n   margin: 24px 0 16px 0;\n }\n \n+.auth-submit-btn {\n+  height: 48px;\n+  font-size: 16px;\n+  font-weight: 600;\n+  background: linear-gradient(135deg, #1989fa, #1976d2);\n+  border: none;\n+  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.3);\n+  transition: all 0.3s ease;\n+}\n+\n+.auth-submit-btn:hover {\n+  background: linear-gradient(135deg, #1976d2, #1565c0);\n+  box-shadow: 0 6px 16px rgba(25, 137, 250, 0.4);\n+  transform: translateY(-1px);\n+}\n+\n+.auth-submit-btn:active {\n+  transform: translateY(0);\n+  box-shadow: 0 2px 8px rgba(25, 137, 250, 0.3);\n+}\n+\n .auth-switch {\n   display: flex;\n   justify-content: center;\n   align-items: center;\n"
+                },
+                {
+                    "date": 1752342001827,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -198,10 +198,15 @@\n         }\n \n         if (response.success) {\n           console.log('认证成功，响应数据:', response)\n-          Toast.success(response.message || (isLogin.value ? '登录成功' : '注册成功'))\n \n+          if (isLogin.value) {\n+            Toast.success('登录成功，正在加载用户数据...')\n+          } else {\n+            Toast.success(response.message || '注册成功')\n+          }\n+\n           const successData = {\n             type: isLogin.value ? 'login' : 'register',\n             user: response.data.user\n           }\n"
                 }
             ],
             "date": 1752285564155,

@@ -81,6 +81,17 @@
             <h3 class="section-title">绑定等级卡</h3>
             <p class="section-desc">输入卡号和卡密来绑定新的等级卡</p>
 
+            <!-- 体验卡限制提示 -->
+            <div v-if="hasUnusedExperienceCard" class="experience-card-notice">
+              <van-notice-bar
+                left-icon="info-o"
+                color="#ff6b35"
+                background="#fff7f0"
+                text="提示：您已有可用的体验卡，体验卡在使用前不可叠加绑定。其他等级卡可正常叠加。"
+              />
+            </div>
+
+
             <form @submit.prevent="handleBindCard" class="bind-form">
               <BaseInput
                 v-model="bindForm.cardNumber"
@@ -251,9 +262,18 @@ export default {
     const bindLoading = ref(false)
     const pointsInfo = ref(null)
     const showPurchaseModal = ref(false)
+    const userCards = ref([])
 
     // 计算登录状态
     const isLoggedIn = computed(() => authApi.isLoggedIn())
+
+    // 检查是否有未使用的体验卡
+    const hasUnusedExperienceCard = computed(() => {
+      return userCards.value.some(card =>
+        card.type_name === '体验卡' && card.remaining_points > 0
+      )
+    })
+
 
     // 绑定表单数据
     const bindForm = reactive({
@@ -304,20 +324,26 @@ export default {
           cards_count: 0,
           cards_breakdown: []
         }
+        userCards.value = []
         loading.value = false
         return
       }
 
       try {
         loading.value = true
-        const response = await pointsApi.getUserPoints()
 
-        if (response.success) {
-          pointsInfo.value = response.data
+        // 并行加载积分信息和用户卡片信息
+        const [pointsResponse, cardsResponse] = await Promise.all([
+          pointsApi.getUserPoints(),
+          levelCardApi.getMyCards()
+        ])
+
+        if (pointsResponse.success) {
+          pointsInfo.value = pointsResponse.data
         } else {
-          console.error('获取积分信息失败:', response.message)
+          console.error('获取积分信息失败:', pointsResponse.message)
           // 如果是认证错误，显示登录提示
-          if (response.message && response.message.includes('令牌')) {
+          if (pointsResponse.message && pointsResponse.message.includes('令牌')) {
             Toast.fail('请先登录')
             pointsInfo.value = {
               total_points: 0,
@@ -328,19 +354,30 @@ export default {
             Toast.fail('获取积分信息失败')
           }
         }
+
+        if (cardsResponse.success) {
+          userCards.value = cardsResponse.data.cards || []
+        } else {
+          console.error('获取用户卡片信息失败:', cardsResponse.message)
+          userCards.value = []
+        }
+
       } catch (error) {
         console.error('加载积分信息失败:', error)
         // 如果是认证错误，显示登录提示
-        if (error.message && (error.message.includes('令牌') || error.message.includes('401'))) {
-          Toast.fail('请先登录')
+        if (error.message && (error.message.includes('令牌') || error.message.includes('401') || error.message.includes('登录已过期'))) {
+          Toast.fail('登录已过期，请重新登录')
           pointsInfo.value = {
             total_points: 0,
             cards_count: 0,
             cards_breakdown: []
           }
+        } else if (error.message && error.message.includes('网络连接失败')) {
+          Toast.fail('网络连接失败，请检查服务器状态')
         } else {
           Toast.fail('获取积分信息失败')
         }
+        userCards.value = []
       } finally {
         loading.value = false
       }
@@ -370,19 +407,43 @@ export default {
       bindLoading.value = true
 
       try {
+        console.log('🎫 尝试绑定等级卡:', {
+          cardNumber: bindForm.cardNumber.trim(),
+          hasUnusedExperienceCard: hasUnusedExperienceCard.value,
+          userCards: userCards.value
+        })
+
         const response = await levelCardApi.bindCard(
           bindForm.cardNumber.trim(),
           bindForm.cardPassword.trim()
         )
 
+        console.log('🎫 绑定响应:', response)
+
         if (response.success) {
-          Toast.success(response.message || '绑定成功')
+          Toast.success(response.message || '绑定成功，正在更新积分...')
 
-          // 重新加载积分信息
-          await loadPointsInfo()
+          // 显示积分更新中的提示
+          Toast.loading({
+            message: '正在更新积分信息...',
+            forbidClick: true,
+            duration: 0
+          })
 
-          // 通知父组件积分已更新
-          emit('points-updated', response.data)
+          try {
+            // 重新加载积分信息
+            await loadPointsInfo()
+
+            Toast.clear()
+            Toast.success('等级卡绑定成功，积分已更新')
+
+            // 通知父组件积分已更新
+            emit('points-updated', response.data)
+          } catch (error) {
+            Toast.clear()
+            console.error('更新积分信息失败:', error)
+            Toast.fail('积分更新失败，请刷新页面')
+          }
 
           // 重置表单
           resetBindForm()
@@ -391,15 +452,34 @@ export default {
           // 如果是认证错误，显示登录提示
           if (response.message && response.message.includes('令牌')) {
             Toast.fail('请先登录')
+          } else if (response.message && response.message.includes('体验卡')) {
+            // 体验卡相关错误，显示详细提示
+            Toast.fail(response.message)
           } else {
             Toast.fail(response.message || '绑定失败')
           }
         }
       } catch (error) {
-        console.error('绑定等级卡失败:', error)
+        console.error('🎫 绑定等级卡失败:', error)
+        console.error('🎫 错误详情:', {
+          message: error.message,
+          hasUnusedExperienceCard: hasUnusedExperienceCard.value,
+          userCards: userCards.value
+        })
         // 如果是认证错误，显示登录提示
-        if (error.message && (error.message.includes('令牌') || error.message.includes('401'))) {
-          Toast.fail('请先登录')
+        if (error.message && (error.message.includes('令牌') || error.message.includes('401') || error.message.includes('登录已过期'))) {
+          Toast.fail('登录已过期，请重新登录')
+        } else if (error.message && error.message.includes('体验卡')) {
+          // 体验卡相关错误，显示详细提示
+          // 提取原始错误消息（去掉"请求失败: "前缀）
+          const originalMessage = error.message.replace(/^请求失败:\s*/, '')
+          Toast({
+            type: 'fail',
+            message: originalMessage,
+            duration: 4000 // 显示更长时间
+          })
+        } else if (error.message && error.message.includes('网络连接失败')) {
+          Toast.fail('网络连接失败，请检查服务器状态')
         } else {
           Toast.fail(error.message || '绑定失败')
         }
@@ -428,6 +508,8 @@ export default {
       cardPasswordRules,
       showPurchaseModal,
       isLoggedIn,
+      userCards,
+      hasUnusedExperienceCard,
       closeModal,
       loadPointsInfo,
       handleBindCard,
@@ -583,6 +665,11 @@ export default {
   font-size: 14px;
   color: #969799;
   margin: 0 0 16px 0;
+}
+
+/* 体验卡提示 */
+.experience-card-notice {
+  margin-bottom: 16px;
 }
 
 /* 等级卡明细 */

@@ -315,7 +315,7 @@ router.post('/init-level-cards', async (req, res, next) => {
     // 1. 创建等级卡类型表
     console.log('📝 创建等级卡类型表...');
     await query(`
-      CREATE TABLE IF NOT EXISTS level_card_types (
+      CREATE TABLE IF NOT EXISTS card_types (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
         icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
@@ -374,10 +374,10 @@ router.post('/init-level-cards', async (req, res, next) => {
     console.log('✅ 等级卡交易记录表创建成功');
 
     // 4. 插入等级卡类型数据（包含体验卡）
-    const existingTypes = await query('SELECT COUNT(*) as count FROM level_card_types');
+    const existingTypes = await query('SELECT COUNT(*) as count FROM card_types');
     if (existingTypes[0].count === 0) {
       await query(`
-        INSERT INTO level_card_types (name, icon, price, points, description) VALUES
+        INSERT INTO card_types (name, icon, price, points, description) VALUES
         ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
         ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
         ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
@@ -405,7 +405,7 @@ router.get('/card-types', adminAuth, async (req, res, next) => {
     try {
       const cardTypes = await query(`
         SELECT id, name, icon, points, price, description
-        FROM level_card_types
+        FROM card_types
         ORDER BY points ASC
       `);
 
@@ -421,7 +421,7 @@ router.get('/card-types', adminAuth, async (req, res, next) => {
 
       // 创建表和初始数据
       await query(`
-        CREATE TABLE IF NOT EXISTS level_card_types (
+        CREATE TABLE IF NOT EXISTS card_types (
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
           icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
@@ -435,7 +435,7 @@ router.get('/card-types', adminAuth, async (req, res, next) => {
 
       // 插入初始数据
       await query(`
-        INSERT INTO level_card_types (name, icon, price, points, description) VALUES
+        INSERT INTO card_types (name, icon, price, points, description) VALUES
         ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
         ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
         ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
@@ -445,7 +445,7 @@ router.get('/card-types', adminAuth, async (req, res, next) => {
       // 重新获取数据
       const cardTypes = await query(`
         SELECT id, name, icon, points, price, description
-        FROM level_card_types
+        FROM card_types
         ORDER BY points ASC
       `);
 
@@ -499,7 +499,7 @@ router.get('/cards', adminAuth, async (req, res, next) => {
     const countQuery = `
       SELECT COUNT(*) as total
       FROM level_cards lc
-      LEFT JOIN level_card_types ct ON lc.type_id = ct.id
+      LEFT JOIN card_types ct ON lc.type_id = ct.id
       LEFT JOIN users u ON lc.bound_user_id = u.id
       ${whereClause}
     `;
@@ -513,7 +513,7 @@ router.get('/cards', adminAuth, async (req, res, next) => {
              ct.name as type_name, ct.icon, ct.points as total_points, ct.price,
              u.username as bound_username, u.id as bound_user_id
       FROM level_cards lc
-      LEFT JOIN level_card_types ct ON lc.type_id = ct.id
+      LEFT JOIN card_types ct ON lc.type_id = ct.id
       LEFT JOIN users u ON lc.bound_user_id = u.id
       ${whereClause}
       ORDER BY lc.created_at DESC
@@ -550,7 +550,7 @@ router.get('/cards/:id', adminAuth, async (req, res, next) => {
              ct.name as type_name, ct.icon, ct.points as total_points, ct.price,
              u.username as bound_username, u.id as bound_user_id, u.email as bound_user_email
       FROM level_cards lc
-      LEFT JOIN level_card_types ct ON lc.type_id = ct.id
+      LEFT JOIN card_types ct ON lc.type_id = ct.id
       LEFT JOIN users u ON lc.bound_user_id = u.id
       WHERE lc.id = ?
     `, [cardId]);
@@ -1080,7 +1080,7 @@ router.post('/generate-experience-cards', adminAuth, async (req, res, next) => {
     // 获取体验卡类型信息 - 修复表名，遵循开发原则
     const cardTypeResult = await query(`
       SELECT id, name, points, price
-      FROM level_card_types
+      FROM card_types
       WHERE name = '体验卡'
     `);
 
@@ -1142,7 +1142,7 @@ router.get('/experience-cards-stats', adminAuth, async (req, res, next) => {
         SUM(CASE WHEN bound_user_id IS NULL THEN remaining_points ELSE 0 END) as available_points,
         SUM(CASE WHEN bound_user_id IS NOT NULL THEN remaining_points ELSE 0 END) as bound_points
       FROM level_cards lc
-      JOIN level_card_types ct ON lc.type_id = ct.id
+      JOIN card_types ct ON lc.type_id = ct.id
       WHERE ct.name = '体验卡'
     `);
 

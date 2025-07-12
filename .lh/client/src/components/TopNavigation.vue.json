@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752290874113,
@@ -20,6 +20,30 @@
                 {
                     "date": 1752290981271,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -220,9 +220,13 @@\n // 暴露给父组件的方法\n defineExpose({\n   updatePointsStatus,\n   getCurrentPoints: () => pointsStatus.current,\n-  hasEnoughPoints: () => pointsStatus.canGenerate\n+  hasEnoughPoints: () => pointsStatus.canGenerate,\n+  showLoginModal: () => {\n+    authMode.value = 'login'\n+    showAuthModal.value = true\n+  }\n })\n </script>\n \n <style scoped>\n"
+                },
+                {
+                    "date": 1752341911904,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,12 +1,18 @@\n <template>\n   <div class=\"top-navigation\">\n-    <!-- 积分显示（左边） -->\n-    <div class=\"nav-item nav-points\" @click=\"showPointsModal = true\" title=\"点击查看积分详情\">\n+    <!-- 积分显示（左边） - 仅在登录时显示 -->\n+    <div\n+      v-if=\"isLoggedIn\"\n+      class=\"nav-item nav-points\"\n+      @click=\"showPointsModal = true\"\n+      title=\"点击查看积分详情\"\n+    >\n       <div class=\"nav-icon\">\n         <van-icon name=\"diamond-o\" size=\"18\" />\n       </div>\n-      <span class=\"nav-text\">{{ pointsStatus.current }}</span>\n+      <span v-if=\"!pointsLoading\" class=\"nav-text\">{{ pointsStatus.current }}</span>\n+      <van-loading v-else size=\"14\" color=\"var(--primary-color)\" />\n     </div>\n \n     <!-- 用户信息（右边） -->\n     <div class=\"nav-item nav-user\">\n"
+                },
+                {
+                    "date": 1752341923307,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -66,8 +66,9 @@\n const showPointsModal = ref(false)\n const showAuthModal = ref(false)\n const authMode = ref('login')\n const loading = ref(false)\n+const pointsLoading = ref(false)\n \n // 用户信息\n const userInfo = ref(null)\n const isLoggedIn = computed(() => {\n"
+                },
+                {
+                    "date": 1752341943757,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -96,8 +96,9 @@\n \n   // 检查登录状态，如果未登录则不发送API请求\n   if (!levelCardPointsManager.isLoggedIn() || !isLoggedIn.value) {\n     console.log('❌ 未登录，设置默认积分状态')\n+    pointsLoading.value = false\n     Object.assign(pointsStatus, {\n       current: 0,\n       total_points: 0,\n       cards_count: 0,\n@@ -108,8 +109,9 @@\n     return\n   }\n \n   try {\n+    pointsLoading.value = true\n     console.log('🚀 发送积分API请求...')\n     const newStatus = await levelCardPointsManager.getPointsStatus()\n     console.log('✅ 积分状态更新成功:', newStatus)\n     Object.assign(pointsStatus, newStatus)\n@@ -126,8 +128,10 @@\n         generationCost: 20,\n         isLoggedIn: false\n       })\n     }\n+  } finally {\n+    pointsLoading.value = false\n   }\n }\n \n // 显示登录弹窗\n"
+                },
+                {
+                    "date": 1752341960528,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -140,9 +140,9 @@\n   showAuthModal.value = true\n }\n \n // 处理认证成功\n-const handleAuthSuccess = (data) => {\n+const handleAuthSuccess = async (data) => {\n   console.log('认证成功，更新用户信息:', data)\n \n   // 立即更新用户信息\n   userInfo.value = data.user\n@@ -157,12 +157,10 @@\n \n   // 触发父组件的登录事件\n   emit('login', data)\n \n-  // 延迟更新积分状态，确保登录状态已同步\n-  setTimeout(() => {\n-    updatePointsStatus()\n-  }, 100)\n+  // 立即更新积分状态，显示加载状态\n+  await updatePointsStatus()\n \n   // 关闭弹窗\n   showAuthModal.value = false\n }\n"
+                },
+                {
+                    "date": 1752342580448,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -170,10 +170,16 @@\n   router.push('/profile')\n }\n \n // 处理积分更新\n-const handlePointsUpdated = () => {\n-  updatePointsStatus()\n+const handlePointsUpdated = async () => {\n+  console.log('🔄 收到积分更新事件，强制刷新积分状态')\n+  // 清除levelCardPointsManager的缓存，确保获取最新数据\n+  levelCardPointsManager.pointsInfo = null\n+  levelCardPointsManager.lastUpdateTime = 0\n+\n+  // 更新积分状态\n+  await updatePointsStatus()\n }\n \n // 初始化用户信息\n const initUserInfo = () => {\n"
+                },
+                {
+                    "date": 1752342628711,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -173,10 +173,9 @@\n // 处理积分更新\n const handlePointsUpdated = async () => {\n   console.log('🔄 收到积分更新事件，强制刷新积分状态')\n   // 清除levelCardPointsManager的缓存，确保获取最新数据\n-  levelCardPointsManager.pointsInfo = null\n-  levelCardPointsManager.lastUpdateTime = 0\n+  levelCardPointsManager.clearCache()\n \n   // 更新积分状态\n   await updatePointsStatus()\n }\n"
                 }
             ],
             "date": 1752290874113,

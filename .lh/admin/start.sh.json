@@ -1,0 +1,26 @@
+{
+    "sourceFile": "admin/start.sh",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1752339002715,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752339267961,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -27,9 +27,9 @@\n fi\n \n echo\n echo \"启动开发服务器...\"\n-echo \"访问地址: http://localhost:3003\"\n+echo \"访问地址: http://localhost:3002\"\n echo \"按 Ctrl+C 停止服务器\"\n echo\n \n npm run dev\n"
+                },
+                {
+                    "date": 1752339358912,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -27,9 +27,9 @@\n fi\n \n echo\n echo \"启动开发服务器...\"\n-echo \"访问地址: http://localhost:3002\"\n+echo \"访问地址: http://localhost:3003\"\n echo \"按 Ctrl+C 停止服务器\"\n echo\n \n npm run dev\n"
+                }
+            ],
+            "date": 1752339002715,
+            "name": "Commit-0",
+            "content": "#!/bin/bash\n\necho \"========================================\"\necho \"iComfy 后台管理系统启动脚本\"\necho \"========================================\"\necho\n\necho \"检查 Node.js 环境...\"\nif ! command -v node &> /dev/null; then\n    echo \"错误: 未找到 Node.js，请先安装 Node.js\"\n    exit 1\nfi\n\nnode --version\necho\n\necho \"检查项目依赖...\"\nif [ ! -d \"node_modules\" ]; then\n    echo \"正在安装依赖...\"\n    npm install\n    if [ $? -ne 0 ]; then\n        echo \"错误: 依赖安装失败\"\n        exit 1\n    fi\nelse\n    echo \"依赖已存在，跳过安装\"\nfi\n\necho\necho \"启动开发服务器...\"\necho \"访问地址: http://localhost:3003\"\necho \"按 Ctrl+C 停止服务器\"\necho\n\nnpm run dev\n"
+        }
+    ]
+}

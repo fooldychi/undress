@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 10,
             "patches": [
                 {
                     "date": 1752322119517,
@@ -16,6 +16,38 @@
                 {
                     "date": 1752322154554,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,9 +134,9 @@\n     const cards = await query(`\n       SELECT lc.id, lc.card_number, lc.remaining_points, lc.bound_at,\n              ct.name as type_name, ct.icon, ct.points as total_points, ct.price\n       FROM level_cards lc\n-      JOIN card_types ct ON lc.type_id = ct.id\n+      JOIN level_card_types ct ON lc.type_id = ct.id\n       WHERE lc.bound_user_id = ?\n         AND (\n           ct.name != '体验卡' OR\n           (ct.name = '体验卡' AND lc.remaining_points > 0)\n"
+                },
+                {
+                    "date": 1752342851558,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -55,8 +55,34 @@\n     }\n \n     const card = cardResult[0];\n \n+    // 如果是体验卡，检查用户是否已经绑定了未使用的体验卡\n+    if (card.type_name === '体验卡') {\n+      console.log(`🎁 检查用户${userId}的体验卡绑定状态...`);\n+\n+      const existingExperienceCards = await query(`\n+        SELECT lc.id, lc.card_number, lc.remaining_points\n+        FROM level_cards lc\n+        JOIN level_card_types ct ON lc.type_id = ct.id\n+        WHERE lc.bound_user_id = ?\n+          AND ct.name = '体验卡'\n+          AND lc.remaining_points > 0\n+      `, [userId]);\n+\n+      if (existingExperienceCards.length > 0) {\n+        const existingCard = existingExperienceCards[0];\n+        console.log(`❌ 用户${userId}已绑定未使用的体验卡: ${existingCard.card_number}，剩余积分: ${existingCard.remaining_points}`);\n+\n+        return res.status(400).json({\n+          success: false,\n+          message: `您已绑定体验卡 ${existingCard.card_number}（剩余${existingCard.remaining_points}积分），请先使用完当前体验卡后再绑定新的体验卡`\n+        });\n+      }\n+    }\n+\n+    const card = cardResult[0];\n+\n     // 检查是否已被绑定\n     if (card.bound_user_id) {\n       return res.status(400).json({\n         success: false,\n"
+                },
+                {
+                    "date": 1752342867051,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -55,34 +55,8 @@\n     }\n \n     const card = cardResult[0];\n \n-    // 如果是体验卡，检查用户是否已经绑定了未使用的体验卡\n-    if (card.type_name === '体验卡') {\n-      console.log(`🎁 检查用户${userId}的体验卡绑定状态...`);\n-\n-      const existingExperienceCards = await query(`\n-        SELECT lc.id, lc.card_number, lc.remaining_points\n-        FROM level_cards lc\n-        JOIN level_card_types ct ON lc.type_id = ct.id\n-        WHERE lc.bound_user_id = ?\n-          AND ct.name = '体验卡'\n-          AND lc.remaining_points > 0\n-      `, [userId]);\n-\n-      if (existingExperienceCards.length > 0) {\n-        const existingCard = existingExperienceCards[0];\n-        console.log(`❌ 用户${userId}已绑定未使用的体验卡: ${existingCard.card_number}，剩余积分: ${existingCard.remaining_points}`);\n-\n-        return res.status(400).json({\n-          success: false,\n-          message: `您已绑定体验卡 ${existingCard.card_number}（剩余${existingCard.remaining_points}积分），请先使用完当前体验卡后再绑定新的体验卡`\n-        });\n-      }\n-    }\n-\n-    const card = cardResult[0];\n-\n     // 检查是否已被绑定\n     if (card.bound_user_id) {\n       return res.status(400).json({\n         success: false,\n"
+                },
+                {
+                    "date": 1752343609989,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -68,9 +68,9 @@\n     if (card.type_name === '体验卡') {\n       const existingExperienceCard = await query(`\n         SELECT COUNT(*) as count\n         FROM level_cards lc\n-        JOIN card_types ct ON lc.type_id = ct.id\n+        JOIN level_card_types ct ON lc.type_id = ct.id\n         WHERE lc.bound_user_id = ? AND ct.name = '体验卡' AND lc.remaining_points > 0\n       `, [userId]);\n \n       if (existingExperienceCard[0].count > 0) {\n"
+                },
+                {
+                    "date": 1752346750471,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,9 +8,9 @@\n router.get('/types', async (req, res, next) => {\n   try {\n     const cardTypes = await query(`\n       SELECT id, name, icon, points, price\n-      FROM level_card_types\n+      FROM card_types\n       ORDER BY points ASC\n     `);\n \n     res.json({\n"
+                },
+                {
+                    "date": 1752346767232,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -42,9 +42,9 @@\n     // 查找等级卡及其类型信息\n     const cardResult = await query(`\n       SELECT lc.*, ct.name as type_name, ct.icon, ct.points as total_points\n       FROM level_cards lc\n-      JOIN level_card_types ct ON lc.type_id = ct.id\n+      JOIN card_types ct ON lc.type_id = ct.id\n       WHERE lc.card_number = ? AND lc.card_password = ?\n     `, [cardNumber, cardPassword]);\n \n     if (cardResult.length === 0) {\n"
+                },
+                {
+                    "date": 1752346780048,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -68,9 +68,9 @@\n     if (card.type_name === '体验卡') {\n       const existingExperienceCard = await query(`\n         SELECT COUNT(*) as count\n         FROM level_cards lc\n-        JOIN level_card_types ct ON lc.type_id = ct.id\n+        JOIN card_types ct ON lc.type_id = ct.id\n         WHERE lc.bound_user_id = ? AND ct.name = '体验卡' AND lc.remaining_points > 0\n       `, [userId]);\n \n       if (existingExperienceCard[0].count > 0) {\n"
+                },
+                {
+                    "date": 1752346796968,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,9 +134,9 @@\n     const cards = await query(`\n       SELECT lc.id, lc.card_number, lc.remaining_points, lc.bound_at,\n              ct.name as type_name, ct.icon, ct.points as total_points, ct.price\n       FROM level_cards lc\n-      JOIN level_card_types ct ON lc.type_id = ct.id\n+      JOIN card_types ct ON lc.type_id = ct.id\n       WHERE lc.bound_user_id = ?\n         AND (\n           ct.name != '体验卡' OR\n           (ct.name = '体验卡' AND lc.remaining_points > 0)\n"
+                },
+                {
+                    "date": 1752346834555,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -167,9 +167,9 @@\n       SELECT lct.id, lct.type, lct.points_amount, lct.remaining_points, lct.description, lct.created_at,\n              lc.card_number, lctype.name as card_type_name, lctype.icon\n       FROM level_card_transactions lct\n       JOIN level_cards lc ON lct.card_id = lc.id\n-      JOIN level_card_types lctype ON lc.type_id = lctype.id\n+      JOIN card_types lctype ON lc.type_id = lctype.id\n       WHERE lct.user_id = ?\n       ORDER BY lct.created_at DESC\n       LIMIT ? OFFSET ?\n     `, [userId, parseInt(limit), parseInt(offset)]);\n"
                 }
             ],
             "date": 1752322119517,

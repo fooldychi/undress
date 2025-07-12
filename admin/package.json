@@ -4,10 +4,10 @@
   "description": "iComfy后台管理系统",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3002",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "vite preview --port 3002"
+    "serve": "vite preview"
   },
   "dependencies": {
     "vue": "^3.4.0",

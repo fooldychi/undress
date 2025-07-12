@@ -3,11 +3,39 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 7,
             "patches": [
                 {
                     "date": 1752303258100,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752338451516,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,9 +30,9 @@\n )\n \n echo.\n echo 启动开发服务器...\n-echo 访问地址: http://localhost:3002\n+echo 访问地址: http://localhost:3003\n echo 按 Ctrl+C 停止服务器\n echo.\n \n echo 正在启动 Vite 开发服务器...\n"
+                },
+                {
+                    "date": 1752338462964,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -35,7 +35,7 @@\n echo 按 Ctrl+C 停止服务器\n echo.\n \n echo 正在启动 Vite 开发服务器...\n-node_modules\\.bin\\vite.cmd --port 3002 --host\n+node_modules\\.bin\\vite.cmd --port 3003 --host\n \n pause\n"
+                },
+                {
+                    "date": 1752338792554,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,12 +30,12 @@\n )\n \n echo.\n echo 启动开发服务器...\n-echo 访问地址: http://localhost:3003\n+echo 访问地址: http://localhost:3002\n echo 按 Ctrl+C 停止服务器\n echo.\n \n echo 正在启动 Vite 开发服务器...\n-node_modules\\.bin\\vite.cmd --port 3003 --host\n+node_modules\\.bin\\vite.cmd --port 3002 --host\n \n pause\n"
+                },
+                {
+                    "date": 1752338991388,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,12 +30,12 @@\n )\n \n echo.\n echo 启动开发服务器...\n-echo 访问地址: http://localhost:3002\n+echo 访问地址: http://localhost:3003\n echo 按 Ctrl+C 停止服务器\n echo.\n \n echo 正在启动 Vite 开发服务器...\n-node_modules\\.bin\\vite.cmd --port 3002 --host\n+node_modules\\.bin\\vite.cmd --port 3003 --host\n \n pause\n"
+                },
+                {
+                    "date": 1752339267962,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,12 +30,12 @@\n )\n \n echo.\n echo 启动开发服务器...\n-echo 访问地址: http://localhost:3003\n+echo 访问地址: http://localhost:3002\n echo 按 Ctrl+C 停止服务器\n echo.\n \n echo 正在启动 Vite 开发服务器...\n-node_modules\\.bin\\vite.cmd --port 3003 --host\n+node_modules\\.bin\\vite.cmd --port 3002 --host\n \n pause\n"
+                },
+                {
+                    "date": 1752339346279,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,12 +30,12 @@\n )\n \n echo.\n echo 启动开发服务器...\n-echo 访问地址: http://localhost:3002\n+echo 访问地址: http://localhost:3003\n echo 按 Ctrl+C 停止服务器\n echo.\n \n echo 正在启动 Vite 开发服务器...\n-node_modules\\.bin\\vite.cmd --port 3002 --host\n+npm run dev\n \n pause\n"
+                },
+                {
+                    "date": 1752339796977,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,41 +1,14 @@\n @echo off\n-chcp 65001 >nul\n echo ========================================\n-echo iComfy 后台管理系统启动脚本\n+echo    AIMagic Admin System Startup\n echo ========================================\n echo.\n \n-echo 检查 Node.js 环境...\n-node --version >nul 2>&1\n-if %errorlevel% neq 0 (\n-    echo 错误: 未找到 Node.js，请先安装 Node.js\n-    pause\n-    exit /b 1\n-) else (\n-    echo Node.js 环境正常\n-)\n-\n+echo Starting development server...\n+echo Access URL: http://localhost:3003\n+echo Press Ctrl+C to stop server\n echo.\n-echo 检查项目依赖...\n-if not exist \"node_modules\" (\n-    echo 正在安装依赖...\n-    npm install\n-    if %errorlevel% neq 0 (\n-        echo 错误: 依赖安装失败\n-        pause\n-        exit /b 1\n-    )\n-) else (\n-    echo 依赖已存在，跳过安装\n-)\n \n-echo.\n-echo 启动开发服务器...\n-echo 访问地址: http://localhost:3003\n-echo 按 Ctrl+C 停止服务器\n-echo.\n-\n-echo 正在启动 Vite 开发服务器...\n npm run dev\n \n pause\n"
                 }
             ],
             "date": 1752303258100,

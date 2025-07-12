@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 53,
+            "activePatchIndex": 56,
             "patches": [
                 {
                     "date": 1752283749891,
@@ -220,6 +220,18 @@
                 {
                     "date": 1752296163349,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -795,36 +795,24 @@\n   gap: 4px;\n   font-weight: 600;\n }\n \n-.points-current {\n-  font-size: 1.8rem;\n+.level-card-points .points-current {\n+  font-size: 1.4rem;\n   font-weight: 700;\n   color: var(--primary-color);\n }\n \n-.points-separator {\n-  font-size: 1.2rem;\n+.level-card-points .points-separator {\n+  font-size: 1rem;\n   color: var(--text-light);\n }\n \n-.points-total {\n-  font-size: 1.2rem;\n+.level-card-points .points-total {\n+  font-size: 1rem;\n   color: var(--text-light);\n }\n \n-.points-unit {\n-  font-size: 0.9rem;\n-  color: var(--text-light);\n-  margin-left: 4px;\n-}\n-\n-.card-date {\n-  font-size: 0.85rem;\n-  color: var(--text-light);\n-  margin: 0;\n-}\n-\n /* 记录部分样式 */\n .records-content {\n   display: flex;\n   flex-direction: column;\n"
+                },
+                {
+                    "date": 1752341891136,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -302,8 +302,14 @@\n     const handleLogout = () => {\n       authApi.logout()\n       handleUserLogout()\n       Toast.success('退出登录成功')\n+\n+      // 跳转到首页并显示登录模态框\n+      router.push('/')\n+      setTimeout(() => {\n+        showLoginModal()\n+      }, 500) // 延迟显示登录模态框，确保页面跳转完成\n     }\n \n     // 刷新用户信息\n     const refreshUserInfo = async () => {\n"
+                },
+                {
+                    "date": 1752342349779,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -293,9 +293,8 @@\n     const handleUserLogout = () => {\n       userInfo.value = null\n       pointsInfo.value = null\n       recentRecords.value = []\n-      allRecords.value = []\n       router.push('/')\n     }\n \n     // 退出登录\n"
+                },
+                {
+                    "date": 1752342383937,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -393,36 +393,10 @@\n     const viewAllRecords = () => {\n       Toast.fail('功能未开通，敬请期待')\n     }\n \n-    // 加载更多记录\n-    const loadMoreRecords = async () => {\n-      if (!isLoggedIn.value || recordsLoading.value || recordsFinished.value) return\n \n-      try {\n-        recordsLoading.value = true\n-        const response = await pointsApi.getPointsHistory(recordsPage.value, 20, false)\n \n-        if (response.success) {\n-          const newRecords = response.data.logs || []\n-          allRecords.value.push(...newRecords)\n-\n-          if (newRecords.length < 20) {\n-            recordsFinished.value = true\n-          } else {\n-            recordsPage.value++\n-          }\n-        } else {\n-          recordsFinished.value = true\n-        }\n-      } catch (error) {\n-        console.error('加载积分记录失败:', error)\n-        recordsFinished.value = true\n-      } finally {\n-        recordsLoading.value = false\n-      }\n-    }\n-\n     // 初始化数据\n     const initializeData = async () => {\n       if (!isLoggedIn.value) {\n         loading.value = false\n"
                 }
             ],
             "date": 1752283749891,
