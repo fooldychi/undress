@@ -1,0 +1,22 @@
+{
+    "sourceFile": "admin/src/utils/request.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752308146905,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752308727131,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,9 +4,9 @@\n import router from '@/router'\n \n // 创建axios实例\n const service = axios.create({\n-  baseURL: 'http://localhost:3006/api', // 直接访问后端API\n+  baseURL: '/api', // 使用代理\n   timeout: 30000, // 请求超时时间\n   headers: {\n     'Content-Type': 'application/json'\n   }\n"
+                }
+            ],
+            "date": 1752308146905,
+            "name": "Commit-0",
+            "content": "import axios from 'axios'\nimport { ElMessage, ElMessageBox } from 'element-plus'\nimport { getToken, clearAuth } from './auth'\nimport router from '@/router'\n\n// 创建axios实例\nconst service = axios.create({\n  baseURL: 'http://localhost:3006/api', // 直接访问后端API\n  timeout: 30000, // 请求超时时间\n  headers: {\n    'Content-Type': 'application/json'\n  }\n})\n\n// 请求拦截器\nservice.interceptors.request.use(\n  config => {\n    // 添加token到请求头\n    const token = getToken()\n    if (token) {\n      config.headers.Authorization = `Bearer ${token}`\n    }\n\n    console.log('🚀 发送请求:', config.method?.toUpperCase(), config.url)\n    return config\n  },\n  error => {\n    console.error('❌ 请求错误:', error)\n    return Promise.reject(error)\n  }\n)\n\n// 响应拦截器\nservice.interceptors.response.use(\n  response => {\n    const res = response.data\n    console.log('✅ 收到响应:', response.config.url, res)\n\n    // 如果是文件下载，直接返回\n    if (response.config.responseType === 'blob') {\n      return response\n    }\n\n    // 检查业务状态码\n    if (res.success === false) {\n      // 特殊错误码处理\n      if (res.code === 'NO_TOKEN' || res.code === 'INVALID_TOKEN' || res.code === 'ADMIN_NOT_FOUND') {\n        ElMessageBox.confirm(\n          '登录状态已过期，请重新登录',\n          '系统提示',\n          {\n            confirmButtonText: '重新登录',\n            cancelButtonText: '取消',\n            type: 'warning'\n          }\n        ).then(() => {\n          clearAuth()\n          router.push('/login')\n        })\n        return Promise.reject(new Error(res.message || '登录已过期'))\n      }\n\n      // 其他业务错误\n      ElMessage.error(res.message || '请求失败')\n      return Promise.reject(new Error(res.message || '请求失败'))\n    }\n\n    return res\n  },\n  error => {\n    console.error('❌ 响应错误:', error)\n\n    let message = '网络错误'\n\n    if (error.response) {\n      const { status, data } = error.response\n\n      switch (status) {\n        case 401:\n          message = '未授权，请重新登录'\n          clearAuth()\n          router.push('/login')\n          break\n        case 403:\n          message = '权限不足'\n          break\n        case 404:\n          message = '请求的资源不存在'\n          break\n        case 500:\n          message = '服务器内部错误'\n          break\n        default:\n          message = data?.message || `请求失败 (${status})`\n      }\n    } else if (error.code === 'ECONNABORTED') {\n      message = '请求超时'\n    } else if (error.message.includes('Network Error')) {\n      message = '网络连接失败'\n    }\n\n    ElMessage.error(message)\n    return Promise.reject(error)\n  }\n)\n\nexport default service\n"
+        }
+    ]
+}

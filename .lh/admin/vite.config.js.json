@@ -1,0 +1,18 @@
+{
+    "sourceFile": "admin/vite.config.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752299827901,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752299827901,
+            "name": "Commit-0",
+            "content": "import { defineConfig } from 'vite'\nimport vue from '@vitejs/plugin-vue'\nimport { resolve } from 'path'\n\nexport default defineConfig({\n  plugins: [\n    vue()\n  ],\n  resolve: {\n    alias: {\n      '@': resolve(__dirname, 'src')\n    }\n  },\n  server: {\n    port: 3002,\n    open: true,\n    proxy: {\n      '/api': {\n        target: 'http://localhost:3006',\n        changeOrigin: true,\n        secure: false\n      }\n    }\n  },\n  build: {\n    outDir: 'dist',\n    sourcemap: false\n  }\n})\n"
+        }
+    ]
+}

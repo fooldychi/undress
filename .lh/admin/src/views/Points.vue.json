@@ -1,0 +1,22 @@
+{
+    "sourceFile": "admin/src/views/Points.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752314297287,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752314328928,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,30 +44,25 @@\n   if (!date) return ''\n   return new Date(date).toLocaleString()\n }\n \n-const loadPoints = () => {\n-  // 模拟数据\n-  pointsList.value = [\n-    {\n-      id: 1,\n-      user_id: 1,\n-      username: 'user001',\n-      type: 'earn',\n-      points: 100,\n-      description: '绑定等级卡获得积分',\n-      created_at: new Date().toISOString()\n-    },\n-    {\n-      id: 2,\n-      user_id: 1,\n-      username: 'user001',\n-      type: 'spend',\n-      points: 50,\n-      description: 'AI换脸服务消费',\n-      created_at: new Date().toISOString()\n+const loadPoints = async () => {\n+  loading.value = true\n+  try {\n+    const response = await getPointsList({ page: 1, pageSize: 50 })\n+    if (response.success) {\n+      pointsList.value = response.data.items.map(item => ({\n+        ...item,\n+        type: item.action_type === 'consume' ? 'spend' : 'earn',\n+        points: item.points_amount\n+      }))\n     }\n-  ]\n+  } catch (error) {\n+    console.error('加载积分记录失败:', error)\n+    ElMessage.error('加载积分记录失败')\n+  } finally {\n+    loading.value = false\n+  }\n }\n \n onMounted(() => {\n   loadPoints()\n"
+                }
+            ],
+            "date": 1752314297287,
+            "name": "Commit-0",
+            "content": "<template>\n  <div class=\"points-page\">\n    <div class=\"page-header\">\n      <h1 class=\"page-title\">积分记录</h1>\n      <el-button type=\"primary\" @click=\"loadPoints\">\n        <el-icon><Refresh /></el-icon>\n        刷新\n      </el-button>\n    </div>\n\n    <el-card>\n      <el-table :data=\"pointsList\" v-loading=\"loading\">\n        <el-table-column prop=\"id\" label=\"ID\" width=\"80\" />\n        <el-table-column prop=\"user_id\" label=\"用户ID\" width=\"100\" />\n        <el-table-column prop=\"username\" label=\"用户名\" width=\"120\" />\n        <el-table-column prop=\"type\" label=\"类型\" width=\"100\">\n          <template #default=\"{ row }\">\n            <el-tag :type=\"row.type === 'earn' ? 'success' : 'warning'\">\n              {{ row.type === 'earn' ? '获得' : '消费' }}\n            </el-tag>\n          </template>\n        </el-table-column>\n        <el-table-column prop=\"points\" label=\"积分\" width=\"100\" />\n        <el-table-column prop=\"description\" label=\"描述\" min-width=\"200\" />\n        <el-table-column prop=\"created_at\" label=\"时间\" width=\"180\">\n          <template #default=\"{ row }\">\n            {{ formatDate(row.created_at) }}\n          </template>\n        </el-table-column>\n      </el-table>\n    </el-card>\n  </div>\n</template>\n\n<script setup>\nimport { ref, onMounted } from 'vue'\nimport { ElMessage } from 'element-plus'\nimport { getPointsList } from '@/api/points'\n\nconst loading = ref(false)\nconst pointsList = ref([])\n\nconst formatDate = (date) => {\n  if (!date) return ''\n  return new Date(date).toLocaleString()\n}\n\nconst loadPoints = () => {\n  // 模拟数据\n  pointsList.value = [\n    {\n      id: 1,\n      user_id: 1,\n      username: 'user001',\n      type: 'earn',\n      points: 100,\n      description: '绑定等级卡获得积分',\n      created_at: new Date().toISOString()\n    },\n    {\n      id: 2,\n      user_id: 1,\n      username: 'user001',\n      type: 'spend',\n      points: 50,\n      description: 'AI换脸服务消费',\n      created_at: new Date().toISOString()\n    }\n  ]\n}\n\nonMounted(() => {\n  loadPoints()\n})\n</script>\n\n<style scoped>\n.points-page {\n  max-width: 1200px;\n  margin: 0 auto;\n}\n\n.page-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 20px;\n}\n\n.page-title {\n  font-size: 24px;\n  font-weight: 600;\n  color: #303133;\n  margin: 0;\n}\n</style>\n"
+        }
+    ]
+}

@@ -1,0 +1,167 @@
+// 全局样式文件
+
+// 变量定义
+:root {
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  
+  --border-base: #dcdfe6;
+  --border-light: #e4e7ed;
+  --border-lighter: #ebeef5;
+  --border-extra-light: #f2f6fc;
+  
+  --background-base: #f5f7fa;
+  --background-light: #fafafa;
+}
+
+// 基础样式重置
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-base);
+  color: var(--text-primary);
+}
+
+// 工具类
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.flex { display: flex; }
+.flex-center { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+}
+.flex-between { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+}
+.flex-column { flex-direction: column; }
+.flex-1 { flex: 1; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 8px !important; }
+.mb-2 { margin-bottom: 16px !important; }
+.mb-3 { margin-bottom: 24px !important; }
+.mb-4 { margin-bottom: 32px !important; }
+
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: 8px !important; }
+.mt-2 { margin-top: 16px !important; }
+.mt-3 { margin-top: 24px !important; }
+.mt-4 { margin-top: 32px !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 8px !important; }
+.p-2 { padding: 16px !important; }
+.p-3 { padding: 24px !important; }
+.p-4 { padding: 32px !important; }
+
+// 卡片样式
+.admin-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-extra-light);
+  overflow: hidden;
+  
+  &.no-padding {
+    .el-card__body {
+      padding: 0;
+    }
+  }
+}
+
+// 状态标签
+.status-tag {
+  &.active { color: var(--success-color); }
+  &.inactive { color: var(--danger-color); }
+  &.pending { color: var(--warning-color); }
+}
+
+// 数据统计卡片
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-extra-light);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+  
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    margin-bottom: 16px;
+    
+    &.primary { background: var(--primary-color); }
+    &.success { background: var(--success-color); }
+    &.warning { background: var(--warning-color); }
+    &.danger { background: var(--danger-color); }
+  }
+  
+  .stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+// 表格样式增强
+.admin-table {
+  .el-table__header {
+    background-color: var(--background-light);
+  }
+  
+  .el-table__row:hover {
+    background-color: var(--border-extra-light);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .stat-card {
+    padding: 16px;
+    
+    .stat-value {
+      font-size: 24px;
+    }
+  }
+  
+  .admin-card {
+    margin: 8px;
+  }
+}

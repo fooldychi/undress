@@ -1,0 +1,18 @@
+{
+    "sourceFile": "test-login.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752304393248,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752304393247,
+            "name": "Commit-0",
+            "content": "const axios = require('./server/node_modules/axios');\n\nasync function testLogin() {\n  try {\n    console.log('🧪 测试管理员登录 API...');\n\n    const response = await axios.post('http://localhost:3006/api/admin-auth/login', {\n      username: 'admin',\n      password: 'admin123456'\n    }, {\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      timeout: 10000\n    });\n\n    console.log('✅ 登录成功!');\n    console.log('状态码:', response.status);\n    console.log('响应数据:', JSON.stringify(response.data, null, 2));\n\n  } catch (error) {\n    console.error('❌ 登录失败:');\n    if (error.response) {\n      console.error('状态码:', error.response.status);\n      console.error('响应数据:', JSON.stringify(error.response.data, null, 2));\n    } else {\n      console.error('错误信息:', error.message);\n    }\n  }\n}\n\ntestLogin();\n"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "admin/start.bat",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752303258100,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752303258100,
+            "name": "Commit-0",
+            "content": "@echo off\nchcp 65001 >nul\necho ========================================\necho iComfy 后台管理系统启动脚本\necho ========================================\necho.\n\necho 检查 Node.js 环境...\nnode --version >nul 2>&1\nif %errorlevel% neq 0 (\n    echo 错误: 未找到 Node.js，请先安装 Node.js\n    pause\n    exit /b 1\n) else (\n    echo Node.js 环境正常\n)\n\necho.\necho 检查项目依赖...\nif not exist \"node_modules\" (\n    echo 正在安装依赖...\n    npm install\n    if %errorlevel% neq 0 (\n        echo 错误: 依赖安装失败\n        pause\n        exit /b 1\n    )\n) else (\n    echo 依赖已存在，跳过安装\n)\n\necho.\necho 启动开发服务器...\necho 访问地址: http://localhost:3002\necho 按 Ctrl+C 停止服务器\necho.\n\necho 正在启动 Vite 开发服务器...\nnode_modules\\.bin\\vite.cmd --port 3002 --host\n\npause\n"
+        }
+    ]
+}
