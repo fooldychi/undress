@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1752290191013,
@@ -28,6 +28,46 @@
                 {
                     "date": 1752290964236,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,12 @@\n <template>\r\n   <div class=\"home\">\r\n     <!-- 顶部导航 -->\r\n-    <TopNavigation @login=\"handleUserLogin\" @logout=\"handleUserLogout\" />\r\n+    <TopNavigation\r\n+      ref=\"topNavigationRef\"\r\n+      @login=\"handleUserLogin\"\r\n+      @logout=\"handleUserLogout\"\r\n+    />\r\n \r\n     <div class=\"container\">\r\n       <header class=\"header\">\r\n         <h1 class=\"title\">\r\n"
+                },
+                {
+                    "date": 1752330048295,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -60,9 +60,9 @@\n         </div>\r\n       </main>\r\n \r\n       <footer class=\"footer\">\r\n-        <p>&copy; 2024 Imagic. 基于ComfyUI工作流的AI图像处理平台</p>\r\n+        <p>&copy; 2024 AI Magic. 基于ComfyUI工作流的AI图像处理平台</p>\r\n         <div class=\"footer-actions\">\r\n           <van-button\r\n             @click=\"showConfigModal = !showConfigModal\"\r\n             type=\"default\"\r\n@@ -71,8 +71,18 @@\n             round\r\n           >\r\n             ⚙️ 配置\r\n           </van-button>\r\n+          <van-button\r\n+            @click=\"refreshConfig\"\r\n+            type=\"default\"\r\n+            size=\"small\"\r\n+            plain\r\n+            round\r\n+            :loading=\"configLoading\"\r\n+          >\r\n+            🔄 刷新配置\r\n+          </van-button>\r\n         </div>\r\n       </footer>\r\n \r\n       <!-- 配置模态框 -->\r\n"
+                },
+                {
+                    "date": 1752330063845,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -95,16 +95,17 @@\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n-import { ref } from 'vue'\r\n+import { ref, onMounted } from 'vue'\r\n import { useRouter } from 'vue-router'\r\n import { Palette, ChevronRight } from 'lucide-vue-next'\r\n import { Toast } from 'vant'\r\n import ConfigModal from '../components/ConfigModal.vue'\r\n import TopNavigation from '../components/TopNavigation.vue'\r\n import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'\r\n import { authApi } from '../services/api.js'\r\n+import configService from '../services/configService.js'\r\n \r\n const router = useRouter()\r\n \r\n // 配置模态框状态\r\n"
+                },
+                {
+                    "date": 1752330076175,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -113,8 +113,11 @@\n \r\n // TopNavigation组件引用\r\n const topNavigationRef = ref(null)\r\n \r\n+// 配置加载状态\r\n+const configLoading = ref(false)\r\n+\r\n // 检查登录状态并导航\r\n const navigateTo = (path) => {\r\n   console.log('🔥 点击事件触发，准备导航到:', path)\r\n \r\n"
+                },
+                {
+                    "date": 1752330090935,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -147,15 +147,46 @@\n     Toast.fail(`导航到 ${path} 失败，请刷新页面重试`)\r\n   }\r\n }\r\n \r\n+// 刷新配置\r\n+const refreshConfig = async () => {\r\n+  configLoading.value = true\r\n+  try {\r\n+    console.log('🔄 手动刷新配置...')\r\n+\r\n+    // 清除配置缓存并重新获取\r\n+    configService.clearCache()\r\n+    await configService.syncComfyUIConfig()\r\n+\r\n+    Toast.success('配置刷新成功')\r\n+    console.log('✅ 配置刷新完成')\r\n+  } catch (error) {\r\n+    console.error('❌ 配置刷新失败:', error)\r\n+    Toast.fail('配置刷新失败: ' + error.message)\r\n+  } finally {\r\n+    configLoading.value = false\r\n+  }\r\n+}\r\n+\r\n // 配置保存回调\r\n const onConfigSaved = (config) => {\r\n   console.log('配置已保存:', config)\r\n   showConfigModal.value = false\r\n-  alert('配置已保存')\r\n+  Toast.success('配置已保存')\r\n }\r\n \r\n+// 组件挂载时初始化\r\n+onMounted(async () => {\r\n+  try {\r\n+    // 确保配置服务已初始化\r\n+    await configService.getConfig()\r\n+    console.log('✅ 首页配置检查完成')\r\n+  } catch (error) {\r\n+    console.warn('⚠️ 首页配置检查失败:', error)\r\n+  }\r\n+})\r\n+\r\n // 用户登录成功回调\r\n const handleUserLogin = (data) => {\r\n   console.log('用户登录成功:', data)\r\n   // 可以在这里触发一些需要登录状态的操作\r\n"
+                },
+                {
+                    "date": 1752333049152,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -84,8 +84,11 @@\n           </van-button>\r\n         </div>\r\n       </footer>\r\n \r\n+      <!-- 负载均衡器状态 -->\r\n+      <LoadBalancerStatus v-if=\"showLoadBalancerStatus\" />\r\n+\r\n       <!-- 配置模态框 -->\r\n       <ConfigModal\r\n         :visible=\"showConfigModal\"\r\n         @close=\"showConfigModal = false\"\r\n"
+                },
+                {
+                    "date": 1752333063544,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -81,8 +81,17 @@\n             :loading=\"configLoading\"\r\n           >\r\n             🔄 刷新配置\r\n           </van-button>\r\n+          <van-button\r\n+            @click=\"showLoadBalancerStatus = !showLoadBalancerStatus\"\r\n+            type=\"default\"\r\n+            size=\"small\"\r\n+            plain\r\n+            round\r\n+          >\r\n+            📊 服务器状态\r\n+          </van-button>\r\n         </div>\r\n       </footer>\r\n \r\n       <!-- 负载均衡器状态 -->\r\n"
+                },
+                {
+                    "date": 1752333077762,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -112,8 +112,9 @@\n import { useRouter } from 'vue-router'\r\n import { Palette, ChevronRight } from 'lucide-vue-next'\r\n import { Toast } from 'vant'\r\n import ConfigModal from '../components/ConfigModal.vue'\r\n+import LoadBalancerStatus from '../components/LoadBalancerStatus.vue'\r\n import TopNavigation from '../components/TopNavigation.vue'\r\n import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'\r\n import { authApi } from '../services/api.js'\r\n import configService from '../services/configService.js'\r\n"
+                },
+                {
+                    "date": 1752333089689,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -129,8 +129,11 @@\n \r\n // 配置加载状态\r\n const configLoading = ref(false)\r\n \r\n+// 负载均衡器状态显示\r\n+const showLoadBalancerStatus = ref(false)\r\n+\r\n // 检查登录状态并导航\r\n const navigateTo = (path) => {\r\n   console.log('🔥 点击事件触发，准备导航到:', path)\r\n \r\n"
+                },
+                {
+                    "date": 1752333687012,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -90,8 +90,17 @@\n             round\r\n           >\r\n             📊 服务器状态\r\n           </van-button>\r\n+          <van-button\r\n+            @click=\"$router.push('/load-balancer-test')\"\r\n+            type=\"default\"\r\n+            size=\"small\"\r\n+            plain\r\n+            round\r\n+          >\r\n+            🧪 负载均衡测试\r\n+          </van-button>\r\n         </div>\r\n       </footer>\r\n \r\n       <!-- 负载均衡器状态 -->\r\n"
+                },
+                {
+                    "date": 1752335877665,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -60,9 +60,9 @@\n         </div>\r\n       </main>\r\n \r\n       <footer class=\"footer\">\r\n-        <p>&copy; 2024 AI Magic. 基于ComfyUI工作流的AI图像处理平台</p>\r\n+        <p>&copy; 2024 AI Magic. AI图像处理应用（仅供个人娱乐，请勿在互联网传播，否则后果自负）</p>\r\n         <div class=\"footer-actions\">\r\n           <van-button\r\n             @click=\"showConfigModal = !showConfigModal\"\r\n             type=\"default\"\r\n"
                 }
             ],
             "date": 1752290191013,

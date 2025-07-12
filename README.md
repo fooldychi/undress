@@ -1,4 +1,4 @@
-# iComfy - AI图像处理平台
+# AI Magic - AI图像处理平台
 
 一个基于Vue3和Node.js的现代化AI图像处理平台，提供换脸、换装等多种AI图像处理服务。
 
@@ -164,4 +164,5 @@ docker run -p 3006:3006 icomfy
 
 ---
 
-**iComfy** - 让AI图像处理更简单 ✨
+**AI Magic** - 让AI图像处理更简单 ✨
+

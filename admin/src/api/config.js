@@ -30,3 +30,18 @@ export function testDatabase() {
     method: 'post'
   })
 }
+
+/**
+ * 测试ComfyUI连接
+ */
+export function testComfyUIConnection(serverUrl, timeout = 10000) {
+  return request({
+    url: '/admin/config/test',
+    method: 'post',
+    data: {
+      config_group: 'comfyui',
+      serverUrl,
+      timeout
+    }
+  })
+}

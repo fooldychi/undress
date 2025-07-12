@@ -3,6 +3,9 @@ import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 import comfyUIConfig from '../config/comfyui.config.js'
 import pointsManager from '../utils/pointsManager.js'
+import levelCardPointsManager from '../utils/levelCardPointsManager.js'
+import { updateAPIConfig } from './api.js'
+import loadBalancer from './loadBalancer.js'
 
 // API配置 - 直连模式
 const DEFAULT_CONFIG = {
@@ -104,6 +107,13 @@ function removeConfigChangeListener(listener) {
 
 // 通知配置变更
 function notifyConfigChange(config) {
+  // 同步更新API配置
+  try {
+    updateAPIConfig(config)
+  } catch (error) {
+    console.error('更新API配置失败:', error)
+  }
+
   configChangeListeners.forEach(listener => {
     try {
       listener(config)
@@ -111,6 +121,45 @@ function notifyConfigChange(config) {
       console.error('配置变更监听器执行失败:', error)
     }
   })
+}
+
+// 获取 ComfyUI 图片访问URL
+function getComfyUIImageUrl(imageData) {
+  try {
+    // 如果已经是 ComfyUI 的 URL 格式，直接返回
+    if (typeof imageData === 'string' && imageData.includes('/view?')) {
+      console.log('🔗 已是 ComfyUI URL 格式:', imageData)
+      return imageData
+    }
+
+    // 如果是 base64 数据，尝试从全局变量或缓存中获取对应的 ComfyUI URL
+    if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+      console.log('📸 检测到 base64 图片数据，尝试获取 ComfyUI URL...')
+
+      // 检查是否有存储的 ComfyUI URL（在生成过程中可能已经保存）
+      if (window.lastComfyUIImageUrl) {
+        console.log('🔗 使用缓存的 ComfyUI URL:', window.lastComfyUIImageUrl)
+        return window.lastComfyUIImageUrl
+      }
+
+      // 如果没有缓存的URL，返回一个占位符或者 null
+      console.warn('⚠️ 无法获取 ComfyUI URL，使用占位符')
+      return null
+    }
+
+    // 其他情况，尝试转换为字符串
+    const urlString = String(imageData)
+    if (urlString.includes('/view?')) {
+      return urlString
+    }
+
+    console.warn('⚠️ 无法识别的图片数据格式:', typeof imageData)
+    return null
+
+  } catch (error) {
+    console.error('❌ 获取 ComfyUI 图片URL失败:', error)
+    return null
+  }
 }
 
 // 更新配置
@@ -145,19 +194,33 @@ function getCurrentConfig(forceRefresh = false) {
   return getComfyUIConfig(forceRefresh)
 }
 
-// 获取API基础URL - 直连模式
-function getApiBaseUrl() {
-  const config = getComfyUIConfig(true)
-  console.log('🎯 直连ComfyUI服务器:', config.COMFYUI_SERVER_URL)
+// 获取API基础URL - 使用负载均衡
+async function getApiBaseUrl() {
+  try {
+    // 使用负载均衡器选择最优服务器
+    const optimalServer = await loadBalancer.getOptimalServer()
+    console.log('🎯 负载均衡选择的服务器:', optimalServer)
 
-  let baseUrl = config.COMFYUI_SERVER_URL
+    // 确保URL格式正确，移除末尾的斜杠
+    let baseUrl = optimalServer
+    if (baseUrl && baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1)
+    }
 
-  // 确保URL格式正确，移除末尾的斜杠
-  if (baseUrl && baseUrl.endsWith('/')) {
-    baseUrl = baseUrl.slice(0, -1)
+    return baseUrl
+  } catch (error) {
+    console.warn('⚠️ 负载均衡器失败，使用配置的服务器:', error)
+
+    // 降级到配置的服务器
+    const config = getComfyUIConfig(true)
+    let baseUrl = config.COMFYUI_SERVER_URL
+
+    if (baseUrl && baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1)
+    }
+
+    return baseUrl
   }
-
-  return baseUrl
 }
 
 // 重置为默认配置
@@ -175,7 +238,7 @@ function generateClientId() {
 async function uploadImageToComfyUI(base64Image) {
   try {
     const config = getComfyUIConfig()
-    const apiBaseUrl = getApiBaseUrl()
+    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
     console.log('🔄 第一步：上传图片到ComfyUI服务器')
     console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
 
@@ -276,12 +339,14 @@ function createUndressWorkflowPrompt(uploadedImageName) {
 
 // 第二步：提交工作流到ComfyUI
 async function submitWorkflow(workflowPrompt) {
+  let selectedServer = null
   try {
     const config = getComfyUIConfig()
-    const apiBaseUrl = getApiBaseUrl()
+    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
+    selectedServer = apiBaseUrl // 记录选择的服务器
     console.log('🔄 第二步：提交工作流到ComfyUI')
     console.log('📡 API地址:', `${apiBaseUrl}/prompt`)
-    console.log('🔧 使用代理:', config.USE_PROXY ? '是' : '否')
+    console.log('🔧 使用负载均衡:', '是')
 
     // 构建请求体，按照ComfyUI API文档格式
     const requestBody = {
@@ -330,6 +395,13 @@ async function submitWorkflow(workflowPrompt) {
 
   } catch (error) {
     console.error('❌ 工作流提交失败:', error)
+
+    // 记录服务器失败
+    if (selectedServer) {
+      console.log('📝 记录服务器失败:', selectedServer)
+      await loadBalancer.recordFailure(selectedServer)
+    }
+
     throw new Error(`工作流提交失败: ${error.message}`)
   }
 }
@@ -338,7 +410,7 @@ async function submitWorkflow(workflowPrompt) {
 async function checkTaskStatus(promptId) {
   try {
     const config = getComfyUIConfig()
-    const apiBaseUrl = getApiBaseUrl()
+    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
     console.log('🔍 查询任务状态:', `${apiBaseUrl}/history/${promptId}`)
     const response = await fetch(`${apiBaseUrl}/history/${promptId}`)
 
@@ -359,7 +431,7 @@ async function checkTaskStatus(promptId) {
 async function getGeneratedImage(taskResult) {
   try {
     const config = getComfyUIConfig()
-    const apiBaseUrl = getApiBaseUrl()
+    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
 
     // 从任务结果中找到输出图片
     const outputs = taskResult.outputs
@@ -415,6 +487,10 @@ async function getGeneratedImage(taskResult) {
 
     console.log('🌐 获取图片URL:', imageUrl)
 
+    // 保存 ComfyUI 原始URL到全局变量，供积分扣除时使用
+    window.lastComfyUIImageUrl = imageUrl
+    console.log('💾 保存 ComfyUI 图片URL 供积分记录使用:', imageUrl)
+
     // 获取图片数据并转换为base64
     const imageResponse = await fetch(imageUrl)
     if (!imageResponse.ok) {
@@ -463,11 +539,11 @@ async function processUndressImage(base64Image) {
   try {
     console.log('🚀 开始处理换衣请求...')
 
-    // 检查体验点
-    console.log('💎 检查体验点...')
-    if (!pointsManager.hasEnoughPoints()) {
-      const status = pointsManager.getPointsStatus()
-      throw new Error(`体验点不足！当前点数: ${status.current}，需要: ${status.generationCost}`)
+    // 检查积分（优先使用等级卡系统）
+    console.log('💎 检查积分...')
+    const pointsStatus = await levelCardPointsManager.getPointsStatus()
+    if (!pointsStatus.canGenerate) {
+      throw new Error(`积分不足！当前积分: ${pointsStatus.current}，需要: ${pointsStatus.generationCost}`)
     }
 
     console.log('📋 流程：第一步上传图片 → 第二步提交工作流')
@@ -502,10 +578,12 @@ async function processUndressImage(base64Image) {
     const resultImage = await getGeneratedImage(taskResult)
     console.log('🎉 换衣处理完全成功！')
 
-    // 消耗体验点
-    console.log('💎 消耗体验点...')
-    const pointsResult = pointsManager.consumePoints()
-    console.log(`✅ 已消耗 ${pointsResult.consumed} 体验点，剩余: ${pointsResult.remaining}`)
+    // 消耗积分（从等级卡扣除）
+    console.log('💎 消耗积分...')
+    // 获取 ComfyUI 图片访问URL而不是 base64 数据
+    const imageViewUrl = getComfyUIImageUrl(resultImage)
+    const pointsResult = await levelCardPointsManager.consumePoints(20, '一键换衣', imageViewUrl)
+    console.log(`✅ 已消耗 ${pointsResult.consumed} 积分，剩余: ${pointsResult.remaining}`)
 
     // 获取节点49的原图用于对比
     let originalImage = null
@@ -517,7 +595,7 @@ async function processUndressImage(base64Image) {
         subfolder: ''
       })
       const config = getComfyUIConfig()
-      const apiBaseUrl = getApiBaseUrl()
+      const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
       originalImage = `${apiBaseUrl}/view?${params.toString()}`
       console.log('📷 获取节点49原图URL:', originalImage)
     } catch (error) {
@@ -548,7 +626,7 @@ async function processUndressImage(base64Image) {
 // 检查ComfyUI服务器状态
 async function checkComfyUIServerStatus() {
   try {
-    const apiBaseUrl = getApiBaseUrl()
+    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
     console.log('🔍 检查ComfyUI服务器状态:', apiBaseUrl)
 
     const response = await fetch(`${apiBaseUrl}/system_stats`, {
@@ -575,11 +653,11 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
   try {
     console.log('🚀 开始换脸处理')
 
-    // 检查体验点
-    console.log('💎 检查体验点...')
-    if (!pointsManager.hasEnoughPoints()) {
-      const status = pointsManager.getPointsStatus()
-      throw new Error(`体验点不足！当前点数: ${status.current}，需要: ${status.generationCost}`)
+    // 检查积分（优先使用等级卡系统）
+    console.log('💎 检查积分...')
+    const pointsStatus = await levelCardPointsManager.getPointsStatus()
+    if (!pointsStatus.canGenerate) {
+      throw new Error(`积分不足！当前积分: ${pointsStatus.current}，需要: ${pointsStatus.generationCost}`)
     }
 
     if (onProgress) onProgress('正在检查服务器状态...', 5)
@@ -683,10 +761,12 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
     const imageUrl = await getGeneratedImage(taskResult)
     console.log('🖼️ 成功获取换脸结果图片URL')
 
-    // 消耗体验点
-    console.log('💎 消耗体验点...')
-    const pointsResult = pointsManager.consumePoints()
-    console.log(`✅ 已消耗 ${pointsResult.consumed} 体验点，剩余: ${pointsResult.remaining}`)
+    // 消耗积分（从等级卡扣除）
+    console.log('💎 消耗积分...')
+    // 获取 ComfyUI 图片访问URL而不是 base64 数据
+    const imageViewUrl = getComfyUIImageUrl(imageUrl)
+    const pointsResult = await levelCardPointsManager.consumePoints(20, '极速换脸', imageViewUrl)
+    console.log(`✅ 已消耗 ${pointsResult.consumed} 积分，剩余: ${pointsResult.remaining}`)
 
     if (onProgress) onProgress('换脸完成！', 100)
 

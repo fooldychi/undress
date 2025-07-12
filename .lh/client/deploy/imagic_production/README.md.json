@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/deploy/imagic_production/README.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752329612458,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752329612458,
+            "name": "Commit-0",
+            "content": "# AI Magic 生产环境部署\r\n\r\n## 📦 包含内容\r\n\r\n- `index.html` - 主页面文件\r\n- `assets/` - 静态资源文件（CSS、JS、图片等）\r\n- `proxy-server.js` - 代理服务器（可选）\r\n- `package.json` - Node.js依赖配置\r\n- `start.bat` - Windows启动脚本\r\n- `nginx.conf` - Nginx配置示例\r\n- `DEPLOYMENT.md` - 详细部署说明\r\n\r\n## 🚀 快速部署\r\n\r\n### 方式1: 静态网站托管（推荐）\r\n1. 将 `index.html` 和 `assets/` 文件夹上传到静态托管平台\r\n2. 支持的平台：Vercel、Netlify、GitHub Pages、阿里云OSS等\r\n\r\n### 方式2: 使用代理服务器\r\n1. 确保已安装 Node.js (>=14.0.0)\r\n2. 双击运行 `start.bat` 或执行以下命令：\r\n   ```bash\r\n   npm install --production\r\n   npm start\r\n   ```\r\n3. 访问 http://localhost:3008\r\n\r\n### 方式3: Nginx部署\r\n1. 将文件上传到服务器\r\n2. 参考 `nginx.conf` 配置Nginx\r\n3. 重启Nginx服务\r\n\r\n## ⚙️ 配置说明\r\n\r\n### ComfyUI服务器配置\r\n- 用户可在前端界面点击\"⚙️ 配置\"按钮设置ComfyUI服务器地址\r\n- 默认服务器：https://dzqgp58z0s-8188.cnb.run\r\n- 支持自定义服务器地址\r\n\r\n### 代理服务器（可选）\r\n- 端口：3008\r\n- 用途：解决CORS跨域问题\r\n- 启动：`npm start` 或 `node proxy-server.js`\r\n\r\n## 🔧 功能特性\r\n\r\n- ✅ AI换衣功能\r\n- ✅ 拖拽对比界面\r\n- ✅ 响应式设计\r\n- ✅ Toast提示\r\n- ✅ 配置管理\r\n- ✅ 移动端适配\r\n\r\n## 📞 技术支持\r\n\r\n如遇问题，请检查：\r\n1. 浏览器控制台错误信息\r\n2. ComfyUI服务器连接状态\r\n3. 网络连接是否正常\r\n\r\n详细部署说明请查看 `DEPLOYMENT.md` 文件。\r\n"
+        }
+    ]
+}

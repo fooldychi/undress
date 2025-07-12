@@ -80,6 +80,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { getCurrentConfig, updateComfyUIConfig, resetToDefaultConfig } from '../services/comfyui.js'
+import configService from '../services/configService.js'
 
 const props = defineProps({
   visible: {
@@ -121,9 +122,36 @@ watch(() => props.visible, (newVisible) => {
 })
 
 // 加载当前配置
-const loadCurrentConfig = () => {
-  const currentConfig = getCurrentConfig()
-  localConfig.value = { ...currentConfig }
+const loadCurrentConfig = async () => {
+  try {
+    // 首先尝试从服务端获取最新配置
+    const serverConfig = await configService.getConfig()
+
+    // 提取ComfyUI相关配置
+    const comfyuiServerConfig = {
+      COMFYUI_SERVER_URL: serverConfig['comfyui.server_url'] || '',
+      CLIENT_ID: serverConfig['comfyui.client_id'] || '',
+      TIMEOUT: serverConfig['comfyui.timeout'] || 300000
+    }
+
+    // 获取本地配置
+    const currentConfig = getCurrentConfig()
+
+    // 合并服务端配置和本地配置，优先使用服务端配置
+    localConfig.value = {
+      ...currentConfig,
+      ...Object.fromEntries(
+        Object.entries(comfyuiServerConfig).filter(([key, value]) => value != null && value !== '')
+      )
+    }
+
+    console.log('📋 配置加载完成:', localConfig.value)
+  } catch (error) {
+    console.warn('⚠️ 从服务端加载配置失败，使用本地配置:', error)
+    // 回退到本地配置
+    const currentConfig = getCurrentConfig()
+    localConfig.value = { ...currentConfig }
+  }
 }
 
 // 测试连接功能已删除

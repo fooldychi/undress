@@ -396,6 +396,73 @@ router.post('/init-level-cards', async (req, res, next) => {
 });
 
 
+// 获取等级卡类型列表（管理员用）
+router.get('/card-types', adminAuth, async (req, res, next) => {
+  try {
+    console.log('🔍 获取等级卡类型列表...');
+
+    // 首先检查表是否存在
+    try {
+      const cardTypes = await query(`
+        SELECT id, name, icon, points, price, description
+        FROM level_card_types
+        ORDER BY points ASC
+      `);
+
+      console.log('✅ 成功获取等级卡类型:', cardTypes.length, '个');
+      res.json({
+        success: true,
+        data: {
+          cardTypes
+        }
+      });
+    } catch (tableError) {
+      console.log('⚠️ 等级卡类型表不存在，尝试创建...');
+
+      // 创建表和初始数据
+      await query(`
+        CREATE TABLE IF NOT EXISTS level_card_types (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
+          icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
+          price DECIMAL(10,2) NOT NULL COMMENT '价格',
+          points INT NOT NULL COMMENT '积分数量',
+          description TEXT COMMENT '描述',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // 插入初始数据
+      await query(`
+        INSERT INTO level_card_types (name, icon, price, points, description) VALUES
+        ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
+        ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
+        ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
+        ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')
+      `);
+
+      // 重新获取数据
+      const cardTypes = await query(`
+        SELECT id, name, icon, points, price, description
+        FROM level_card_types
+        ORDER BY points ASC
+      `);
+
+      console.log('✅ 表创建成功，获取等级卡类型:', cardTypes.length, '个');
+      res.json({
+        success: true,
+        data: {
+          cardTypes
+        }
+      });
+    }
+  } catch (error) {
+    console.error('❌ 获取等级卡类型失败:', error);
+    next(error);
+  }
+});
+
 // 获取所有等级卡列表（管理员用）
 router.get('/cards', adminAuth, async (req, res, next) => {
   try {
@@ -432,7 +499,7 @@ router.get('/cards', adminAuth, async (req, res, next) => {
     const countQuery = `
       SELECT COUNT(*) as total
       FROM level_cards lc
-      LEFT JOIN card_types ct ON lc.type_id = ct.id
+      LEFT JOIN level_card_types ct ON lc.type_id = ct.id
       LEFT JOIN users u ON lc.bound_user_id = u.id
       ${whereClause}
     `;
@@ -446,7 +513,7 @@ router.get('/cards', adminAuth, async (req, res, next) => {
              ct.name as type_name, ct.icon, ct.points as total_points, ct.price,
              u.username as bound_username, u.id as bound_user_id
       FROM level_cards lc
-      LEFT JOIN card_types ct ON lc.type_id = ct.id
+      LEFT JOIN level_card_types ct ON lc.type_id = ct.id
       LEFT JOIN users u ON lc.bound_user_id = u.id
       ${whereClause}
       ORDER BY lc.created_at DESC
@@ -483,7 +550,7 @@ router.get('/cards/:id', adminAuth, async (req, res, next) => {
              ct.name as type_name, ct.icon, ct.points as total_points, ct.price,
              u.username as bound_username, u.id as bound_user_id, u.email as bound_user_email
       FROM level_cards lc
-      LEFT JOIN card_types ct ON lc.type_id = ct.id
+      LEFT JOIN level_card_types ct ON lc.type_id = ct.id
       LEFT JOIN users u ON lc.bound_user_id = u.id
       WHERE lc.id = ?
     `, [cardId]);
@@ -538,7 +605,7 @@ router.put('/cards/:id/status', adminAuth, async (req, res, next) => {
 
     await query(`
       UPDATE level_cards
-      SET status = ?, updated_at = NOW()
+      SET status = ?
       WHERE id = ?
     `, [status, cardId]);
 
@@ -559,7 +626,7 @@ router.put('/cards/:id/unbind', adminAuth, async (req, res, next) => {
 
     await query(`
       UPDATE level_cards
-      SET bound_user_id = NULL, bound_at = NULL, updated_at = NOW()
+      SET bound_user_id = NULL, bound_at = NULL
       WHERE id = ?
     `, [cardId]);
 
@@ -911,16 +978,51 @@ router.put('/users/batch-status', adminAuth, async (req, res, next) => {
 // 生成等级卡（管理员用）
 router.post('/generate-cards', adminAuth, async (req, res, next) => {
   try {
-    const { cardType = '基础卡', count = 5 } = req.body;
+    const { cardTypeId, count = 5 } = req.body;
 
-    console.log(`🎫 开始生成${count}张${cardType}...`);
+    if (!cardTypeId) {
+      return res.status(400).json({
+        success: false,
+        message: '请选择等级卡类型'
+      });
+    }
 
-    // 获取卡片类型信息 - 修复表名，遵循开发原则
+    if (!count || count <= 0 || count > 100) {
+      return res.status(400).json({
+        success: false,
+        message: '生成数量必须在1-100之间'
+      });
+    }
+
+    console.log(`🎫 开始生成${count}张等级卡，类型ID: ${cardTypeId}...`);
+
+    // 确保level_cards表存在
+    await query(`
+      CREATE TABLE IF NOT EXISTS level_cards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        card_number VARCHAR(20) UNIQUE NOT NULL COMMENT '卡号',
+        card_password VARCHAR(20) NOT NULL COMMENT '卡密',
+        type_id INT NOT NULL COMMENT '等级卡类型ID',
+        total_points INT NOT NULL COMMENT '总积分',
+        remaining_points INT NOT NULL COMMENT '剩余积分',
+        status ENUM('active', 'used', 'expired', 'disabled') DEFAULT 'active' COMMENT '状态',
+        bound_user_id INT NULL COMMENT '绑定的用户ID',
+        bound_at DATETIME NULL COMMENT '绑定时间',
+        expires_at DATETIME NULL COMMENT '过期时间',
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NULL,
+        INDEX idx_card_number (card_number),
+        INDEX idx_bound_user (bound_user_id),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // 获取卡片类型信息
     const cardTypeResult = await query(`
-      SELECT id, name, points, price
+      SELECT id, name, points, price, description
       FROM level_card_types
-      WHERE name = ?
-    `, [cardType]);
+      WHERE id = ?
+    `, [cardTypeId]);
 
     if (cardTypeResult.length === 0) {
       return res.status(400).json({
@@ -934,7 +1036,7 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
 
     // 批量生成等级卡
     for (let i = 1; i <= count; i++) {
-      const cardNumber = generateCardNumber(cardType, i);
+      const cardNumber = generateCardNumber(typeInfo.name, i);
       const cardPassword = generateCardPassword();
 
       await query(`
@@ -946,15 +1048,16 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
         cardNumber,
         cardPassword,
         typeName: typeInfo.name,
-        points: typeInfo.points
+        points: typeInfo.points,
+        price: typeInfo.price
       });
     }
 
-    console.log(`✅ 成功生成${count}张${cardType}`);
+    console.log(`✅ 成功生成${count}张${typeInfo.name}`);
 
     res.json({
       success: true,
-      message: `成功生成${count}张${cardType}`,
+      message: `成功生成${count}张${typeInfo.name}`,
       data: {
         cards: generatedCards,
         cardType: typeInfo.name,
@@ -1039,7 +1142,7 @@ router.get('/experience-cards-stats', adminAuth, async (req, res, next) => {
         SUM(CASE WHEN bound_user_id IS NULL THEN remaining_points ELSE 0 END) as available_points,
         SUM(CASE WHEN bound_user_id IS NOT NULL THEN remaining_points ELSE 0 END) as bound_points
       FROM level_cards lc
-      JOIN card_types ct ON lc.type_id = ct.id
+      JOIN level_card_types ct ON lc.type_id = ct.id
       WHERE ct.name = '体验卡'
     `);
 

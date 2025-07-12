@@ -28,7 +28,7 @@ router.get('/', adminAuth, async (req, res) => {
   try {
     const configs = await query(`
       SELECT config_key, config_value, config_type, config_group, description, is_encrypted
-      FROM system_config 
+      FROM system_config
       ORDER BY config_group, config_key
     `);
 
@@ -122,15 +122,15 @@ router.put('/', async (req, res) => {
       const { config_key, config_value, is_encrypted } = config;
 
       let valueToStore = config_value;
-      
+
       // 如果需要加密
       if (is_encrypted && config_value) {
         valueToStore = encrypt(config_value);
       }
 
       const result = await query(`
-        UPDATE system_config 
-        SET config_value = ?, updated_at = CURRENT_TIMESTAMP 
+        UPDATE system_config
+        SET config_value = ?, updated_at = CURRENT_TIMESTAMP
         WHERE config_key = ?
       `, [valueToStore, config_key]);
 
@@ -185,13 +185,13 @@ router.post('/reset', async (req, res) => {
 // 测试配置连接
 router.post('/test', async (req, res) => {
   try {
-    const { config_group, configs } = req.body;
+    const { config_group, configs, serverUrl, timeout = 10000 } = req.body;
 
     if (config_group === 'database') {
       // 测试数据库连接
       const mysql = require('mysql2/promise');
       const dbConfig = {};
-      
+
       configs.forEach(config => {
         const key = config.config_key.replace('database.', '');
         dbConfig[key] = config.config_value;
@@ -205,7 +205,7 @@ router.post('/test', async (req, res) => {
           password: dbConfig.password,
           database: dbConfig.name
         });
-        
+
         await connection.ping();
         await connection.end();
 
@@ -218,6 +218,87 @@ router.post('/test', async (req, res) => {
           success: false,
           message: `数据库连接测试失败: ${error.message}`
         });
+      }
+    } else if (config_group === 'comfyui' || serverUrl) {
+      // 测试ComfyUI连接
+      const testUrl = serverUrl || configs?.find(c => c.config_key === 'comfyui.server_url')?.config_value;
+
+      if (!testUrl) {
+        return res.json({
+          success: false,
+          message: '请提供ComfyUI服务器地址'
+        });
+      }
+
+      console.log(`🔍 测试ComfyUI连接: ${testUrl}`);
+
+      // 构建健康检查URL
+      const healthCheckUrl = `${testUrl.replace(/\/$/, '')}/system_stats`;
+
+      // 使用fetch进行连接测试
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      try {
+        const response = await fetch(healthCheckUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Imagic-Admin/1.0'
+          },
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ ComfyUI连接测试成功');
+
+          res.json({
+            success: true,
+            message: 'ComfyUI服务器连接正常',
+            data: {
+              status: 'connected',
+              responseTime: Date.now(),
+              serverInfo: data
+            }
+          });
+        } else {
+          console.log(`❌ ComfyUI连接测试失败: HTTP ${response.status}`);
+
+          res.json({
+            success: false,
+            message: `服务器响应错误: HTTP ${response.status}`,
+            data: {
+              status: 'error',
+              statusCode: response.status
+            }
+          });
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+
+        if (fetchError.name === 'AbortError') {
+          console.log('❌ ComfyUI连接测试超时');
+          res.json({
+            success: false,
+            message: `连接超时 (${timeout}ms)`,
+            data: {
+              status: 'timeout'
+            }
+          });
+        } else {
+          console.log('❌ ComfyUI连接测试失败:', fetchError.message);
+          res.json({
+            success: false,
+            message: `连接失败: ${fetchError.message}`,
+            data: {
+              status: 'error',
+              error: fetchError.message
+            }
+          });
+        }
       }
     } else {
       res.json({

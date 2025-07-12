@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752284292222,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752319383518,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n       port: 3001,\r\n       open: true,\r\n       proxy: {\r\n         '/api': {\r\n-          target: 'http://localhost:3006',\r\n+          target: 'http://localhost:3007',\r\n           changeOrigin: true,\r\n           secure: false,\r\n           configure: (proxy, options) => {\r\n             proxy.on('error', (err, req, res) => {\r\n"
                 }
             ],
             "date": 1752284292222,

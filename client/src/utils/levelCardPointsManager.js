@@ -99,16 +99,23 @@ class LevelCardPointsManager {
   }
 
   // 消耗积分
-  async consumePoints(amount, description = '生成图片') {
+  async consumePoints(amount, description = '生成图片', mediaUrl = null) {
     if (!this.isLoggedIn()) {
       throw new Error('请先登录')
     }
 
     try {
+      console.log(`💰 开始消耗积分: ${amount}点, 描述: ${description}`)
+      if (mediaUrl) {
+        console.log(`🎬 关联媒体URL: ${mediaUrl}`)
+      }
+
       // 调用后端API消耗积分
-      const response = await pointsApi.consumePoints(amount, description)
+      const response = await pointsApi.consumePoints(amount, description, mediaUrl)
 
       if (response.success) {
+        console.log(`✅ 积分消耗成功: 消耗${amount}点, 剩余${response.data.remaining_points}点`)
+
         // 清除缓存，强制下次获取最新数据
         this.pointsInfo = null
         this.lastUpdateTime = 0

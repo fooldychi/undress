@@ -1,0 +1,30 @@
+{
+    "sourceFile": "admin/src/views/UserDetail.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1752320976309,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752320995510,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,15 +9,41 @@\n     </div>\n \n     <el-card v-loading=\"loading\">\n       <div v-if=\"userInfo\">\n-        <h2>{{ userInfo.username }}</h2>\n-        <p>邮箱: {{ userInfo.email }}</p>\n-        <p>积分: {{ userInfo.points }}</p>\n-        <p>状态: {{ userInfo.status === 'active' ? '正常' : '禁用' }}</p>\n-        <p>注册时间: {{ formatDate(userInfo.created_at) }}</p>\n+        <div class=\"user-basic-info\">\n+          <h2>{{ userInfo.username }}</h2>\n+          <div class=\"info-grid\">\n+            <div class=\"info-item\">\n+              <label>用户ID:</label>\n+              <span>{{ userInfo.id }}</span>\n+            </div>\n+            <div class=\"info-item\">\n+              <label>邮箱:</label>\n+              <span>{{ userInfo.email }}</span>\n+            </div>\n+            <div class=\"info-item\">\n+              <label>状态:</label>\n+              <el-tag :type=\"getStatusType(userInfo.status)\">\n+                {{ getStatusText(userInfo.status) }}\n+              </el-tag>\n+            </div>\n+            <div class=\"info-item\">\n+              <label>注册时间:</label>\n+              <span>{{ formatDate(userInfo.created_at) }}</span>\n+            </div>\n+            <div class=\"info-item\" v-if=\"userInfo.updated_at\">\n+              <label>更新时间:</label>\n+              <span>{{ formatDate(userInfo.updated_at) }}</span>\n+            </div>\n+            <div class=\"info-item\" v-if=\"userInfo.last_login\">\n+              <label>最后登录:</label>\n+              <span>{{ formatDate(userInfo.last_login) }}</span>\n+            </div>\n+          </div>\n+        </div>\n       </div>\n-      <el-empty v-else description=\"用户不存在\" />\n+      <el-empty v-else-if=\"!loading\" description=\"用户不存在\" />\n     </el-card>\n   </div>\n </template>\n \n"
+                },
+                {
+                    "date": 1752321010606,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -62,8 +62,26 @@\n   if (!date) return ''\n   return new Date(date).toLocaleString()\n }\n \n+const getStatusType = (status) => {\n+  switch (status) {\n+    case 'active': return 'success'\n+    case 'banned': return 'danger'\n+    case 'inactive': return 'warning'\n+    default: return 'info'\n+  }\n+}\n+\n+const getStatusText = (status) => {\n+  switch (status) {\n+    case 'active': return '正常'\n+    case 'banned': return '已封禁'\n+    case 'inactive': return '未激活'\n+    default: return '未知'\n+  }\n+}\n+\n const goBack = () => {\n   router.push('/users')\n }\n \n"
+                },
+                {
+                    "date": 1752321025924,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -117,8 +117,37 @@\n .page-header {\n   margin-bottom: 20px;\n }\n \n+.user-basic-info h2 {\n+  margin-bottom: 20px;\n+  color: #303133;\n+}\n+\n+.info-grid {\n+  display: grid;\n+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));\n+  gap: 16px;\n+}\n+\n+.info-item {\n+  display: flex;\n+  align-items: center;\n+  padding: 12px 0;\n+  border-bottom: 1px solid #f0f0f0;\n+}\n+\n+.info-item label {\n+  font-weight: 500;\n+  color: #606266;\n+  min-width: 100px;\n+  margin-right: 12px;\n+}\n+\n+.info-item span {\n+  color: #303133;\n+}\n+\n .page-title {\n   font-size: 24px;\n   font-weight: 600;\n   color: #303133;\n"
+                }
+            ],
+            "date": 1752320976309,
+            "name": "Commit-0",
+            "content": "<template>\n  <div class=\"user-detail\">\n    <div class=\"page-header\">\n      <el-button @click=\"goBack\" type=\"text\">\n        <el-icon><ArrowLeft /></el-icon>\n        返回用户列表\n      </el-button>\n      <h1 class=\"page-title\">用户详情</h1>\n    </div>\n\n    <el-card v-loading=\"loading\">\n      <div v-if=\"userInfo\">\n        <h2>{{ userInfo.username }}</h2>\n        <p>邮箱: {{ userInfo.email }}</p>\n        <p>积分: {{ userInfo.points }}</p>\n        <p>状态: {{ userInfo.status === 'active' ? '正常' : '禁用' }}</p>\n        <p>注册时间: {{ formatDate(userInfo.created_at) }}</p>\n      </div>\n      <el-empty v-else description=\"用户不存在\" />\n    </el-card>\n  </div>\n</template>\n\n<script setup>\nimport { ref, onMounted } from 'vue'\nimport { useRoute, useRouter } from 'vue-router'\nimport { ElMessage } from 'element-plus'\nimport { getUserDetail } from '@/api/users'\n\nconst route = useRoute()\nconst router = useRouter()\nconst loading = ref(false)\nconst userInfo = ref(null)\n\nconst formatDate = (date) => {\n  if (!date) return ''\n  return new Date(date).toLocaleString()\n}\n\nconst goBack = () => {\n  router.push('/users')\n}\n\n// 加载用户详情\nconst loadUserDetail = async () => {\n  loading.value = true\n  try {\n    const response = await getUserDetail(route.params.id)\n    if (response.success) {\n      userInfo.value = response.data.user\n    } else {\n      ElMessage.error('获取用户详情失败')\n    }\n  } catch (error) {\n    console.error('获取用户详情失败:', error)\n    ElMessage.error('获取用户详情失败')\n  } finally {\n    loading.value = false\n  }\n}\n\nonMounted(() => {\n  loadUserDetail()\n})\n</script>\n\n<style scoped>\n.user-detail {\n  max-width: 800px;\n  margin: 0 auto;\n}\n\n.page-header {\n  margin-bottom: 20px;\n}\n\n.page-title {\n  font-size: 24px;\n  font-weight: 600;\n  color: #303133;\n  margin: 16px 0 0 0;\n}\n</style>\n"
+        }
+    ]
+}

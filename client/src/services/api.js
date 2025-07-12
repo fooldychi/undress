@@ -1,12 +1,12 @@
 // 导入ComfyUI工作流服务
 import { processUndressImage } from './comfyui.js'
 
-// ComfyUI API服务配置
+// ComfyUI API服务配置 - 将使用动态配置
 const API_CONFIG = {
-  // ComfyUI服务器URL
-  BASE_URL: 'https://dzqgp58z0s-8188.cnb.run',
+  // ComfyUI服务器URL - 将从配置服务获取
+  BASE_URL: 'https://dzqgp58z0s-8188.cnb.run', // 默认值，将被配置服务覆盖
   // 客户端ID，用于标识请求来源
-  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b',
+  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b', // 默认值，将被配置服务覆盖
   // 请求超时时间（毫秒）
   TIMEOUT: 300000 // 5分钟
 }
@@ -243,10 +243,28 @@ async function makeBackendRequest(endpoint, options = {}) {
 
     clearTimeout(timeoutId)
 
-    const data = await response.json()
+    // 检查响应是否有内容
+    const contentType = response.headers.get('content-type')
+    let data = null
+
+    if (contentType && contentType.includes('application/json')) {
+      const text = await response.text()
+      if (text) {
+        try {
+          data = JSON.parse(text)
+        } catch (parseError) {
+          throw new Error(`JSON解析失败: ${parseError.message}`)
+        }
+      } else {
+        throw new Error('服务器返回空响应')
+      }
+    } else {
+      const text = await response.text()
+      throw new Error(`服务器返回非JSON响应: ${text}`)
+    }
 
     if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`)
+      throw new Error(data?.message || `HTTP error! status: ${response.status}`)
     }
 
     return data
@@ -492,6 +510,22 @@ export const userApi = {
       console.error('更新用户信息失败:', error)
       throw error
     }
+  }
+}
+
+// 更新API配置的函数
+export function updateAPIConfig(newConfig) {
+  if (newConfig.COMFYUI_SERVER_URL) {
+    API_CONFIG.BASE_URL = newConfig.COMFYUI_SERVER_URL
+    console.log('🔄 API_CONFIG.BASE_URL 已更新为:', API_CONFIG.BASE_URL)
+  }
+  if (newConfig.CLIENT_ID) {
+    API_CONFIG.CLIENT_ID = newConfig.CLIENT_ID
+    console.log('🔄 API_CONFIG.CLIENT_ID 已更新为:', API_CONFIG.CLIENT_ID)
+  }
+  if (newConfig.TIMEOUT) {
+    API_CONFIG.TIMEOUT = newConfig.TIMEOUT
+    console.log('🔄 API_CONFIG.TIMEOUT 已更新为:', API_CONFIG.TIMEOUT)
   }
 }
 

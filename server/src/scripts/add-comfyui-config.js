@@ -17,7 +17,7 @@ async function addComfyUIConfig() {
       
       // 前端配置
       ['frontend.api_base_url', 'https://your-api-server.com/api', 'string', 'frontend', '前端API基础地址'],
-      ['frontend.title', 'Imagic - AI图像处理平台', 'string', 'frontend', '应用标题'],
+      ['frontend.title', 'AI Magic - AI图像处理平台', 'string', 'frontend', '应用标题'],
       ['frontend.version', '1.0.0', 'string', 'frontend', '应用版本']
     ];
 
@@ -58,3 +58,4 @@ if (require.main === module) {
 }
 
 module.exports = { addComfyUIConfig };
+

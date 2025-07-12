@@ -23,11 +23,17 @@ export function getUserDetail(id) {
 
 /**
  * 更新用户状态
+ * @param {number} id 用户ID
+ * @param {string} status 新状态 ('active'|'banned')
  */
 export function updateUserStatus(id, status) {
+  const endpoint = status === 'banned' ? 
+    `/admin/users/${id}/ban` : 
+    `/admin/users/${id}/unban`;
+  
   return request({
-    url: `/admin/users/${id}/status`,
-    method: 'put',
-    data: { status }
+    url: endpoint,
+    method: 'post'
   })
 }
+

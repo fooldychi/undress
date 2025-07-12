@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/docs/PROJECT_OVERVIEW.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752329602047,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752329602047,
+            "name": "Commit-0",
+            "content": "# 项目概览\n\n## 项目简介\n\nAI Magic 是一个基于Vue 3的现代化前端应用，为用户提供AI图像处理服务，包括一键褪衣、文生图、极速换脸等功能。\n\n## 核心功能\n\n### 1. 用户系统\n- **用户认证**: 注册、登录、登出\n- **个人中心**: 用户信息管理、积分查看、操作记录\n- **状态同步**: 实时的登录状态同步机制\n\n### 2. 积分系统\n- **积分管理**: 积分查询、消费记录、充值记录\n- **等级卡系统**: 等级卡绑定、积分充值、卡片管理\n- **消费控制**: 基于积分的功能访问控制\n\n### 3. AI图像处理\n- **一键褪衣**: 智能服装移除功能\n- **文生图**: 基于文本描述生成图像\n- **极速换脸**: 人脸替换技术\n\n## 技术架构\n\n### 前端技术栈\n```\nVue 3 (Composition API)\n├── Vue Router 4          # 路由管理\n├── Vant 4               # UI组件库\n├── Vite                 # 构建工具\n└── CSS Variables        # 样式系统\n```\n\n### 核心组件\n- **TopNavigation**: 顶部导航栏，包含积分显示和用户状态\n- **AuthModal**: 统一的登录注册弹窗\n- **RecordItem**: 积分记录项组件\n- **ResultModal**: 结果查看弹窗\n\n### 页面结构\n- **HomePage**: 主页，功能入口\n- **Profile**: 个人中心，用户信息管理\n- **ClothesSwap**: 一键褪衣功能页面\n- **TextToImage**: 文生图功能页面\n- **FaceSwap**: 极速换脸功能页面\n\n## 设计系统\n\n### CSS变量系统\n```css\n:root {\n  --primary-color: #6366f1;    # 主色调\n  --bg-primary: #0f0f23;       # 主背景\n  --bg-card: #16213e;          # 卡片背景\n  --text-color: #e2e8f0;       # 主文字颜色\n  --border-color: #334155;     # 边框颜色\n}\n```\n\n### 图标规范\n- **积分相关**: `diamond-o`\n- **等级卡相关**: `credit-pay`\n- **用户相关**: `user-o`\n- **记录相关**: `records`\n\n## API接口\n\n### 认证相关\n- `POST /api/auth/register` - 用户注册\n- `POST /api/auth/login` - 用户登录\n- `POST /api/auth/logout` - 用户登出\n\n### 用户相关\n- `GET /api/user/info` - 获取用户信息\n- `PUT /api/user/info` - 更新用户信息\n\n### 积分相关\n- `GET /api/points/status` - 获取积分状态\n- `GET /api/points/records` - 获取积分记录\n\n### 等级卡相关\n- `GET /api/level-cards/my` - 获取我的等级卡\n- `POST /api/level-cards/bind` - 绑定等级卡\n\n### 图像处理相关\n- `POST /api/image/clothes-swap` - 一键褪衣\n- `POST /api/image/text-to-image` - 文生图\n- `POST /api/image/face-swap` - 极速换脸\n\n## 开发规范\n\n### 组件开发\n1. 使用Vue 3 Composition API\n2. 遵循单一职责原则\n3. 确保组件可复用性\n4. 实现响应式设计\n\n### 样式规范\n1. 使用CSS变量确保一致性\n2. 遵循BEM命名规范\n3. 优先使用flex和grid布局\n4. 确保移动端适配\n\n### 代码质量\n1. 使用TypeScript类型检查\n2. 遵循ESLint规则\n3. 编写有意义的注释\n4. 进行单元测试\n\n## 部署流程\n\n### 开发环境\n```bash\nnpm install\nnpm run dev\n```\n\n### 生产环境\n```bash\nnpm run build\n# 部署dist目录到Web服务器\n```\n\n## 项目结构\n\n```\nclient/\n├── src/\n│   ├── components/      # 可复用组件\n│   ├── views/          # 页面组件\n│   ├── services/       # API服务\n│   ├── router/         # 路由配置\n│   ├── styles/         # 全局样式\n│   └── utils/          # 工具函数\n├── public/             # 静态资源\n├── docs/               # 项目文档\n└── package.json        # 项目配置\n```\n\n## 关键特性\n\n### 1. 状态管理\n- 使用Vue 3 Composition API进行状态管理\n- 实现跨组件的状态同步\n- 登录状态的实时更新机制\n\n### 2. 用户体验\n- 统一的设计语言\n- 流畅的页面切换\n- 友好的错误处理\n- 完善的加载状态\n\n### 3. 性能优化\n- 组件懒加载\n- 图片优化\n- 代码分割\n- 缓存策略\n\n### 4. 安全性\n- JWT Token认证\n- 前端路由守卫\n- API请求拦截\n- 用户输入验证\n\n## 维护指南\n\n### 代码维护\n1. 定期更新依赖包\n2. 监控性能指标\n3. 修复安全漏洞\n4. 优化用户体验\n\n### 文档维护\n1. 更新API文档\n2. 维护开发规范\n3. 记录重要变更\n4. 提供使用指南\n\n---\n\n本文档提供了项目的整体概览，详细的开发规范请参考 [前端开发原则](./FRONTEND_DEVELOPMENT_PRINCIPLES.md)。\n\n"
+        }
+    ]
+}

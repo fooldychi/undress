@@ -1,0 +1,18 @@
+{
+    "sourceFile": "admin/src/api/points.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752316984204,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752316984204,
+            "name": "Commit-0",
+            "content": "import request from '@/utils/request'\n\n/**\n * 获取积分记录列表\n */\nexport function getPointsList(params) {\n  return request({\n    url: '/admin/points-logs',\n    method: 'get',\n    params\n  })\n}\n\n/**\n * 查看积分记录结果\n */\nexport function viewPointsResult(url) {\n  // 直接返回URL，让前端处理打开\n  return Promise.resolve({ success: true, data: { url } })\n}\n"
+        }
+    ]
+}

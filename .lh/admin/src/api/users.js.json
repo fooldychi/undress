@@ -1,0 +1,18 @@
+{
+    "sourceFile": "admin/src/api/users.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752320402575,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752320402575,
+            "name": "Commit-0",
+            "content": "import request from '@/utils/request'\n\n/**\n * 获取用户列表\n */\nexport function getUserList(params) {\n  return request({\n    url: '/admin/users',\n    method: 'get',\n    params\n  })\n}\n\n/**\n * 获取用户详情\n */\nexport function getUserDetail(id) {\n  return request({\n    url: `/admin/users/${id}`,\n    method: 'get'\n  })\n}\n\n/**\n * 更新用户状态\n * @param {number} id 用户ID\n * @param {string} status 新状态 ('active'|'banned')\n */\nexport function updateUserStatus(id, status) {\n  const endpoint = status === 'banned' ? \n    `/admin/users/${id}/ban` : \n    `/admin/users/${id}/unban`;\n  \n  return request({\n    url: endpoint,\n    method: 'post'\n  })\n}\n\n"
+        }
+    ]
+}

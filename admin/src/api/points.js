@@ -10,3 +10,11 @@ export function getPointsList(params) {
     params
   })
 }
+
+/**
+ * 查看积分记录结果
+ */
+export function viewPointsResult(url) {
+  // 直接返回URL，让前端处理打开
+  return Promise.resolve({ success: true, data: { url } })
+}

@@ -1,6 +1,6 @@
-# iComfy 后台管理系统
+# AI Magic 后台管理系统
 
-基于 Vue 3 + Element Plus 的现代化后台管理系统，用于管理 iComfy AI图像处理平台。
+基于 Vue 3 + Element Plus 的现代化后台管理系统，用于管理 AI Magic AI图像处理平台。
 
 ## 🚀 功能特色
 
@@ -199,4 +199,5 @@ MIT License
 
 ---
 
-**iComfy Admin** - 让后台管理更简单 ✨
+**AI Magic Admin** - 让后台管理更简单 ✨
+

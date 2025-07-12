@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752288021271,
@@ -16,6 +16,10 @@
                 {
                     "date": 1752288528460,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -80,17 +80,18 @@\n   }\n \n   // 获取默认状态\n   getDefaultStatus() {\n+    const loggedIn = this.isLoggedIn()\n     return {\n       current: 0,\n       total_points: 0,\n       purchased_points: 0,\n       cards_count: 0,\n       cards_breakdown: [],\n       canGenerate: false,\n       generationCost: 20,\n-      isLoggedIn: this.isLoggedIn(),\n+      isLoggedIn: loggedIn,\n       dailyRemaining: 0,\n       dailyFreePoints: 0,\n       totalUsedToday: 0,\n       experienceCardPoints: 0\n"
+                },
+                {
+                    "date": 1752334538178,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,18 +98,25 @@\n     }\n   }\n \n   // 消耗积分\n-  async consumePoints(amount, description = '生成图片') {\n+  async consumePoints(amount, description = '生成图片', mediaUrl = null) {\n     if (!this.isLoggedIn()) {\n       throw new Error('请先登录')\n     }\n \n     try {\n+      console.log(`💰 开始消耗积分: ${amount}点, 描述: ${description}`)\n+      if (mediaUrl) {\n+        console.log(`🎬 关联媒体URL: ${mediaUrl}`)\n+      }\n+\n       // 调用后端API消耗积分\n-      const response = await pointsApi.consumePoints(amount, description)\n+      const response = await pointsApi.consumePoints(amount, description, mediaUrl)\n \n       if (response.success) {\n+        console.log(`✅ 积分消耗成功: 消耗${amount}点, 剩余${response.data.remaining_points}点`)\n+\n         // 清除缓存，强制下次获取最新数据\n         this.pointsInfo = null\n         this.lastUpdateTime = 0\n \n"
                 }
             ],
             "date": 1752288021271,

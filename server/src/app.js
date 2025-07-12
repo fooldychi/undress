@@ -16,6 +16,7 @@ const imageRoutes = require('./routes/images');
 const seckillRoutes = require('./routes/seckill');
 const levelCardsRoutes = require('./routes/levelCards');
 const adminAuthRoutes = require('./routes/adminAuth');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,11 +33,13 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://localhost:3002',  // 后台管理系统端口
       'http://localhost:3007',  // Vue 管理后台端口
       'http://localhost:5173',  // Vite 默认端口
       'http://localhost:5174',  // Vite 备用端口
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
+      'http://127.0.0.1:3002',  // 后台管理系统端口
       'http://127.0.0.1:3007',  // Vue 管理后台端口
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174'
@@ -99,7 +102,7 @@ app.use('/api/level-cards', require('./routes/levelCards'));
 app.use('/api/admin-auth', adminAuthRoutes);
 // 注意：更具体的路由要放在前面
 app.use('/api/admin/config', require('./routes/config'));
-app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin', adminRoutes);
 app.use('/api/config', require('./routes/public-config'));
 
 // 404处理

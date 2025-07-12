@@ -2,6 +2,17 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
+// 引入配置服务和负载均衡器
+import configService from './services/configService.js'
+import loadBalancer from './services/loadBalancer.js'
+
+// 开发环境下引入配置测试工具和修复工具
+if (import.meta.env.DEV) {
+  import('./utils/testConfig.js')
+  import('./utils/fixLoadBalancer.js')
+  import('./utils/testPointsConsumption.js')
+}
+
 // 引入Vant UI
 import Vant, { Toast } from 'vant'
 import 'vant/lib/index.css'
@@ -31,8 +42,24 @@ window.addEventListener('unhandledrejection', (event) => {
 })
 
 // 确保DOM加载完成
-function initApp() {
+async function initApp() {
   try {
+    console.log('🚀 初始化配置服务...')
+    // 初始化配置服务
+    try {
+      await configService.initialize()
+    } catch (error) {
+      console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)
+    }
+
+    console.log('🚀 初始化负载均衡器...')
+    // 初始化负载均衡器
+    try {
+      await loadBalancer.initialize()
+    } catch (error) {
+      console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)
+    }
+
     console.log('📦 创建Vue应用实例...')
     const app = createApp(App)
 

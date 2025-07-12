@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752283813378,
@@ -12,6 +12,14 @@
                 {
                     "date": 1752283825864,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -41,8 +41,16 @@\n     meta: {\r\n       title: '极速换脸 - Imagic'\r\n     }\r\n   },\r\n+  {\r\n+    path: '/profile',\r\n+    name: 'Profile',\r\n+    component: Profile,\r\n+    meta: {\r\n+      title: '个人中心 - Imagic'\r\n+    }\r\n+  },\r\n \r\n ]\r\n \r\n const router = createRouter({\r\n"
+                },
+                {
+                    "date": 1752333640475,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,8 +5,9 @@\n const ClothesSwap = () => import('../views/ClothesSwap.vue')\r\n const TextToImage = () => import('../views/TextToImage.vue')\r\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n+const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n \r\n \r\n \r\n const routes = [\r\n"
+                },
+                {
+                    "date": 1752333670905,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,8 +50,16 @@\n     meta: {\r\n       title: '个人中心 - Imagic'\r\n     }\r\n   },\r\n+  {\r\n+    path: '/load-balancer-test',\r\n+    name: 'LoadBalancerTest',\r\n+    component: LoadBalancerTest,\r\n+    meta: {\r\n+      title: '负载均衡器测试 - AI Magic'\r\n+    }\r\n+  },\r\n \r\n ]\r\n \r\n const router = createRouter({\r\n"
                 }
             ],
             "date": 1752283813378,

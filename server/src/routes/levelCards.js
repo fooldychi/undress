@@ -9,7 +9,7 @@ router.get('/types', async (req, res, next) => {
   try {
     const cardTypes = await query(`
       SELECT id, name, icon, points, price
-      FROM card_types
+      FROM level_card_types
       ORDER BY points ASC
     `);
 
@@ -43,7 +43,7 @@ router.post('/bind', authenticateToken, async (req, res, next) => {
     const cardResult = await query(`
       SELECT lc.*, ct.name as type_name, ct.icon, ct.points as total_points
       FROM level_cards lc
-      JOIN card_types ct ON lc.type_id = ct.id
+      JOIN level_card_types ct ON lc.type_id = ct.id
       WHERE lc.card_number = ? AND lc.card_password = ?
     `, [cardNumber, cardPassword]);
 
@@ -135,7 +135,7 @@ router.get('/my-cards', authenticateToken, async (req, res, next) => {
       SELECT lc.id, lc.card_number, lc.remaining_points, lc.bound_at,
              ct.name as type_name, ct.icon, ct.points as total_points, ct.price
       FROM level_cards lc
-      JOIN card_types ct ON lc.type_id = ct.id
+      JOIN level_card_types ct ON lc.type_id = ct.id
       WHERE lc.bound_user_id = ?
         AND (
           ct.name != '体验卡' OR

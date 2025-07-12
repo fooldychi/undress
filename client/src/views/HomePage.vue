@@ -61,7 +61,7 @@
       </main>
 
       <footer class="footer">
-        <p>&copy; 2024 Imagic. 基于ComfyUI工作流的AI图像处理平台</p>
+        <p>&copy; 2024 AI Magic. AI图像处理应用（仅供个人娱乐，请勿在互联网传播，否则后果自负）</p>
         <div class="footer-actions">
           <van-button
             @click="showConfigModal = !showConfigModal"
@@ -72,8 +72,39 @@
           >
             ⚙️ 配置
           </van-button>
+          <van-button
+            @click="refreshConfig"
+            type="default"
+            size="small"
+            plain
+            round
+            :loading="configLoading"
+          >
+            🔄 刷新配置
+          </van-button>
+          <van-button
+            @click="showLoadBalancerStatus = !showLoadBalancerStatus"
+            type="default"
+            size="small"
+            plain
+            round
+          >
+            📊 服务器状态
+          </van-button>
+          <van-button
+            @click="$router.push('/load-balancer-test')"
+            type="default"
+            size="small"
+            plain
+            round
+          >
+            🧪 负载均衡测试
+          </van-button>
         </div>
       </footer>
+
+      <!-- 负载均衡器状态 -->
+      <LoadBalancerStatus v-if="showLoadBalancerStatus" />
 
       <!-- 配置模态框 -->
       <ConfigModal
@@ -86,14 +117,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Palette, ChevronRight } from 'lucide-vue-next'
 import { Toast } from 'vant'
 import ConfigModal from '../components/ConfigModal.vue'
+import LoadBalancerStatus from '../components/LoadBalancerStatus.vue'
 import TopNavigation from '../components/TopNavigation.vue'
 import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'
 import { authApi } from '../services/api.js'
+import configService from '../services/configService.js'
 
 const router = useRouter()
 
@@ -102,6 +135,12 @@ const showConfigModal = ref(false)
 
 // TopNavigation组件引用
 const topNavigationRef = ref(null)
+
+// 配置加载状态
+const configLoading = ref(false)
+
+// 负载均衡器状态显示
+const showLoadBalancerStatus = ref(false)
 
 // 检查登录状态并导航
 const navigateTo = (path) => {
@@ -134,12 +173,43 @@ const navigateTo = (path) => {
   }
 }
 
+// 刷新配置
+const refreshConfig = async () => {
+  configLoading.value = true
+  try {
+    console.log('🔄 手动刷新配置...')
+
+    // 清除配置缓存并重新获取
+    configService.clearCache()
+    await configService.syncComfyUIConfig()
+
+    Toast.success('配置刷新成功')
+    console.log('✅ 配置刷新完成')
+  } catch (error) {
+    console.error('❌ 配置刷新失败:', error)
+    Toast.fail('配置刷新失败: ' + error.message)
+  } finally {
+    configLoading.value = false
+  }
+}
+
 // 配置保存回调
 const onConfigSaved = (config) => {
   console.log('配置已保存:', config)
   showConfigModal.value = false
-  alert('配置已保存')
+  Toast.success('配置已保存')
 }
+
+// 组件挂载时初始化
+onMounted(async () => {
+  try {
+    // 确保配置服务已初始化
+    await configService.getConfig()
+    console.log('✅ 首页配置检查完成')
+  } catch (error) {
+    console.warn('⚠️ 首页配置检查失败:', error)
+  }
+})
 
 // 用户登录成功回调
 const handleUserLogin = (data) => {

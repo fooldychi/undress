@@ -252,11 +252,11 @@ const toggleUserStatus = async (user) => {
       }
     )
 
-    // const newStatus = user.status === 'active' ? 'inactive' : 'active'
-    // await updateUserStatus(user.id, newStatus)
+    const newStatus = user.status === 'active' ? 'banned' : 'active'
+    await updateUserStatus(user.id, newStatus)
 
-    // 模拟更新
-    user.status = user.status === 'active' ? 'inactive' : 'active'
+    // 更新本地状态
+    user.status = newStatus
 
     ElMessage.success(`${action}成功`)
   } catch (error) {
@@ -330,3 +330,4 @@ onMounted(() => {
   }
 }
 </style>
+

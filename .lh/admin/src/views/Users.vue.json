@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752314123169,
@@ -12,6 +12,14 @@
                 {
                     "date": 1752314185061,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -173,51 +173,22 @@\n // 加载用户列表\n const loadUsers = async () => {\n   loading.value = true\n   try {\n-    // const params = {\n-    //   page: pagination.page,\n-    //   size: pagination.size,\n-    //   ...searchForm,\n-    //   ...sortInfo\n-    // }\n-    // const response = await getUserList(params)\n-    // if (response.success) {\n-    //   userList.value = response.data.list\n-    //   pagination.total = response.data.total\n-    // }\n-\n-    // 模拟数据\n-    userList.value = [\n-      {\n-        id: 1,\n-        username: 'user001',\n-        email: 'user001@example.com',\n-        points: 1500,\n-        status: 'active',\n-        created_at: '2024-01-15T10:30:00Z',\n-        last_login: '2024-01-20T15:45:00Z'\n-      },\n-      {\n-        id: 2,\n-        username: 'user002',\n-        email: 'user002@example.com',\n-        points: 800,\n-        status: 'active',\n-        created_at: '2024-01-16T09:20:00Z',\n-        last_login: '2024-01-19T14:30:00Z'\n-      },\n-      {\n-        id: 3,\n-        username: 'user003',\n-        email: 'user003@example.com',\n-        points: 0,\n-        status: 'inactive',\n-        created_at: '2024-01-17T11:15:00Z',\n-        last_login: null\n-      }\n-    ]\n-    pagination.total = 3\n+    const params = {\n+      page: pagination.page,\n+      pageSize: pagination.size,\n+      search: searchForm.username || searchForm.email,\n+      status: searchForm.status\n+    }\n+    const response = await getUserList(params)\n+    if (response.success) {\n+      userList.value = response.data.items.map(user => ({\n+        ...user,\n+        points: user.total_points || 0\n+      }))\n+      pagination.total = response.data.total\n+    }\n   } catch (error) {\n     console.error('加载用户列表失败:', error)\n     ElMessage.error('加载用户列表失败')\n   } finally {\n"
+                },
+                {
+                    "date": 1752316875626,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -251,13 +251,13 @@\n         type: 'warning'\n       }\n     )\n \n-    // const newStatus = user.status === 'active' ? 'inactive' : 'active'\n-    // await updateUserStatus(user.id, newStatus)\n+    const newStatus = user.status === 'active' ? 'inactive' : 'active'\n+    await updateUserStatus(user.id, newStatus)\n \n-    // 模拟更新\n-    user.status = user.status === 'active' ? 'inactive' : 'active'\n+    // 更新本地状态\n+    user.status = newStatus\n \n     ElMessage.success(`${action}成功`)\n   } catch (error) {\n     if (error !== 'cancel') {\n"
+                },
+                {
+                    "date": 1752320407788,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -251,9 +251,9 @@\n         type: 'warning'\n       }\n     )\n \n-    const newStatus = user.status === 'active' ? 'inactive' : 'active'\n+    const newStatus = user.status === 'active' ? 'banned' : 'active'\n     await updateUserStatus(user.id, newStatus)\n \n     // 更新本地状态\n     user.status = newStatus\n@@ -329,4 +329,5 @@\n     margin-bottom: 16px;\n   }\n }\n </style>\n+\n"
                 }
             ],
             "date": 1752314123169,

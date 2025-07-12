@@ -1,0 +1,18 @@
+{
+    "sourceFile": "server/src/scripts/add-comfyui-config.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752329620203,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752329620203,
+            "name": "Commit-0",
+            "content": "const { query } = require('../config/database');\n\nasync function addComfyUIConfig() {\n  try {\n    console.log('🔧 添加ComfyUI配置项...');\n\n    const comfyuiConfigs = [\n      // ComfyUI服务器配置\n      ['comfyui.server_url', 'https://your-comfyui-server.com', 'string', 'comfyui', 'ComfyUI服务器地址'],\n      ['comfyui.client_id', 'your-comfyui-client-id', 'string', 'comfyui', 'ComfyUI客户端ID'],\n      ['comfyui.timeout', '300000', 'number', 'comfyui', 'ComfyUI请求超时时间(毫秒)'],\n      \n      // AI功能配置\n      ['ai.text_to_image_points', '20', 'number', 'ai', '文生图消耗积分'],\n      ['ai.face_swap_points', '20', 'number', 'ai', '换脸消耗积分'],\n      ['ai.undress_points', '20', 'number', 'ai', '换衣消耗积分'],\n      \n      // 前端配置\n      ['frontend.api_base_url', 'https://your-api-server.com/api', 'string', 'frontend', '前端API基础地址'],\n      ['frontend.title', 'AI Magic - AI图像处理平台', 'string', 'frontend', '应用标题'],\n      ['frontend.version', '1.0.0', 'string', 'frontend', '应用版本']\n    ];\n\n    for (const [key, value, type, group, desc] of comfyuiConfigs) {\n      await query(`\n        INSERT INTO system_config (config_key, config_value, config_type, config_group, description)\n        VALUES (?, ?, ?, ?, ?)\n        ON DUPLICATE KEY UPDATE \n          config_value = VALUES(config_value),\n          updated_at = CURRENT_TIMESTAMP\n      `, [key, value, type, group, desc]);\n    }\n    \n    console.log(`✅ 添加了 ${comfyuiConfigs.length} 个ComfyUI配置项`);\n\n    // 验证结果\n    const configs = await query('SELECT config_group, COUNT(*) as count FROM system_config GROUP BY config_group');\n    console.log('\\n📊 配置分组统计:');\n    configs.forEach(config => {\n      console.log(`  ${config.config_group}: ${config.count} 项`);\n    });\n\n    console.log('\\n🎉 ComfyUI配置添加完成！');\n\n  } catch (error) {\n    console.error('❌ 添加ComfyUI配置失败:', error);\n    throw error;\n  }\n}\n\nif (require.main === module) {\n  addComfyUIConfig()\n    .then(() => process.exit(0))\n    .catch(error => {\n      console.error('💥 失败:', error);\n      process.exit(1);\n    });\n}\n\nmodule.exports = { addComfyUIConfig };\n\n"
+        }
+    ]
+}
