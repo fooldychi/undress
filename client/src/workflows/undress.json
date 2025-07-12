@@ -1,0 +1,1294 @@
+{
+  "4": {
+    "inputs": {
+      "ckpt_name": "uberRealisticPornMerge_v23FinalSD.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "20": {
+    "inputs": {
+      "vae_name": "SD/vae-ft-mse-840000-ema-pruned.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "49": {
+    "inputs": {
+      "image": "u=1798547219,2610197229&fm=253&fmt=auto&app=138&f=JPEG.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "107": {
+    "inputs": {
+      "preset": "PLUS (high strength)",
+      "model": [
+        "664",
+        0
+      ]
+    },
+    "class_type": "IPAdapterUnifiedLoader",
+    "_meta": {
+      "title": "IPAdapter加载器"
+    }
+  },
+  "115": {
+    "inputs": {
+      "weight": 0.8,
+      "weight_type": "style transfer",
+      "combine_embeds": "concat",
+      "start_at": 0,
+      "end_at": 1,
+      "embeds_scaling": "V only",
+      "model": [
+        "107",
+        0
+      ],
+      "ipadapter": [
+        "107",
+        1
+      ],
+      "image": [
+        "319",
+        0
+      ],
+      "image_negative": [
+        "116",
+        0
+      ],
+      "clip_vision": [
+        "194",
+        0
+      ]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": {
+      "title": "应用IPAdapter（高级）"
+    }
+  },
+  "116": {
+    "inputs": {
+      "type": "dissolve",
+      "strength": 0.6,
+      "blur": 3
+    },
+    "class_type": "IPAdapterNoise",
+    "_meta": {
+      "title": "IPAdapter噪波"
+    }
+  },
+  "173": {
+    "inputs": {
+      "samples": [
+        "174",
+        3
+      ],
+      "vae": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "174": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 815242277936545,
+      "steps": 35,
+      "cfg": 3.5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "start_at_step": 0,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "preview_method": "auto",
+      "vae_decode": "false",
+      "model": [
+        "190",
+        0
+      ],
+      "positive": [
+        "190",
+        1
+      ],
+      "negative": [
+        "190",
+        2
+      ],
+      "latent_image": [
+        "190",
+        3
+      ]
+    },
+    "class_type": "KSampler Adv. (Efficient)",
+    "_meta": {
+      "title": "K采样器(高级效率)"
+    }
+  },
+  "176": {
+    "inputs": {
+      "kernel": 10,
+      "sigma": 10,
+      "inpaint": [
+        "173",
+        0
+      ],
+      "original": [
+        "259",
+        0
+      ],
+      "mask": [
+        "177",
+        0
+      ],
+      "origin": [
+        "264",
+        2
+      ]
+    },
+    "class_type": "BlendInpaint",
+    "_meta": {
+      "title": "局部重绘（融合）"
+    }
+  },
+  "177": {
+    "inputs": {
+      "expand": 5,
+      "tapered_corners": true,
+      "mask": [
+        "606",
+        0
+      ]
+    },
+    "class_type": "GrowMask",
+    "_meta": {
+      "title": "扩展遮罩"
+    }
+  },
+  "186": {
+    "inputs": {
+      "brushnet": "brushnet_segmentation_mask_fp16.safetensors",
+      "dtype": "float16"
+    },
+    "class_type": "BrushNetLoader",
+    "_meta": {
+      "title": "BrushNet（加载）"
+    }
+  },
+  "190": {
+    "inputs": {
+      "scale": 0.8,
+      "start_at": 5,
+      "end_at": 10000,
+      "model": [
+        "115",
+        0
+      ],
+      "vae": [
+        "20",
+        0
+      ],
+      "image": [
+        "264",
+        0
+      ],
+      "mask": [
+        "606",
+        0
+      ],
+      "brushnet": [
+        "186",
+        0
+      ],
+      "positive": [
+        "706",
+        0
+      ],
+      "negative": [
+        "706",
+        1
+      ]
+    },
+    "class_type": "BrushNet",
+    "_meta": {
+      "title": "BrushNet（应用）"
+    }
+  },
+  "194": {
+    "inputs": {
+      "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": {
+      "title": "加载CLIP视觉"
+    }
+  },
+  "234": {
+    "inputs": {
+      "mask_opacity": 1,
+      "mask_color": "255, 255, 255",
+      "pass_through": false,
+      "image": [
+        "264",
+        0
+      ],
+      "mask": [
+        "606",
+        0
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "图像与遮罩预览"
+    }
+  },
+  "257": {
+    "inputs": {
+      "python_expression": "( (512 + (0 if c > 0 else c)) **2 / (a * b) ) ** 0.5",
+      "print_to_console": "True",
+      "a": [
+        "266",
+        0
+      ],
+      "b": [
+        "266",
+        1
+      ],
+      "c": [
+        "623",
+        0
+      ]
+    },
+    "class_type": "Evaluate Integers",
+    "_meta": {
+      "title": "整数运算"
+    }
+  },
+  "259": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "scale_by": [
+        "257",
+        1
+      ],
+      "image": [
+        "552",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "缩放图像（比例）"
+    }
+  },
+  "260": {
+    "inputs": {
+      "mask": [
+        "703",
+        0
+      ]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "遮罩转换为图像"
+    }
+  },
+  "261": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "scale_by": [
+        "257",
+        1
+      ],
+      "image": [
+        "260",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "缩放图像（比例）"
+    }
+  },
+  "262": {
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "261",
+        0
+      ]
+    },
+    "class_type": "ImageToMask",
+    "_meta": {
+      "title": "图像转换为遮罩"
+    }
+  },
+  "264": {
+    "inputs": {
+      "width": [
+        "575",
+        0
+      ],
+      "height": [
+        "576",
+        0
+      ],
+      "image": [
+        "259",
+        0
+      ],
+      "mask": [
+        "262",
+        0
+      ]
+    },
+    "class_type": "CutForInpaint",
+    "_meta": {
+      "title": "局部重绘（裁剪）"
+    }
+  },
+  "265": {
+    "inputs": {
+      "image_crop_multi": 1,
+      "mask_crop_multi": 1,
+      "bbox_smooth_alpha": 1,
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "512",
+        0
+      ]
+    },
+    "class_type": "easy imageCropFromMask",
+    "_meta": {
+      "title": "遮罩裁剪图像"
+    }
+  },
+  "266": {
+    "inputs": {
+      "image": [
+        "265",
+        0
+      ]
+    },
+    "class_type": "easy imageSize",
+    "_meta": {
+      "title": "图像尺寸"
+    }
+  },
+  "285": {
+    "inputs": {
+      "text": "completely_nude:1.5,bald_girl, ruanyi0336,\n",
+      "token_normalization": "none",
+      "weight_interpretation": "A1111",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "664",
+        1
+      ]
+    },
+    "class_type": "BNK_CLIPTextEncodeAdvanced",
+    "_meta": {
+      "title": "CLIP文本编码器(BNK)"
+    }
+  },
+  "286": {
+    "inputs": {
+      "text": "clothing,public_hair,navel_piercing\n\n(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime), text, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck,",
+      "token_normalization": "none",
+      "weight_interpretation": "A1111",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "664",
+        1
+      ]
+    },
+    "class_type": "BNK_CLIPTextEncodeAdvanced",
+    "_meta": {
+      "title": "CLIP文本编码器(BNK)"
+    }
+  },
+  "319": {
+    "inputs": {
+      "interpolation": "LANCZOS",
+      "crop_position": "center",
+      "sharpening": 0.15,
+      "image": [
+        "531",
+        0
+      ]
+    },
+    "class_type": "PrepImageForClipVision",
+    "_meta": {
+      "title": "CLIP视觉图像处理"
+    }
+  },
+  "481": {
+    "inputs": {
+      "expand": 15,
+      "incremental_expandrate": 0,
+      "tapered_corners": true,
+      "flip_input": false,
+      "blur_radius": 5,
+      "lerp_alpha": 1,
+      "decay_factor": 1,
+      "fill_holes": true,
+      "mask": [
+        "545",
+        0
+      ]
+    },
+    "class_type": "GrowMaskWithBlur",
+    "_meta": {
+      "title": "遮罩模糊生长"
+    }
+  },
+  "492": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "721",
+        1
+      ],
+      "source": [
+        "556",
+        0
+      ]
+    },
+    "class_type": "MaskComposite",
+    "_meta": {
+      "title": "合成遮罩"
+    }
+  },
+  "496": {
+    "inputs": {
+      "directory": "/workspace/input",
+      "image_load_cap": 1,
+      "skip_first_images": 53,
+      "select_every_nth": 1
+    },
+    "class_type": "VHS_LoadImagesPath",
+    "_meta": {
+      "title": "加载图像（路径）"
+    }
+  },
+  "512": {
+    "inputs": {
+      "erode_dilate": 0,
+      "fill_holes": 0,
+      "remove_isolated_pixels": 10,
+      "smooth": 0,
+      "blur": 0,
+      "mask": [
+        "481",
+        0
+      ]
+    },
+    "class_type": "MaskFix+",
+    "_meta": {
+      "title": "遮罩修复"
+    }
+  },
+  "531": {
+    "inputs": {
+      "image_crop_multi": 1,
+      "mask_crop_multi": 1,
+      "bbox_smooth_alpha": 1,
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "719",
+        1
+      ]
+    },
+    "class_type": "easy imageCropFromMask",
+    "_meta": {
+      "title": "遮罩裁剪图像"
+    }
+  },
+  "545": {
+    "inputs": {
+      "boolean": [
+        "549",
+        0
+      ],
+      "on_true": [
+        "492",
+        0
+      ],
+      "on_false": [
+        "556",
+        0
+      ]
+    },
+    "class_type": "easy ifElse",
+    "_meta": {
+      "title": "是否判断"
+    }
+  },
+  "549": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "easy boolean",
+    "_meta": {
+      "title": "布尔"
+    }
+  },
+  "552": {
+    "inputs": {
+      "boolean": [
+        "553",
+        0
+      ],
+      "on_true": [
+        "496",
+        0
+      ],
+      "on_false": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "easy ifElse",
+    "_meta": {
+      "title": "是否判断"
+    }
+  },
+  "553": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "easy boolean",
+    "_meta": {
+      "title": "布尔"
+    }
+  },
+  "556": {
+    "inputs": {
+      "boolean": [
+        "553",
+        0
+      ],
+      "on_true": [
+        "496",
+        1
+      ],
+      "on_false": [
+        "49",
+        1
+      ]
+    },
+    "class_type": "easy ifElse",
+    "_meta": {
+      "title": "是否判断"
+    }
+  },
+  "562": {
+    "inputs": {
+      "mask_opacity": 1,
+      "mask_color": "255, 255, 255",
+      "pass_through": false,
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "492",
+        0
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "图像与遮罩预览"
+    }
+  },
+  "563": {
+    "inputs": {
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": [
+        "626",
+        0
+      ],
+      "bbox_detector": "yolox_l.onnx",
+      "pose_estimator": "dw-ll_ucoco_384_bs5.torchscript.pt",
+      "scale_stick_for_xinsr_cn": "disable",
+      "image": [
+        "264",
+        0
+      ]
+    },
+    "class_type": "DWPreprocessor",
+    "_meta": {
+      "title": "DW姿态预处理器"
+    }
+  },
+  "572": {
+    "inputs": {
+      "image": [
+        "552",
+        0
+      ]
+    },
+    "class_type": "easy imageSize",
+    "_meta": {
+      "title": "图像尺寸"
+    }
+  },
+  "573": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": [
+        "572",
+        0
+      ],
+      "height": [
+        "572",
+        1
+      ],
+      "crop": "disabled",
+      "image": [
+        "176",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "575": {
+    "inputs": {
+      "expression": "a * b + 10\n\n\n",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "a": [
+        "583",
+        0
+      ],
+      "b": [
+        "257",
+        1
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "576": {
+    "inputs": {
+      "expression": "a * b + 10\n",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "a": [
+        "583",
+        1
+      ],
+      "b": [
+        "257",
+        1
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "583": {
+    "inputs": {
+      "image": [
+        "594",
+        0
+      ]
+    },
+    "class_type": "easy imageSize",
+    "_meta": {
+      "title": "图像尺寸"
+    }
+  },
+  "585": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "722",
+        1
+      ],
+      "source": [
+        "512",
+        0
+      ]
+    },
+    "class_type": "MaskComposite",
+    "_meta": {
+      "title": "合成遮罩"
+    }
+  },
+  "588": {
+    "inputs": {
+      "image": [
+        "594",
+        0
+      ]
+    },
+    "class_type": "easy imageSize",
+    "_meta": {
+      "title": "图像尺寸"
+    }
+  },
+  "590": {
+    "inputs": {
+      "mask_opacity": 1,
+      "mask_color": "255, 255, 255",
+      "pass_through": false,
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "703",
+        0
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "图像与遮罩预览"
+    }
+  },
+  "594": {
+    "inputs": {
+      "image_crop_multi": 1,
+      "mask_crop_multi": 1,
+      "bbox_smooth_alpha": 1,
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "703",
+        0
+      ]
+    },
+    "class_type": "easy imageCropFromMask",
+    "_meta": {
+      "title": "遮罩裁剪图像"
+    }
+  },
+  "596": {
+    "inputs": {
+      "width": [
+        "588",
+        0
+      ],
+      "height": [
+        "588",
+        1
+      ],
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "703",
+        0
+      ]
+    },
+    "class_type": "CutForInpaint",
+    "_meta": {
+      "title": "局部重绘（裁剪）"
+    }
+  },
+  "602": {
+    "inputs": {
+      "width": [
+        "575",
+        0
+      ],
+      "height": [
+        "576",
+        0
+      ],
+      "image": [
+        "604",
+        0
+      ],
+      "mask": [
+        "262",
+        0
+      ]
+    },
+    "class_type": "CutForInpaint",
+    "_meta": {
+      "title": "局部重绘（裁剪）"
+    }
+  },
+  "603": {
+    "inputs": {
+      "mask": [
+        "512",
+        0
+      ]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "遮罩转换为图像"
+    }
+  },
+  "604": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "scale_by": [
+        "257",
+        1
+      ],
+      "image": [
+        "603",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "缩放图像（比例）"
+    }
+  },
+  "606": {
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "602",
+        0
+      ]
+    },
+    "class_type": "ImageToMask",
+    "_meta": {
+      "title": "图像转换为遮罩"
+    }
+  },
+  "611": {
+    "inputs": {
+      "mask_opacity": 1,
+      "mask_color": "255, 255, 255",
+      "pass_through": true,
+      "image": [
+        "612",
+        0
+      ],
+      "mask": [
+        "612",
+        1
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "图像与遮罩预览"
+    }
+  },
+  "612": {
+    "inputs": {
+      "image_crop_multi": 1,
+      "mask_crop_multi": 1,
+      "bbox_smooth_alpha": 1,
+      "image": [
+        "264",
+        0
+      ],
+      "mask": [
+        "606",
+        0
+      ]
+    },
+    "class_type": "easy imageCropFromMask",
+    "_meta": {
+      "title": "遮罩裁剪图像"
+    }
+  },
+  "619": {
+    "inputs": {
+      "image": [
+        "611",
+        0
+      ]
+    },
+    "class_type": "easy imageSize",
+    "_meta": {
+      "title": "图像尺寸"
+    }
+  },
+  "623": {
+    "inputs": {
+      "expression": "((c**2) * b / a)**0.5 - 512\n\n\n\n",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "a": [
+        "628",
+        0
+      ],
+      "b": [
+        "624",
+        0
+      ],
+      "c": [
+        "630",
+        0
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "624": {
+    "inputs": {
+      "expression": "a * b \n\n",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "a": [
+        "266",
+        0
+      ],
+      "b": [
+        "266",
+        1
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "626": {
+    "inputs": {
+      "image": [
+        "264",
+        0
+      ]
+    },
+    "class_type": "easy imageSize",
+    "_meta": {
+      "title": "图像尺寸"
+    }
+  },
+  "628": {
+    "inputs": {
+      "expression": "a * b \n\n",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "a": [
+        "583",
+        0
+      ],
+      "b": [
+        "583",
+        1
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "630": {
+    "inputs": {
+      "value": 1024
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "664": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "0336-One-line-crotch-pantyhose_v1_pony.safetensors",
+        "strength": 1
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "4",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "强力LoRA加载器"
+    }
+  },
+  "691": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "subtract",
+      "destination": [
+        "492",
+        0
+      ],
+      "source": [
+        "719",
+        1
+      ]
+    },
+    "class_type": "MaskComposite",
+    "_meta": {
+      "title": "合成遮罩"
+    }
+  },
+  "692": {
+    "inputs": {
+      "mask_opacity": 1,
+      "mask_color": "255, 255, 255",
+      "pass_through": false,
+      "image": [
+        "552",
+        0
+      ],
+      "mask": [
+        "691",
+        0
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "图像与遮罩预览"
+    }
+  },
+  "703": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "721",
+        1
+      ],
+      "source": [
+        "585",
+        0
+      ]
+    },
+    "class_type": "MaskComposite",
+    "_meta": {
+      "title": "合成遮罩"
+    }
+  },
+  "705": {
+    "inputs": {
+      "control_net_name": "SD15/control_v11p_sd15_openpose_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "加载ControlNet模型"
+    }
+  },
+  "706": {
+    "inputs": {
+      "strength": 1,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "285",
+        0
+      ],
+      "negative": [
+        "286",
+        0
+      ],
+      "control_net": [
+        "705",
+        0
+      ],
+      "image": [
+        "563",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "应用ControlNet（旧版高级）"
+    }
+  },
+  "713": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_sjcjo_00003_.png&type=temp&subfolder=&rand=0.49747606989196824"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_sjcjo_00004_.png&type=temp&subfolder=&rand=0.6886429887287118"
+          }
+        ]
+      },
+      "image_a": [
+        "573",
+        0
+      ],
+      "image_b": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "图像比较器"
+    }
+  },
+  "719": {
+    "inputs": {
+      "prompt": "face",
+      "threshold": 0.3,
+      "sam_model": [
+        "727",
+        0
+      ],
+      "grounding_dino_model": [
+        "724",
+        0
+      ],
+      "image": [
+        "552",
+        0
+      ]
+    },
+    "class_type": "GroundingDinoSAMSegment (segment anything)",
+    "_meta": {
+      "title": "G-DinoSAM语义分割"
+    }
+  },
+  "721": {
+    "inputs": {
+      "prompt": "clothing",
+      "threshold": 0.3,
+      "sam_model": [
+        "727",
+        0
+      ],
+      "grounding_dino_model": [
+        "724",
+        0
+      ],
+      "image": [
+        "552",
+        0
+      ]
+    },
+    "class_type": "GroundingDinoSAMSegment (segment anything)",
+    "_meta": {
+      "title": "G-DinoSAM语义分割"
+    }
+  },
+  "722": {
+    "inputs": {
+      "prompt": "girl",
+      "threshold": 0.3,
+      "sam_model": [
+        "727",
+        0
+      ],
+      "grounding_dino_model": [
+        "724",
+        0
+      ],
+      "image": [
+        "552",
+        0
+      ]
+    },
+    "class_type": "GroundingDinoSAMSegment (segment anything)",
+    "_meta": {
+      "title": "G-DinoSAM语义分割"
+    }
+  },
+  "724": {
+    "inputs": {
+      "model_name": "GroundingDINO_SwinB (938MB)"
+    },
+    "class_type": "GroundingDinoModelLoader (segment anything)",
+    "_meta": {
+      "title": "G-Dino模型加载器"
+    }
+  },
+  "727": {
+    "inputs": {
+      "model_name": "sam_hq_vit_h (2.57GB)"
+    },
+    "class_type": "SAMModelLoader (segment anything)",
+    "_meta": {
+      "title": "SAM模型加载器"
+    }
+  },
+  "730": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "573",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  }
+}

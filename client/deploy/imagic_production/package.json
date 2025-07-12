@@ -1,0 +1,31 @@
+{
+  "name": "imagic",
+  "version": "1.0.0",
+  "description": "Imagic - AI图像处理平台",
+  "main": "proxy-server-simple.js",
+  "scripts": {
+    "start": "node proxy-server-simple.js",
+    "proxy": "node proxy-server-simple.js",
+    "dev": "node proxy-server-simple.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.6.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "ai",
+    "image-processing",
+    "comfyui",
+    "vue",
+    "clothes-swap"
+  ],
+  "author": "Imagic Team",
+  "license": "MIT"
+}

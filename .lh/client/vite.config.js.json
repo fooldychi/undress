@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/vite.config.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752284292222,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752284292222,
+            "name": "Commit-0",
+            "content": "import { defineConfig } from 'vite'\r\nimport vue from '@vitejs/plugin-vue'\r\n\r\n// https://vitejs.dev/config/\r\nexport default defineConfig(({ command, mode }) => {\r\n  return {\r\n    plugins: [vue()],\r\n\r\n    // 开发服务器配置\r\n    server: {\r\n      port: 3001,\r\n      open: true,\r\n      proxy: {\r\n        '/api': {\r\n          target: 'http://localhost:3006',\r\n          changeOrigin: true,\r\n          secure: false,\r\n          configure: (proxy, options) => {\r\n            proxy.on('error', (err, req, res) => {\r\n              console.log('proxy error', err);\r\n            });\r\n            proxy.on('proxyReq', (proxyReq, req, res) => {\r\n              console.log('Sending Request to the Target:', req.method, req.url);\r\n            });\r\n            proxy.on('proxyRes', (proxyRes, req, res) => {\r\n              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);\r\n            });\r\n          }\r\n        }\r\n      }\r\n    },\r\n\r\n    // 构建配置\r\n    build: {\r\n      outDir: 'dist',\r\n      sourcemap: false,\r\n      assetsDir: 'assets'\r\n    },\r\n\r\n    // 基础路径配置 - 自定义域名使用根路径\r\n    base: '/',\r\n\r\n    // 环境变量配置\r\n    define: {\r\n      __VUE_PROD_DEVTOOLS__: false,\r\n      __VUE_OPTIONS_API__: true\r\n    }\r\n  }\r\n})\r\n\r\n\r\n"
+        }
+    ]
+}
