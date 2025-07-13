@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752384829477,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752435679768,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -123,14 +123,10 @@\n   background: rgba(255, 255, 255, 0.2);\n   color: rgba(255, 255, 255, 0.8);\n }\n \n-.status-icon--loading {\n-  background: linear-gradient(135deg, rgba(25, 137, 250, 0.3), rgba(25, 137, 250, 0.1));\n-  color: #1989fa;\n-  animation: pulse 2s ease-in-out infinite;\n-}\n \n+\n .status-icon--success {\n   background: linear-gradient(135deg, rgba(7, 193, 96, 0.3), rgba(7, 193, 96, 0.1));\n   color: #07c160;\n }\n"
                 }
             ],
             "date": 1752384829477,

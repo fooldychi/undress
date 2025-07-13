@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // 使用动态导入避免循环依赖
 const HomePage = () => import('../views/HomePage.vue')
 const ClothesSwap = () => import('../views/ClothesSwap.vue')
-const TextToImage = () => import('../views/TextToImage.vue')
+
 const FaceSwap = () => import('../views/FaceSwap.vue')
 const Profile = () => import('../views/Profile.vue')
 
@@ -27,14 +27,7 @@ const routes = [
       title: '一键换衣 - Imagic'
     }
   },
-  {
-    path: '/text-to-image',
-    name: 'TextToImage',
-    component: TextToImage,
-    meta: {
-      title: '文生图 - Imagic'
-    }
-  },
+
   {
     path: '/face-swap',
     name: 'FaceSwap',

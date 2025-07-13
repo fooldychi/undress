@@ -124,11 +124,7 @@ const statusIcon = computed(() => {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.status-icon--loading {
-  background: linear-gradient(135deg, rgba(25, 137, 250, 0.3), rgba(25, 137, 250, 0.1));
-  color: #1989fa;
-  animation: pulse 2s ease-in-out infinite;
-}
+
 
 .status-icon--success {
   background: linear-gradient(135deg, rgba(7, 193, 96, 0.3), rgba(7, 193, 96, 0.1));

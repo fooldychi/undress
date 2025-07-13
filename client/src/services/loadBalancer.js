@@ -11,12 +11,19 @@ class ComfyUILoadBalancer {
     this.serverLoads = new Map()
     this.lockedServer = null
     this.lastLockTime = 0
-    this.lockDuration = 30000 // 30秒锁定时间
-    this.healthCheckTimeout = 15000 // 15秒健康检查超时
-    this.queueCheckTimeout = 8000 // 8秒队列检查超时
+    this.lockDuration = 15000 // 缩短锁定时间到15秒
+    this.healthCheckTimeout = 10000 // 10秒健康检查超时
+    this.queueCheckTimeout = 6000 // 6秒队列检查超时
     this.lastUpdateTime = 0
-    this.updateInterval = 10000 // 10秒更新间隔（更频繁的更新）
-    this.forceUpdateThreshold = 30000 // 30秒强制更新阈值
+    this.updateInterval = 8000 // 8秒更新间隔（更频繁的更新）
+    this.forceUpdateThreshold = 20000 // 20秒强制更新阈值
+    this.failureThreshold = 2 // 连续失败2次后标记为不健康
+    this.serverFailures = new Map() // 记录服务器失败次数
+    this.autoFailoverEnabled = true // 启用自动故障转移
+    this.lastFailoverTime = 0
+    this.failoverCooldown = 5000 // 故障转移冷却时间5秒
+    this.healthMonitorInterval = null // 健康监控定时器
+    this.healthMonitorFrequency = 30000 // 30秒检查一次健康状态
   }
 
   /**
@@ -79,6 +86,9 @@ class ComfyUILoadBalancer {
       // 初始化服务器负载信息
       await this.updateServerLoads()
 
+      // 启动健康监控
+      this.startHealthMonitoring()
+
       console.log('✅ ComfyUI 负载均衡器初始化完成')
 
     } catch (error) {
@@ -122,13 +132,20 @@ class ComfyUILoadBalancer {
         // 更智能的健康状态判断
         const isHealthy = this.determineServerHealth(health, queue, server)
 
+        // 如果服务器恢复健康，重置失败计数
+        if (isHealthy && this.serverFailures.has(server.url)) {
+          console.log(`✅ 服务器 ${server.url} 已恢复健康，重置失败计数`)
+          this.resetFailureCount(server.url)
+        }
+
         this.serverLoads.set(server.url, {
           ...server,
           healthy: isHealthy,
           queue: queue,
           lastCheck: now,
           responseTime: health.responseTime || 0,
-          healthDetails: { health, queue }
+          healthDetails: { health, queue },
+          failureCount: this.serverFailures.get(server.url) || 0
         })
 
         const queueInfo = queue.healthy ? `队列=${queue.total || 0}(运行:${queue.running || 0},等待:${queue.pending || 0})` : `队列检查失败`
@@ -313,13 +330,30 @@ class ComfyUILoadBalancer {
 
       // 获取所有健康的服务器
       let healthyServers = Array.from(this.serverLoads.values())
-        .filter(server => server.healthy)
+        .filter(server => {
+          // 过滤掉健康状态为false的服务器
+          if (!server.healthy) return false
+
+          // 过滤掉失败次数过多的服务器
+          const failures = this.serverFailures.get(server.url) || 0
+          if (failures >= this.failureThreshold) {
+            console.log(`⚠️ 跳过失败次数过多的服务器: ${server.url} (${failures}次)`)
+            return false
+          }
+
+          return true
+        })
         .sort((a, b) => {
-          // 首先按队列数量排序
+          // 首先按失败次数排序（失败次数少的优先）
+          const failureA = this.serverFailures.get(a.url) || 0
+          const failureB = this.serverFailures.get(b.url) || 0
+          if (failureA !== failureB) return failureA - failureB
+
+          // 然后按队列数量排序
           const queueDiff = (a.queue.total || 0) - (b.queue.total || 0)
           if (queueDiff !== 0) return queueDiff
 
-          // 队列相同时按优先级排序
+          // 最后按优先级排序
           return a.priority - b.priority
         })
 
@@ -456,12 +490,19 @@ class ComfyUILoadBalancer {
   /**
    * 记录服务器失败
    */
-  async recordFailure(serverUrl) {
-    console.log(`📝 记录服务器失败: ${serverUrl}`)
+  async recordFailure(serverUrl, errorType = 'unknown') {
+    console.log(`📝 记录服务器失败: ${serverUrl}, 错误类型: ${errorType}`)
 
-    // 如果失败的是当前锁定的服务器，解除锁定
+    // 增加失败计数
+    const currentFailures = this.serverFailures.get(serverUrl) || 0
+    const newFailures = currentFailures + 1
+    this.serverFailures.set(serverUrl, newFailures)
+
+    console.log(`⚠️ 服务器 ${serverUrl} 失败次数: ${newFailures}/${this.failureThreshold}`)
+
+    // 如果失败的是当前锁定的服务器，立即解除锁定
     if (this.lockedServer === serverUrl) {
-      console.log('🔓 解除失败服务器的锁定')
+      console.log('🔓 立即解除失败服务器的锁定')
       this.lockedServer = null
       this.lastLockTime = 0
     }
@@ -471,7 +512,14 @@ class ComfyUILoadBalancer {
       const serverInfo = this.serverLoads.get(serverUrl)
       serverInfo.healthy = false
       serverInfo.lastFailure = Date.now()
+      serverInfo.failureCount = newFailures
+      serverInfo.lastErrorType = errorType
       this.serverLoads.set(serverUrl, serverInfo)
+    }
+
+    // 如果达到失败阈值且启用自动故障转移，触发故障转移
+    if (newFailures >= this.failureThreshold && this.autoFailoverEnabled) {
+      await this.triggerFailover(serverUrl)
     }
 
     // 强制更新服务器负载信息
@@ -479,10 +527,108 @@ class ComfyUILoadBalancer {
   }
 
   /**
+   * 触发故障转移
+   */
+  async triggerFailover(failedServerUrl) {
+    const now = Date.now()
+
+    // 检查故障转移冷却时间
+    if (now - this.lastFailoverTime < this.failoverCooldown) {
+      console.log('⏳ 故障转移冷却中，跳过此次转移')
+      return
+    }
+
+    console.log(`🔄 触发故障转移，失败服务器: ${failedServerUrl}`)
+    this.lastFailoverTime = now
+
+    // 强制重新评估所有服务器
+    await this.forceReassessment()
+
+    // 尝试选择新的服务器
+    try {
+      const newServer = await this.selectServerByMinQueue()
+      if (newServer && newServer !== failedServerUrl) {
+        console.log(`✅ 故障转移成功，新服务器: ${newServer}`)
+        return newServer
+      } else {
+        console.warn('⚠️ 故障转移失败，没有可用的替代服务器')
+      }
+    } catch (error) {
+      console.error('❌ 故障转移过程中出错:', error)
+    }
+  }
+
+  /**
+   * 重置服务器失败计数
+   */
+  resetFailureCount(serverUrl) {
+    if (this.serverFailures.has(serverUrl)) {
+      console.log(`🔄 重置服务器失败计数: ${serverUrl}`)
+      this.serverFailures.delete(serverUrl)
+
+      // 同时更新服务器负载信息
+      if (this.serverLoads.has(serverUrl)) {
+        const serverInfo = this.serverLoads.get(serverUrl)
+        serverInfo.failureCount = 0
+        delete serverInfo.lastErrorType
+        this.serverLoads.set(serverUrl, serverInfo)
+      }
+    }
+  }
+
+  /**
    * 获取最优服务器（主要接口）
    */
   async getOptimalServer() {
     return await this.selectServerByMinQueue()
+  }
+
+  /**
+   * 手动触发服务器切换
+   */
+  async switchToNextServer() {
+    console.log('🔄 手动触发服务器切换...')
+
+    // 如果当前有锁定的服务器，将其标记为失败
+    if (this.lockedServer) {
+      console.log(`📝 标记当前服务器为失败: ${this.lockedServer}`)
+      await this.recordFailure(this.lockedServer, 'manual_switch')
+    }
+
+    // 强制重新评估并选择新服务器
+    await this.forceReassessment()
+    const newServer = await this.selectServerByMinQueue()
+
+    console.log(`✅ 手动切换完成，新服务器: ${newServer}`)
+    return newServer
+  }
+
+  /**
+   * 获取下一个可用服务器（不锁定）
+   */
+  async getNextAvailableServer(excludeUrls = []) {
+    await this.updateServerLoads()
+
+    const availableServers = Array.from(this.serverLoads.values())
+      .filter(server => {
+        if (!server.healthy) return false
+        if (excludeUrls.includes(server.url)) return false
+
+        const failures = this.serverFailures.get(server.url) || 0
+        return failures < this.failureThreshold
+      })
+      .sort((a, b) => {
+        const failureA = this.serverFailures.get(a.url) || 0
+        const failureB = this.serverFailures.get(b.url) || 0
+        if (failureA !== failureB) return failureA - failureB
+
+        const queueDiff = (a.queue.total || 0) - (b.queue.total || 0)
+        if (queueDiff !== 0) return queueDiff
+
+        return a.priority - b.priority
+      })
+
+    return availableServers.length > 0 ? availableServers[0].url : null
   }
 
   /**
@@ -494,6 +640,10 @@ class ComfyUILoadBalancer {
     // 清除锁定状态
     this.lockedServer = null
     this.lastLockTime = 0
+
+    // 重置所有服务器的失败计数（给它们一个重新开始的机会）
+    console.log('🔄 重置所有服务器失败计数')
+    this.serverFailures.clear()
 
     // 强制更新负载信息
     await this.updateServerLoads(true)
@@ -518,7 +668,10 @@ class ComfyUILoadBalancer {
       const priority = `优先级:${info.priority}`
       const responseTime = info.responseTime ? `响应:${info.responseTime}ms` : '响应:未知'
       const lastCheck = info.lastCheck ? `检查:${Math.round((Date.now() - info.lastCheck) / 1000)}s前` : '检查:从未'
-      console.log(`   ${status} ${url} ${queueInfo} ${priority} ${responseTime} ${lastCheck} ${locked}`)
+      const failures = this.serverFailures.get(url) || 0
+      const failureInfo = failures > 0 ? `失败:${failures}次` : ''
+      const errorType = info.lastErrorType ? `错误:${info.lastErrorType}` : ''
+      console.log(`   ${status} ${url} ${queueInfo} ${priority} ${responseTime} ${lastCheck} ${failureInfo} ${errorType} ${locked}`)
     }
   }
 
@@ -547,6 +700,78 @@ class ComfyUILoadBalancer {
     }
 
     return stats
+  }
+
+  /**
+   * 启动健康监控
+   */
+  startHealthMonitoring() {
+    if (this.healthMonitorInterval) {
+      clearInterval(this.healthMonitorInterval)
+    }
+
+    console.log(`🏥 启动健康监控，检查频率: ${this.healthMonitorFrequency / 1000}秒`)
+
+    this.healthMonitorInterval = setInterval(async () => {
+      try {
+        await this.performHealthMonitoring()
+      } catch (error) {
+        console.error('❌ 健康监控出错:', error)
+      }
+    }, this.healthMonitorFrequency)
+  }
+
+  /**
+   * 停止健康监控
+   */
+  stopHealthMonitoring() {
+    if (this.healthMonitorInterval) {
+      console.log('🛑 停止健康监控')
+      clearInterval(this.healthMonitorInterval)
+      this.healthMonitorInterval = null
+    }
+  }
+
+  /**
+   * 执行健康监控
+   */
+  async performHealthMonitoring() {
+    console.log('🏥 执行定期健康检查...')
+
+    // 更新服务器负载信息
+    await this.updateServerLoads()
+
+    // 检查当前锁定的服务器是否仍然健康
+    if (this.lockedServer) {
+      const lockedServerInfo = this.serverLoads.get(this.lockedServer)
+      if (lockedServerInfo && !lockedServerInfo.healthy) {
+        console.warn(`⚠️ 锁定的服务器 ${this.lockedServer} 不健康，解除锁定`)
+        this.lockedServer = null
+        this.lastLockTime = 0
+      }
+    }
+
+    // 检查是否有服务器从故障中恢复
+    const healthyServers = Array.from(this.serverLoads.values())
+      .filter(server => server.healthy)
+
+    if (healthyServers.length > 0) {
+      console.log(`✅ 健康监控完成，发现 ${healthyServers.length} 个健康服务器`)
+    } else {
+      console.warn('⚠️ 健康监控警告：没有发现健康的服务器')
+    }
+  }
+
+  /**
+   * 销毁负载均衡器
+   */
+  destroy() {
+    this.stopHealthMonitoring()
+    this.servers = []
+    this.serverLoads.clear()
+    this.serverFailures.clear()
+    this.lockedServer = null
+    console.log('🗑️ 负载均衡器已销毁')
   }
 }
 

@@ -120,44 +120,7 @@ export const IMAGE_PROCESSING_CONFIGS = {
     }
   },
 
-  // 文生图配置
-  'text-to-image': {
-    id: 'text-to-image',
-    title: '文生图',
-    description: '输入文字描述，AI为您生成精美图像',
-    processButtonText: '生成图像',
-    processingTitle: '正在生成图像...',
-    processingDescription: '请耐心等待，AI正在为您创作',
 
-    // 文生图使用文本输入而不是图片上传
-    inputPanels: [
-      {
-        id: 'text-prompt',
-        type: 'text',
-        title: '描述您想要的图像',
-        icon: 'edit',
-        iconColor: 'var(--van-success-color)',
-        placeholder: '请详细描述您想要生成的图像，例如：一只橙色的猫坐在窗台上，窗外是蓝天白云，阳光透过窗户洒在猫咪身上，画面温馨美好，高清摄影风格',
-        rows: 6,
-        maxLength: 500,
-        required: true,
-        tips: [
-          '描述越详细，生成效果越好',
-          '可以包含风格、色彩、构图等要素',
-          '支持中英文描述'
-        ]
-      }
-    ],
-
-
-
-    resultConfig: {
-      showComparison: false,
-      comparisonType: 'none',
-      downloadEnabled: true,
-      resetEnabled: true
-    }
-  }
 }
 
 /**

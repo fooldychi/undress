@@ -65,18 +65,7 @@
       :progress="progress"
       :show-progress="showProgress"
     >
-      <template #extra>
-        <div v-if="processingInfo" class="processing-info">
-          <div v-if="processingInfo.promptId" class="info-item">
-            <span class="info-label">任务ID:</span>
-            <span class="info-value">{{ processingInfo.promptId }}</span>
-          </div>
-          <div v-if="processingInfo.processingTime > 0" class="info-item">
-            <span class="info-label">处理时间:</span>
-            <span class="info-value">{{ Math.floor(processingInfo.processingTime / 1000) }}秒</span>
-          </div>
-        </div>
-      </template>
+
     </MobileStatusCard>
 
     <!-- 结果展示 - 只显示额外的结果信息，操作按钮始终在底部 -->
@@ -100,10 +89,10 @@
       <van-button
         type="default"
         size="large"
-        @click="$emit('reprocess')"
+        @click="$emit('reset')"
         class="result-action-btn"
       >
-        重新处理
+        重新选择
       </van-button>
     </div>
   </MobilePageContainer>

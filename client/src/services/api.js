@@ -119,41 +119,7 @@ export const comfyApi = {
     }
   },
 
-  // 文生图API
-  textToImage: async ({ prompt, size = '512x512', style = 'realistic' }) => {
-    try {
-      // 在开发环境中使用模拟响应
-      if (import.meta.env.DEV) {
-        console.log('开发模式：使用模拟文生图API', { prompt, size, style })
-        return await createMockResponse('文生图')
-      }
 
-      // 生产环境中的真实API调用
-      const [width, height] = size.split('x').map(Number)
-
-      const response = await makeRequest('/api/text-to-image', {
-        body: JSON.stringify({
-          prompt,
-          width,
-          height,
-          style,
-          // ComfyUI工作流参数
-          workflow_id: 'text_to_image_workflow',
-          parameters: {
-            steps: 20,
-            cfg_scale: 7.5,
-            sampler: 'euler_a',
-            seed: -1 // 随机种子
-          }
-        })
-      })
-
-      return response
-    } catch (error) {
-      console.error('文生图API调用失败:', error)
-      throw error
-    }
-  },
 
   // 换脸API
   faceSwap: async ({ sourceImage, targetImage, preserveExpression = true, enhanceQuality = false }) => {

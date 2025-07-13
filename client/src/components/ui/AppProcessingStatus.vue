@@ -10,12 +10,6 @@
     >
       <template #extra>
         <slot name="extra">
-          <div v-if="promptId" class="prompt-id">
-            <small>任务ID: {{ promptId }}</small>
-          </div>
-          <div v-if="processingTime" class="processing-time">
-            <small>处理时间: {{ processingTime }}</small>
-          </div>
         </slot>
       </template>
     </AppProgressBar>
@@ -51,14 +45,7 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
-  promptId: {
-    type: String,
-    default: ''
-  },
-  processingTime: {
-    type: String,
-    default: ''
-  },
+
   centered: {
     type: Boolean,
     default: true
@@ -106,7 +93,7 @@ const containerClasses = computed(() => ({
   .app-processing-status--centered {
     margin-top: 16px;
   }
-  
+
   .prompt-id,
   .processing-time {
     font-size: 0.8rem;

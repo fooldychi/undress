@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 55,
+            "activePatchIndex": 60,
             "patches": [
                 {
                     "date": 1752412387224,
@@ -228,6 +228,26 @@
                 {
                     "date": 1752431353704,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -169,15 +169,18 @@\n }\r\n \r\n .comparison-wrapper {\r\n   position: relative;\r\n-  width: 100%;\r\n-  height: 100%;\r\n   overflow: hidden;\r\n   cursor: col-resize;\r\n   background: #000000;\r\n+  /* 使用弹性布局的子元素，确保有明确的尺寸 */\r\n+  width: 100%;\r\n+  height: 100%;\r\n   min-height: 300px;\r\n   max-height: 500px;\r\n+  /* 确保wrapper能够正确显示内容 */\r\n+  flex-shrink: 0;\r\n }\r\n \r\n .image-layer {\r\n   position: absolute;\r\n"
+                },
+                {
+                    "date": 1752434055546,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -194,9 +194,8 @@\n   width: 100%;\r\n   height: 100%;\r\n   object-fit: contain;\r\n   object-position: center;\r\n-  display: block;\r\n }\r\n \r\n .result-layer {\r\n   transition: clip-path 0.1s ease-out;\r\n"
+                },
+                {
+                    "date": 1752434990012,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -194,8 +194,9 @@\n   width: 100%;\r\n   height: 100%;\r\n   object-fit: contain;\r\n   object-position: center;\r\n+  display: block;\r\n }\r\n \r\n .result-layer {\r\n   transition: clip-path 0.1s ease-out;\r\n"
+                },
+                {
+                    "date": 1752435696753,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,9 +6,8 @@\n         <img\r\n           :src=\"originalImage\"\r\n           alt=\"原图\"\r\n           class=\"comparison-image\"\r\n-          :style=\"imageStyle\"\r\n           @load=\"handleImageLoad\"\r\n           ref=\"originalImageRef\"\r\n         />\r\n       </div>\r\n"
+                },
+                {
+                    "date": 1752435711416,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -16,9 +16,9 @@\n       <div\r\n         class=\"image-layer result-layer\"\r\n         :style=\"{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }\"\r\n       >\r\n-        <img :src=\"resultImage\" alt=\"处理结果\" class=\"comparison-image\" :style=\"imageStyle\" />\r\n+        <img :src=\"resultImage\" alt=\"处理结果\" class=\"comparison-image\" />\r\n       </div>\r\n \r\n       <!-- 拖拽滑块 -->\r\n       <div\r\n"
+                },
+                {
+                    "date": 1752435726641,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -66,12 +66,10 @@\n const containerStyle = computed(() => {\r\n   return ImageSizeUtils.getContainerStyle('preview', isMobile.value)\r\n })\r\n \r\n-const imageStyle = computed(() => {\r\n-  return ImageSizeUtils.getImageStyle('preview', isMobile.value)\r\n-})\r\n \r\n+\r\n // 处理图片加载\r\n const handleImageLoad = () => {\r\n   if (originalImageRef.value) {\r\n     const img = originalImageRef.value\r\n"
                 }
             ],
             "date": 1752412387224,

@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
       console.log(`   备用服务器: ${finalConfig['comfyui.backup_servers']}`);
       console.log(`   自动切换: ${finalConfig['comfyui.auto_switch']}`);
       console.log(`   超时时间: ${finalConfig['comfyui.timeout']}ms`);
-      console.log(`   文生图积分: ${finalConfig['ai.text_to_image_points']}`);
+
 
       res.json({
         success: true,

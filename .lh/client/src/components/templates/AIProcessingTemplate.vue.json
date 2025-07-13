@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 12,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1752384788723,
@@ -56,6 +56,14 @@
                 {
                     "date": 1752427418905,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -78,33 +78,34 @@\n         </div>\n       </template>\n     </MobileStatusCard>\n \n-    <!-- 结果展示 -->\n+    <!-- 结果展示 - 只显示额外的结果信息，操作按钮始终在底部 -->\n     <div v-if=\"resultData\" class=\"result-section\">\n+      <!-- 额外的结果信息插槽 -->\n       <slot name=\"result\" :result=\"resultData\" />\n+    </div>\n \n-      <!-- 结果操作按钮 -->\n-      <div class=\"result-actions\">\n-        <van-button\n-          type=\"primary\"\n-          size=\"large\"\n-          @click=\"$emit('download', resultData)\"\n-          :loading=\"downloadLoading\"\n-          class=\"result-action-btn\"\n-        >\n-          下载图片\n-        </van-button>\n+    <!-- 结果操作按钮 - 有结果时显示 -->\n+    <div v-if=\"resultData\" class=\"result-actions\">\n+      <van-button\n+        type=\"primary\"\n+        size=\"large\"\n+        @click=\"$emit('download', resultData)\"\n+        :loading=\"downloadLoading\"\n+        class=\"result-action-btn\"\n+      >\n+        下载图片\n+      </van-button>\n \n-        <van-button\n-          type=\"default\"\n-          size=\"large\"\n-          @click=\"$emit('reprocess')\"\n-          class=\"result-action-btn\"\n-        >\n-          重新处理\n-        </van-button>\n-      </div>\n+      <van-button\n+        type=\"default\"\n+        size=\"large\"\n+        @click=\"$emit('reprocess')\"\n+        class=\"result-action-btn\"\n+      >\n+        重新处理\n+      </van-button>\n     </div>\n   </MobilePageContainer>\n </template>\n \n"
+                },
+                {
+                    "date": 1752435662083,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -64,20 +64,9 @@\n       :description=\"processingDescription\"\n       :progress=\"progress\"\n       :show-progress=\"showProgress\"\n     >\n-      <template #extra>\n-        <div v-if=\"processingInfo\" class=\"processing-info\">\n-          <div v-if=\"processingInfo.promptId\" class=\"info-item\">\n-            <span class=\"info-label\">任务ID:</span>\n-            <span class=\"info-value\">{{ processingInfo.promptId }}</span>\n-          </div>\n-          <div v-if=\"processingInfo.processingTime > 0\" class=\"info-item\">\n-            <span class=\"info-label\">处理时间:</span>\n-            <span class=\"info-value\">{{ Math.floor(processingInfo.processingTime / 1000) }}秒</span>\n-          </div>\n-        </div>\n-      </template>\n+\n     </MobileStatusCard>\n \n     <!-- 结果展示 - 只显示额外的结果信息，操作按钮始终在底部 -->\n     <div v-if=\"resultData\" class=\"result-section\">\n"
+                },
+                {
+                    "date": 1752435742932,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -88,12 +88,12 @@\n \n       <van-button\n         type=\"default\"\n         size=\"large\"\n-        @click=\"$emit('reprocess')\"\n+        @click=\"$emit('reset')\"\n         class=\"result-action-btn\"\n       >\n-        重新处理\n+        重新选择\n       </van-button>\n     </div>\n   </MobilePageContainer>\n </template>\n"
                 }
             ],
             "date": 1752384788723,

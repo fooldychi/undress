@@ -49,7 +49,7 @@ const createTables = async () => {
       CREATE TABLE IF NOT EXISTS processing_tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
-        type ENUM('undress', 'text-to-image', 'face-swap') NOT NULL,
+        type ENUM('undress', 'face-swap') NOT NULL,
         status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
         prompt TEXT DEFAULT NULL,
         settings TEXT DEFAULT NULL,

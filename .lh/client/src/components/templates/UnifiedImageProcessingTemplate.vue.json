@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 42,
+            "activePatchIndex": 54,
             "patches": [
                 {
                     "date": 1752395027594,
@@ -176,6 +176,54 @@
                 {
                     "date": 1752429746602,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -324,11 +324,12 @@\n \n \n \n .comparison-result {\n-  /* 移除flex布局，使用块级布局确保子元素占满宽度 */\n+  /* 确保对比组件居中显示 */\n   width: 100%;\n   margin: 0 auto;\n+  text-align: center; /* 居中对比组件 */\n }\n \n .simple-result {\n   text-align: center;\n"
+                },
+                {
+                    "date": 1752433395512,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -132,8 +132,9 @@\n   VantImageComparison\n } from '../mobile'\n import ImageComparison from '../ImageComparison.vue'\n import UnifiedImageUploadPanel from '../common/UnifiedImageUploadPanel.vue'\n+import ServerStatusPanel from '../ServerStatusPanel.vue'\n import { getImageProcessingConfig, fetchImageProcessingConfigFromAPI } from '../../config/imageProcessingConfigs.js'\n \n // Props\n const props = defineProps({\n"
+                },
+                {
+                    "date": 1752433418380,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,8 +22,11 @@\n     @reprocess=\"$emit('reprocess')\"\n   >\n     <!-- 输入区域 -->\n     <template #inputs>\n+      <!-- 服务器状态面板 -->\n+      <ServerStatusPanel v-if=\"showServerStatus\" />\n+\n       <!-- 图片上传面板 -->\n       <template v-if=\"config.uploadPanels\">\n         <UnifiedImageUploadPanel\n           v-for=\"panel in config.uploadPanels\"\n"
+                },
+                {
+                    "date": 1752433448057,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -195,8 +195,9 @@\n })\n const uploadData = ref({})\n const inputData = ref({})\n const configLoaded = ref(false)\n+const showServerStatus = ref(false) // 控制服务器状态面板显示\n \n // 计算属性\n const canProcess = computed(() => {\n   // 检查上传面板\n"
+                },
+                {
+                    "date": 1752433493117,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -270,13 +270,38 @@\n \n // 状态相关方法\n \n \n+// 切换服务器状态面板显示（可以通过快捷键或其他方式触发）\n+const toggleServerStatus = () => {\n+  showServerStatus.value = !showServerStatus.value\n+}\n+\n+// 监听键盘事件，Ctrl+Shift+S 切换服务器状态面板\n+const handleKeydown = (event) => {\n+  if (event.ctrlKey && event.shiftKey && event.key === 'S') {\n+    event.preventDefault()\n+    toggleServerStatus()\n+  }\n+}\n+\n // 生命周期\n onMounted(() => {\n   loadConfig()\n+\n+  // 在开发环境或出现网络问题时显示服务器状态面板\n+  if (import.meta.env.DEV) {\n+    showServerStatus.value = true\n+  }\n+\n+  // 添加键盘事件监听\n+  document.addEventListener('keydown', handleKeydown)\n })\n \n+onUnmounted(() => {\n+  document.removeEventListener('keydown', handleKeydown)\n+})\n+\n // 暴露数据给父组件\n defineExpose({\n   uploadData,\n   inputData,\n"
+                },
+                {
+                    "date": 1752433508290,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -127,9 +127,9 @@\n   </div>\n </template>\n \n <script setup>\n-import { ref, computed, watch, onMounted } from 'vue'\n+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'\n import { Toast } from 'vant'\n import {\n   AIProcessingTemplate,\n   VantImageComparison\n"
+                },
+                {
+                    "date": 1752435193875,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,11 +22,8 @@\n     @reprocess=\"$emit('reprocess')\"\n   >\n     <!-- 输入区域 -->\n     <template #inputs>\n-      <!-- 服务器状态面板 -->\n-      <ServerStatusPanel v-if=\"showServerStatus\" />\n-\n       <!-- 图片上传面板 -->\n       <template v-if=\"config.uploadPanels\">\n         <UnifiedImageUploadPanel\n           v-for=\"panel in config.uploadPanels\"\n"
+                },
+                {
+                    "date": 1752435209003,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -132,9 +132,8 @@\n   VantImageComparison\n } from '../mobile'\n import ImageComparison from '../ImageComparison.vue'\n import UnifiedImageUploadPanel from '../common/UnifiedImageUploadPanel.vue'\n-import ServerStatusPanel from '../ServerStatusPanel.vue'\n import { getImageProcessingConfig, fetchImageProcessingConfigFromAPI } from '../../config/imageProcessingConfigs.js'\n \n // Props\n const props = defineProps({\n"
+                },
+                {
+                    "date": 1752435223749,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -191,9 +191,8 @@\n })\n const uploadData = ref({})\n const inputData = ref({})\n const configLoaded = ref(false)\n-const showServerStatus = ref(false) // 控制服务器状态面板显示\n \n // 计算属性\n const canProcess = computed(() => {\n   // 检查上传面板\n"
+                },
+                {
+                    "date": 1752435244074,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -265,38 +265,13 @@\n \n // 状态相关方法\n \n \n-// 切换服务器状态面板显示（可以通过快捷键或其他方式触发）\n-const toggleServerStatus = () => {\n-  showServerStatus.value = !showServerStatus.value\n-}\n-\n-// 监听键盘事件，Ctrl+Shift+S 切换服务器状态面板\n-const handleKeydown = (event) => {\n-  if (event.ctrlKey && event.shiftKey && event.key === 'S') {\n-    event.preventDefault()\n-    toggleServerStatus()\n-  }\n-}\n-\n // 生命周期\n onMounted(() => {\n   loadConfig()\n-\n-  // 在开发环境或出现网络问题时显示服务器状态面板\n-  if (import.meta.env.DEV) {\n-    showServerStatus.value = true\n-  }\n-\n-  // 添加键盘事件监听\n-  document.addEventListener('keydown', handleKeydown)\n })\n \n-onUnmounted(() => {\n-  document.removeEventListener('keydown', handleKeydown)\n-})\n-\n // 暴露数据给父组件\n defineExpose({\n   uploadData,\n   inputData,\n"
+                },
+                {
+                    "date": 1752435261406,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -124,9 +124,9 @@\n   </div>\n </template>\n \n <script setup>\n-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'\n+import { ref, computed, watch, onMounted } from 'vue'\n import { Toast } from 'vant'\n import {\n   AIProcessingTemplate,\n   VantImageComparison\n"
+                },
+                {
+                    "date": 1752435757812,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,9 @@\n     @login=\"$emit('login', $event)\"\n     @logout=\"$emit('logout', $event)\"\n     @process=\"$emit('process')\"\n     @download=\"$emit('download', $event)\"\n-    @reprocess=\"$emit('reprocess')\"\n+    @reset=\"$emit('reset')\"\n   >\n     <!-- 输入区域 -->\n     <template #inputs>\n       <!-- 图片上传面板 -->\n"
+                },
+                {
+                    "date": 1752435773106,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -175,9 +175,9 @@\n   }\n })\n \n // Emits\n-const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'reprocess', 'upload-change', 'input-change'])\n+const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'upload-change', 'input-change'])\n \n // 响应式数据\n const config = ref({\n   title: '',\n"
                 }
             ],
             "date": 1752395027594,

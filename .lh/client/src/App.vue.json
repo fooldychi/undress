@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1752369807054,
@@ -24,6 +24,14 @@
                 {
                     "date": 1752373807345,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,8 @@\n <template>\r\n   <div class=\"app\">\r\n     <router-view />\r\n+    <!-- VantUI Toast 会自动处理，无需手动添加容器 -->\r\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n"
+                },
+                {
+                    "date": 1752436292044,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,5 +22,10 @@\n   min-height: 100vh;\r\n   display: flex;\r\n   flex-direction: column;\r\n }\r\n+\r\n+/* 覆盖所有.home-footer的margin-top */\r\n+.home-footer {\r\n+  margin-top: 0 !important;\r\n+}\r\n </style>\r\n"
+                },
+                {
+                    "date": 1752436320304,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,10 +22,5 @@\n   min-height: 100vh;\r\n   display: flex;\r\n   flex-direction: column;\r\n }\r\n-\r\n-/* 覆盖所有.home-footer的margin-top */\r\n-.home-footer {\r\n-  margin-top: 0 !important;\r\n-}\r\n </style>\r\n"
                 }
             ],
             "date": 1752369807054,

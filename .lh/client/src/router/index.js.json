@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 14,
+            "activePatchIndex": 16,
             "patches": [
                 {
                     "date": 1752283813378,
@@ -64,6 +64,14 @@
                 {
                     "date": 1752374132034,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,16 +50,8 @@\n     meta: {\r\n       title: '个人中心 - Imagic'\r\n     }\r\n   },\r\n-  {\r\n-    path: '/load-balancer-test',\r\n-    name: 'LoadBalancerTest',\r\n-    component: LoadBalancerTest,\r\n-    meta: {\r\n-      title: '负载均衡器测试 - AI Magic'\r\n-    }\r\n-  },\r\n \r\n ]\r\n \r\n const router = createRouter({\r\n"
+                },
+                {
+                    "date": 1752436615247,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -26,17 +26,10 @@\n     meta: {\r\n       title: '一键换衣 - Imagic'\r\n     }\r\n   },\r\n+\r\n   {\r\n-    path: '/text-to-image',\r\n-    name: 'TextToImage',\r\n-    component: TextToImage,\r\n-    meta: {\r\n-      title: '文生图 - Imagic'\r\n-    }\r\n-  },\r\n-  {\r\n     path: '/face-swap',\r\n     name: 'FaceSwap',\r\n     component: FaceSwap,\r\n     meta: {\r\n"
+                },
+                {
+                    "date": 1752436636019,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n \r\n // 使用动态导入避免循环依赖\r\n const HomePage = () => import('../views/HomePage.vue')\r\n const ClothesSwap = () => import('../views/ClothesSwap.vue')\r\n-const TextToImage = () => import('../views/TextToImage.vue')\r\n+\r\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n \r\n \r\n"
                 }
             ],
             "date": 1752283813378,

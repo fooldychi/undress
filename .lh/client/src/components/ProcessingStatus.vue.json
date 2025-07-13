@@ -1,0 +1,30 @@
+{
+    "sourceFile": "client/src/components/ProcessingStatus.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1752435852413,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752435869590,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -52,20 +52,9 @@\n   showProgress: {\r\n     type: Boolean,\r\n     default: true\r\n   },\r\n-  showInfo: {\r\n-    type: Boolean,\r\n-    default: true\r\n-  },\r\n-  promptId: {\r\n-    type: String,\r\n-    default: ''\r\n-  },\r\n-  processingTime: {\r\n-    type: String,\r\n-    default: ''\r\n-  }\r\n+\r\n })\r\n \r\n const isLoading = computed(() => props.status === 'loading')\r\n const isSuccess = computed(() => props.status === 'success')\r\n"
+                },
+                {
+                    "date": 1752435897286,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -108,32 +108,10 @@\n .progress-bar {\r\n   margin-bottom: 16px;\r\n }\r\n \r\n-.process-info {\r\n-  display: flex;\r\n-  flex-direction: column;\r\n-  gap: 8px;\r\n-  padding-top: 16px;\r\n-}\r\n \r\n-.info-item {\r\n-  display: flex;\r\n-  justify-content: space-between;\r\n-  align-items: center;\r\n-  font-size: 14px;\r\n-}\r\n \r\n-.info-label {\r\n-  color: var(--text-light);\r\n-}\r\n-\r\n-.info-value {\r\n-  color: var(--text-color);\r\n-  font-weight: 500;\r\n-  font-family: monospace;\r\n-}\r\n-\r\n @media (max-width: 768px) {\r\n   .processing-status {\r\n     padding: 16px;\r\n   }\r\n"
+                },
+                {
+                    "date": 1752435929961,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -119,11 +119,7 @@\n   .status-content {\r\n     gap: 12px;\r\n   }\r\n \r\n-  .info-item {\r\n-    flex-direction: column;\r\n-    align-items: flex-start;\r\n-    gap: 4px;\r\n-  }\r\n+\r\n }\r\n </style>\r\n"
+                }
+            ],
+            "date": 1752435852413,
+            "name": "Commit-0",
+            "content": "<template>\r\n  <div class=\"processing-status\">\r\n    <div class=\"status-content\">\r\n      <div v-if=\"isLoading\" class=\"status-icon loading-container\">\r\n        <van-loading size=\"24\" color=\"var(--primary-color)\" />\r\n      </div>\r\n      <CheckCircle v-else-if=\"isSuccess\" :size=\"24\" color=\"var(--success-color)\" class=\"status-icon\" />\r\n      <XCircle v-else-if=\"isError\" :size=\"24\" color=\"var(--error-color)\" class=\"status-icon\" />\r\n\r\n      <div class=\"status-text\">\r\n        <h4 class=\"status-title\">{{ title }}</h4>\r\n        <p v-if=\"description\" class=\"status-description\">{{ description }}</p>\r\n      </div>\r\n    </div>\r\n\r\n    <!-- 进度条 -->\r\n    <van-progress\r\n      v-if=\"showProgress && progress >= 0\"\r\n      :percentage=\"progress\"\r\n      :show-pivot=\"false\"\r\n      color=\"var(--primary-color)\"\r\n      track-color=\"var(--bg-dark-light)\"\r\n      class=\"progress-bar\"\r\n    />\r\n\r\n\r\n  </div>\r\n</template>\r\n\r\n<script setup>\r\nimport { computed } from 'vue'\r\nimport { CheckCircle, XCircle } from 'lucide-vue-next'\r\n\r\nconst props = defineProps({\r\n  status: {\r\n    type: String,\r\n    default: 'idle', // idle, loading, success, error\r\n    validator: (value) => ['idle', 'loading', 'success', 'error'].includes(value)\r\n  },\r\n  title: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  description: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  progress: {\r\n    type: Number,\r\n    default: -1\r\n  },\r\n  showProgress: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  showInfo: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  promptId: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  processingTime: {\r\n    type: String,\r\n    default: ''\r\n  }\r\n})\r\n\r\nconst isLoading = computed(() => props.status === 'loading')\r\nconst isSuccess = computed(() => props.status === 'success')\r\nconst isError = computed(() => props.status === 'error')\r\n</script>\r\n\r\n<style scoped>\r\n.processing-status {\r\n  background: var(--bg-card);\r\n  border: 1px solid var(--border-color);\r\n  border-radius: 12px;\r\n  padding: 20px;\r\n  margin: 16px 0;\r\n}\r\n\r\n.status-content {\r\n  display: flex;\r\n  align-items: center;\r\n  gap: 16px;\r\n  margin-bottom: 16px;\r\n}\r\n\r\n.status-icon {\r\n  flex-shrink: 0;\r\n}\r\n\r\n.loading-container {\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n}\r\n\r\n.status-text {\r\n  flex: 1;\r\n}\r\n\r\n.status-title {\r\n  color: var(--text-color);\r\n  font-size: 16px;\r\n  font-weight: 500;\r\n  margin: 0 0 4px 0;\r\n}\r\n\r\n.status-description {\r\n  color: var(--text-light);\r\n  font-size: 14px;\r\n  margin: 0;\r\n  line-height: 1.4;\r\n}\r\n\r\n.progress-bar {\r\n  margin-bottom: 16px;\r\n}\r\n\r\n.process-info {\r\n  display: flex;\r\n  flex-direction: column;\r\n  gap: 8px;\r\n  padding-top: 16px;\r\n}\r\n\r\n.info-item {\r\n  display: flex;\r\n  justify-content: space-between;\r\n  align-items: center;\r\n  font-size: 14px;\r\n}\r\n\r\n.info-label {\r\n  color: var(--text-light);\r\n}\r\n\r\n.info-value {\r\n  color: var(--text-color);\r\n  font-weight: 500;\r\n  font-family: monospace;\r\n}\r\n\r\n@media (max-width: 768px) {\r\n  .processing-status {\r\n    padding: 16px;\r\n  }\r\n\r\n  .status-content {\r\n    gap: 12px;\r\n  }\r\n\r\n  .info-item {\r\n    flex-direction: column;\r\n    align-items: flex-start;\r\n    gap: 4px;\r\n  }\r\n}\r\n</style>\r\n"
+        }
+    ]
+}

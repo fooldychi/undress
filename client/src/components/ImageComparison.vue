@@ -7,7 +7,6 @@
           :src="originalImage"
           alt="原图"
           class="comparison-image"
-          :style="imageStyle"
           @load="handleImageLoad"
           ref="originalImageRef"
         />
@@ -18,7 +17,7 @@
         class="image-layer result-layer"
         :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
       >
-        <img :src="resultImage" alt="处理结果" class="comparison-image" :style="imageStyle" />
+        <img :src="resultImage" alt="处理结果" class="comparison-image" />
       </div>
 
       <!-- 拖拽滑块 -->
@@ -68,9 +67,7 @@ const containerStyle = computed(() => {
   return ImageSizeUtils.getContainerStyle('preview', isMobile.value)
 })
 
-const imageStyle = computed(() => {
-  return ImageSizeUtils.getImageStyle('preview', isMobile.value)
-})
+
 
 // 处理图片加载
 const handleImageLoad = () => {

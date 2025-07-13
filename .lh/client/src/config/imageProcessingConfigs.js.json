@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 5,
             "patches": [
                 {
                     "date": 1752392983852,
@@ -24,6 +24,10 @@
                 {
                     "date": 1752396181189,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -252,12 +252,8 @@\n     processButtonText: '开始处理',\n     processingTitle: '正在处理...',\n     processingDescription: '请耐心等待',\n     uploadPanels: [],\n-    statusConfig: {\n-      showUploadStatus: true,\n-      statusItems: []\n-    },\n     resultConfig: {\n       showComparison: true,\n       comparisonType: 'slider',\n       downloadEnabled: true,\n"
+                },
+                {
+                    "date": 1752436658658,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -119,46 +119,9 @@\n       resetEnabled: true\n     }\n   },\n \n-  // 文生图配置\n-  'text-to-image': {\n-    id: 'text-to-image',\n-    title: '文生图',\n-    description: '输入文字描述，AI为您生成精美图像',\n-    processButtonText: '生成图像',\n-    processingTitle: '正在生成图像...',\n-    processingDescription: '请耐心等待，AI正在为您创作',\n \n-    // 文生图使用文本输入而不是图片上传\n-    inputPanels: [\n-      {\n-        id: 'text-prompt',\n-        type: 'text',\n-        title: '描述您想要的图像',\n-        icon: 'edit',\n-        iconColor: 'var(--van-success-color)',\n-        placeholder: '请详细描述您想要生成的图像，例如：一只橙色的猫坐在窗台上，窗外是蓝天白云，阳光透过窗户洒在猫咪身上，画面温馨美好，高清摄影风格',\n-        rows: 6,\n-        maxLength: 500,\n-        required: true,\n-        tips: [\n-          '描述越详细，生成效果越好',\n-          '可以包含风格、色彩、构图等要素',\n-          '支持中英文描述'\n-        ]\n-      }\n-    ],\n-\n-\n-\n-    resultConfig: {\n-      showComparison: false,\n-      comparisonType: 'none',\n-      downloadEnabled: true,\n-      resetEnabled: true\n-    }\n-  }\n }\n \n /**\n  * 获取指定功能的配置\n"
                 }
             ],
             "date": 1752392983852,

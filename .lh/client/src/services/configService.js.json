@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752330171943,
@@ -16,6 +16,10 @@
                 {
                     "date": 1752330425122,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -16,9 +16,9 @@\n   async fetchServerConfig() {\n     try {\n       console.log('🔄 从服务端获取配置...')\n \n-      const response = await fetch('/api/public-config', {\n+      const response = await fetch('/api/config', {\n         method: 'GET',\n         headers: {\n           'Content-Type': 'application/json'\n         }\n"
+                },
+                {
+                    "date": 1752436710637,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -115,17 +115,15 @@\n   async getAIPointsConfig() {\n     try {\n       const config = await this.getConfig()\n       return {\n-        textToImage: config['ai.text_to_image_points'] || 20,\n         faceSwap: config['ai.face_swap_points'] || 20,\n         undress: config['ai.undress_points'] || 20\n       }\n     } catch (error) {\n       console.error('❌ 获取AI积分配置失败:', error)\n       // 返回默认值\n       return {\n-        textToImage: 20,\n         faceSwap: 20,\n         undress: 20\n       }\n     }\n"
                 }
             ],
             "date": 1752330171943,

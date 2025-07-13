@@ -116,7 +116,6 @@ class ConfigService {
     try {
       const config = await this.getConfig()
       return {
-        textToImage: config['ai.text_to_image_points'] || 20,
         faceSwap: config['ai.face_swap_points'] || 20,
         undress: config['ai.undress_points'] || 20
       }
@@ -124,7 +123,6 @@ class ConfigService {
       console.error('❌ 获取AI积分配置失败:', error)
       // 返回默认值
       return {
-        textToImage: 20,
         faceSwap: 20,
         undress: 20
       }

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 7,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1752294531380,
@@ -36,6 +36,10 @@
                 {
                     "date": 1752329597244,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-# AI图像处理平台 - 前端\r\n+# AI Magic - 前端\r\n \r\n 基于Vue 3的现代化AI图像处理平台前端应用，提供直观的用户界面和流畅的交互体验。\r\n \r\n ## ✨ 功能特性\r\n"
+                },
+                {
+                    "date": 1752436770484,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,9 +53,8 @@\n │   ├── views/              # 页面组件\r\n │   │   ├── HomePage.vue         # 首页\r\n │   │   ├── Profile.vue          # 个人中心\r\n │   │   ├── ClothesSwap.vue      # 一键褪衣\r\n-│   │   ├── TextToImage.vue      # 文生图\r\n │   │   └── FaceSwap.vue         # 极速换脸\r\n │   ├── services/           # API服务层\r\n │   ├── router/             # 路由配置\r\n │   └── styles/             # 全局样式\r\n"
                 }
             ],
             "date": 1752294531380,

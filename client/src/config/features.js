@@ -55,29 +55,7 @@ export const FEATURE_CONFIGS = [
     pointsCost: 20,
     description_admin: '极速换脸功能管理'
   },
-  {
-    id: 'text-to-image',
-    title: '文生图',
-    description: '通过自然语言描述，AI生成高质量的创意图像，释放无限想象',
-    route: '/text-to-image',
-    icon: {
-      type: 'vant',
-      name: 'photo',
-      size: 28,
-      color: '#4facfe'
-    },
-    iconClass: 'texttoimage-icon',
-    tags: [
-      { text: '文本生成', type: 'success' },
-      { text: '创意无限', type: 'primary' }
-    ],
-    requireLogin: true,
-    enabled: true,
-    order: 3,
-    category: 'ai-generation',
-    pointsCost: 20,
-    description_admin: '文生图功能管理'
-  }
+
 ]
 
 // 图标样式配置
@@ -94,12 +72,7 @@ export const ICON_STYLES = {
     darkBackground: 'linear-gradient(135deg, rgba(240, 147, 251, 0.3), rgba(240, 147, 251, 0.1))',
     darkBorder: '1px solid rgba(240, 147, 251, 0.4)'
   },
-  'texttoimage-icon': {
-    background: 'linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(79, 172, 254, 0.1))',
-    border: '1px solid rgba(79, 172, 254, 0.3)',
-    darkBackground: 'linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(79, 172, 254, 0.1))',
-    darkBorder: '1px solid rgba(79, 172, 254, 0.4)'
-  }
+
 }
 
 // 标签类型配置
@@ -157,11 +130,11 @@ export function getIconStyle(iconClass) {
 export async function fetchFeaturesFromAPI() {
   // 模拟API延迟
   await new Promise(resolve => setTimeout(resolve, 100))
-  
+
   // 这里后续可以替换为真实的API调用
   // const response = await fetch('/api/admin/features')
   // return response.json()
-  
+
   return getEnabledFeatures()
 }
 
@@ -175,7 +148,7 @@ export async function fetchFeaturesFromAPI() {
 export async function updateFeatureConfig(id, updates) {
   // 模拟API调用
   console.log(`更新功能配置: ${id}`, updates)
-  
+
   // 这里后续可以替换为真实的API调用
   // const response = await fetch(`/api/admin/features/${id}`, {
   //   method: 'PUT',
@@ -183,6 +156,6 @@ export async function updateFeatureConfig(id, updates) {
   //   body: JSON.stringify(updates)
   // })
   // return response.ok
-  
+
   return true
 }

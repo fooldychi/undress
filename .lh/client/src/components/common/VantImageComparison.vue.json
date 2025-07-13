@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 58,
+            "activePatchIndex": 61,
             "patches": [
                 {
                     "date": 1752384971595,
@@ -240,6 +240,18 @@
                 {
                     "date": 1752429880606,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -121,9 +121,9 @@\n </script>\n \n <style scoped>\n .comparison-container {\n-  display: flex;\n+  display: inline-flex; /* 改为inline-flex，确保可以被text-align: center居中 */\n   align-items: center;\n   justify-content: center;\n   gap: 4%;\n   width: 100% !important; /* 强制设置宽度，防止被覆盖 */\n"
+                },
+                {
+                    "date": 1752434026599,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -177,8 +177,9 @@\n   width: 100% !important;\n   height: 100% !important;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n+  display: block;\n }\n \n .comparison-image:hover {\n   transform: scale(1.02);\n@@ -271,4 +272,5 @@\n     transform: none;\n   }\n }\n </style>\n+\n"
+                },
+                {
+                    "date": 1752434041889,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -177,9 +177,8 @@\n   width: 100% !important;\n   height: 100% !important;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n-  display: block;\n }\n \n .comparison-image:hover {\n   transform: scale(1.02);\n"
+                },
+                {
+                    "date": 1752434989992,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -271,5 +271,4 @@\n     transform: none;\n   }\n }\n </style>\n-\n"
                 }
             ],
             "date": 1752384971595,

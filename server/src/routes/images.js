@@ -42,12 +42,7 @@ const upload = multer({
 
 // 图像处理任务验证规则
 const processImageSchema = Joi.object({
-  type: Joi.string().valid('undress', 'text-to-image', 'face-swap').required(),
-  prompt: Joi.string().when('type', {
-    is: 'text-to-image',
-    then: Joi.required(),
-    otherwise: Joi.optional()
-  }),
+  type: Joi.string().valid('undress', 'face-swap').required(),
   settings: Joi.object().optional()
 });
 
@@ -63,7 +58,7 @@ router.post('/upload', authenticateToken, upload.single('image'), async (req, re
 
     // 保存图片信息到数据库
     const result = await query(
-      `INSERT INTO images (user_id, filename, original_name, file_path, file_size, mime_type, created_at) 
+      `INSERT INTO images (user_id, filename, original_name, file_path, file_size, mime_type, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
       [
         req.user.id,
@@ -112,7 +107,7 @@ router.post('/upload-multiple', authenticateToken, upload.array('images', 5), as
     // 批量保存图片信息
     for (const file of req.files) {
       const result = await query(
-        `INSERT INTO images (user_id, filename, original_name, file_path, file_size, mime_type, created_at) 
+        `INSERT INTO images (user_id, filename, original_name, file_path, file_size, mime_type, created_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())`,
         [
           req.user.id,
@@ -176,7 +171,7 @@ router.post('/process', authenticateToken, async (req, res, next) => {
 
     // 验证图片是否属于当前用户
     const images = await query(
-      `SELECT id, filename, file_path FROM images 
+      `SELECT id, filename, file_path FROM images
        WHERE id IN (${imageIds.map(() => '?').join(',')}) AND user_id = ?`,
       [...imageIds, req.user.id]
     );
@@ -190,7 +185,7 @@ router.post('/process', authenticateToken, async (req, res, next) => {
 
     // 创建处理任务
     const taskResult = await query(
-      `INSERT INTO processing_tasks (user_id, type, status, prompt, settings, created_at) 
+      `INSERT INTO processing_tasks (user_id, type, status, prompt, settings, created_at)
        VALUES (?, ?, ?, ?, ?, NOW())`,
       [req.user.id, type, 'pending', prompt || null, JSON.stringify(settings || {})]
     );
@@ -241,9 +236,9 @@ router.get('/tasks', authenticateToken, async (req, res, next) => {
     // 获取任务列表
     const tasks = await query(
       `SELECT id, type, status, prompt, progress, created_at, updated_at, completed_at
-       FROM processing_tasks 
-       WHERE user_id = ? 
-       ORDER BY created_at DESC 
+       FROM processing_tasks
+       WHERE user_id = ?
+       ORDER BY created_at DESC
        LIMIT ? OFFSET ?`,
       [req.user.id, limit, offset]
     );
@@ -272,7 +267,7 @@ router.get('/tasks/:id', authenticateToken, async (req, res, next) => {
 
     // 获取任务信息
     const tasks = await query(
-      `SELECT * FROM processing_tasks 
+      `SELECT * FROM processing_tasks
        WHERE id = ? AND user_id = ?`,
       [taskId, req.user.id]
     );
@@ -333,9 +328,9 @@ router.get('/', authenticateToken, async (req, res, next) => {
     // 获取图片列表
     const images = await query(
       `SELECT id, filename, original_name, file_size, mime_type, created_at
-       FROM images 
-       WHERE user_id = ? 
-       ORDER BY created_at DESC 
+       FROM images
+       WHERE user_id = ?
+       ORDER BY created_at DESC
        LIMIT ? OFFSET ?`,
       [req.user.id, limit, offset]
     );

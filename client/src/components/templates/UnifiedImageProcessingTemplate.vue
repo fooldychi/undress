@@ -19,7 +19,7 @@
     @logout="$emit('logout', $event)"
     @process="$emit('process')"
     @download="$emit('download', $event)"
-    @reprocess="$emit('reprocess')"
+    @reset="$emit('reset')"
   >
     <!-- 输入区域 -->
     <template #inputs>
@@ -176,7 +176,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'reprocess', 'upload-change', 'input-change'])
+const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'upload-change', 'input-change'])
 
 // 响应式数据
 const config = ref({

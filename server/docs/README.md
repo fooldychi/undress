@@ -123,7 +123,6 @@ npm test
 ### 图像处理
 - `POST /api/image/face-swap` - AI换脸
 - `POST /api/image/clothes-swap` - AI换装
-- `POST /api/image/text-to-image` - 文本生图
 
 ### 管理后台
 - `GET /api/admin/users` - 用户列表
@@ -138,5 +137,5 @@ npm test
 
 ---
 
-**维护者**: 后端开发团队  
+**维护者**: 后端开发团队
 **最后更新**: 2024年

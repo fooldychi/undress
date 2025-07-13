@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 64,
+            "activePatchIndex": 66,
             "patches": [
                 {
                     "date": 1752348776465,
@@ -264,6 +264,14 @@
                 {
                     "date": 1752424930263,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -94,20 +94,9 @@\n     }\r\n \r\n   } catch (error) {\r\n     console.error('❌ 褪衣处理失败:', error)\r\n-\r\n-    // 区分不同类型的错误\r\n-    let errorMessage = error.message\r\n-    if (errorMessage.includes('服务器返回非JSON响应')) {\r\n-      errorMessage = '后端服务连接异常，请检查服务器状态'\r\n-    } else if (errorMessage.includes('积分扣除失败')) {\r\n-      errorMessage = '图片处理成功，但积分扣除失败，请联系管理员'\r\n-    } else if (errorMessage.includes('网络连接异常')) {\r\n-      errorMessage = '网络连接异常，请检查网络后重试'\r\n-    }\r\n-\r\n-    Toast.fail(`处理失败: ${errorMessage}`)\r\n+    Toast.fail(`处理失败: ${error.message}`)\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n"
+                },
+                {
+                    "date": 1752435791775,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,9 +13,9 @@\n     @logout=\"handleUserLogout\"\r\n     @process=\"processImage\"\r\n     @reset=\"resetProcess\"\r\n     @download=\"handleDownload\"\r\n-    @reprocess=\"handleReprocess\"\r\n+\r\n     @upload-change=\"handleUploadChange\"\r\n     ref=\"templateRef\"\r\n   />\r\n </template>\r\n"
+                },
+                {
+                    "date": 1752435806920,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -136,23 +136,10 @@\n \r\n   Toast.success('图片下载已开始')\r\n }\r\n \r\n-// 重新处理\r\n-const handleReprocess = () => {\r\n-  if (!selectedImage.value) {\r\n-    Toast.fail('请先选择图片')\r\n-    return\r\n-  }\r\n \r\n-  // 清除之前的结果\r\n-  resultImage.value = null\r\n-  originalImageForComparison.value = null\r\n \r\n-  // 重新开始处理\r\n-  processImage()\r\n-}\r\n-\r\n // 用户登录成功回调\r\n const handleUserLogin = (data) => {\r\n   console.log('用户登录成功:', data)\r\n   // 可以在这里触发一些需要登录状态的操作\r\n"
                 }
             ],
             "date": 1752348776465,

@@ -195,7 +195,7 @@ function getCurrentConfig(forceRefresh = false) {
 }
 
 // 获取API基础URL - 使用负载均衡
-async function getApiBaseUrl(forceReassessment = false) {
+async function getApiBaseUrl(forceReassessment = false, excludeUrls = []) {
   try {
     // 如果需要强制重新评估，触发负载均衡器重新评估
     if (forceReassessment) {
@@ -204,7 +204,14 @@ async function getApiBaseUrl(forceReassessment = false) {
     }
 
     // 使用负载均衡器选择最优服务器
-    const optimalServer = await loadBalancer.getOptimalServer()
+    let optimalServer
+    if (excludeUrls.length > 0) {
+      console.log('🔄 获取下一个可用服务器，排除:', excludeUrls)
+      optimalServer = await loadBalancer.getNextAvailableServer(excludeUrls)
+    } else {
+      optimalServer = await loadBalancer.getOptimalServer()
+    }
+
     console.log('🎯 负载均衡选择的服务器:', optimalServer)
 
     // 确保URL格式正确，移除末尾的斜杠
@@ -227,6 +234,52 @@ async function getApiBaseUrl(forceReassessment = false) {
 
     return baseUrl
   }
+}
+
+// 带重试的API调用包装器
+async function callWithRetry(apiCall, maxRetries = 2, excludeUrls = []) {
+  let lastError = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await apiCall()
+      return result
+    } catch (error) {
+      lastError = error
+      console.warn(`⚠️ API调用失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error.message)
+
+      // 如果不是最后一次尝试，且是网络相关错误，尝试下一个服务器
+      if (attempt < maxRetries &&
+          (error.message.includes('fetch') ||
+           error.message.includes('network') ||
+           error.message.includes('timeout') ||
+           error.message.includes('500') ||
+           error.message.includes('502') ||
+           error.message.includes('503'))) {
+
+        // 获取当前失败的服务器URL
+        const currentServer = await getApiBaseUrl()
+        if (currentServer) {
+          excludeUrls.push(currentServer)
+          console.log(`🔄 添加失败服务器到排除列表: ${currentServer}`)
+
+          // 记录失败
+          let errorType = 'api_error'
+          if (error.message.includes('timeout')) errorType = 'timeout'
+          else if (error.message.includes('network')) errorType = 'network'
+          else if (error.message.includes('fetch')) errorType = 'connection'
+          else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) errorType = 'server_error'
+
+          await loadBalancer.recordFailure(currentServer, errorType)
+        }
+
+        // 等待一段时间再重试
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+      }
+    }
+  }
+
+  throw lastError
 }
 
 // 重置为默认配置
@@ -314,7 +367,14 @@ async function uploadImageToComfyUI(base64Image) {
     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
       const currentServer = await getApiBaseUrl()
       console.log('📝 记录服务器上传失败:', currentServer)
-      await loadBalancer.recordFailure(currentServer)
+
+      // 确定错误类型
+      let errorType = 'upload_error'
+      if (error.message.includes('timeout')) errorType = 'timeout'
+      else if (error.message.includes('network')) errorType = 'network'
+      else if (error.message.includes('fetch')) errorType = 'connection'
+
+      await loadBalancer.recordFailure(currentServer, errorType)
     }
 
     throw new Error(`图片上传失败: ${error.message}`)
@@ -413,7 +473,15 @@ async function submitWorkflow(workflowPrompt) {
     // 记录服务器失败
     if (selectedServer) {
       console.log('📝 记录服务器失败:', selectedServer)
-      await loadBalancer.recordFailure(selectedServer)
+
+      // 确定错误类型
+      let errorType = 'workflow_error'
+      if (error.message.includes('timeout')) errorType = 'timeout'
+      else if (error.message.includes('network')) errorType = 'network'
+      else if (error.message.includes('fetch')) errorType = 'connection'
+      else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) errorType = 'server_error'
+
+      await loadBalancer.recordFailure(selectedServer, errorType)
     }
 
     throw new Error(`工作流提交失败: ${error.message}`)
@@ -442,7 +510,14 @@ async function checkTaskStatus(promptId) {
     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
       const currentServer = await getApiBaseUrl()
       console.log('📝 记录服务器状态查询失败:', currentServer)
-      await loadBalancer.recordFailure(currentServer)
+
+      // 确定错误类型
+      let errorType = 'status_check_error'
+      if (error.message.includes('timeout')) errorType = 'timeout'
+      else if (error.message.includes('network')) errorType = 'network'
+      else if (error.message.includes('fetch')) errorType = 'connection'
+
+      await loadBalancer.recordFailure(currentServer, errorType)
     }
 
     throw new Error(`状态查询失败: ${error.message}`)

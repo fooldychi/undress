@@ -14,7 +14,7 @@
     @process="processImage"
     @reset="resetProcess"
     @download="handleDownload"
-    @reprocess="handleReprocess"
+
     @upload-change="handleUploadChange"
     ref="templateRef"
   />
@@ -137,20 +137,7 @@ const handleDownload = (imageUrl) => {
   Toast.success('图片下载已开始')
 }
 
-// 重新处理
-const handleReprocess = () => {
-  if (!selectedImage.value) {
-    Toast.fail('请先选择图片')
-    return
-  }
 
-  // 清除之前的结果
-  resultImage.value = null
-  originalImageForComparison.value = null
-
-  // 重新开始处理
-  processImage()
-}
 
 // 用户登录成功回调
 const handleUserLogin = (data) => {

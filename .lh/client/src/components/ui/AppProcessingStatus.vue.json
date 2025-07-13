@@ -1,0 +1,22 @@
+{
+    "sourceFile": "client/src/components/ui/AppProcessingStatus.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752435949161,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752435967156,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,16 +44,9 @@\n   animated: {\r\n     type: Boolean,\r\n     default: true\r\n   },\r\n-  promptId: {\r\n-    type: String,\r\n-    default: ''\r\n-  },\r\n-  processingTime: {\r\n-    type: String,\r\n-    default: ''\r\n-  },\r\n+\r\n   centered: {\r\n     type: Boolean,\r\n     default: true\r\n   },\r\n"
+                }
+            ],
+            "date": 1752435949161,
+            "name": "Commit-0",
+            "content": "<template>\r\n  <div class=\"app-processing-status\" :class=\"containerClasses\">\r\n    <AppProgressBar\r\n      :percentage=\"percentage\"\r\n      :status-text=\"statusText\"\r\n      :show-status=\"showStatus\"\r\n      :show-percentage=\"showPercentage\"\r\n      :variant=\"variant\"\r\n      :animated=\"animated\"\r\n    >\r\n      <template #extra>\r\n        <slot name=\"extra\">\r\n        </slot>\r\n      </template>\r\n    </AppProgressBar>\r\n  </div>\r\n</template>\r\n\r\n<script setup>\r\nimport { computed } from 'vue'\r\nimport AppProgressBar from './AppProgressBar.vue'\r\n\r\nconst props = defineProps({\r\n  percentage: {\r\n    type: Number,\r\n    default: 0\r\n  },\r\n  statusText: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  showStatus: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  showPercentage: {\r\n    type: Boolean,\r\n    default: false\r\n  },\r\n  variant: {\r\n    type: String,\r\n    default: 'primary'\r\n  },\r\n  animated: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  promptId: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  processingTime: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  centered: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  compact: {\r\n    type: Boolean,\r\n    default: false\r\n  }\r\n})\r\n\r\nconst containerClasses = computed(() => ({\r\n  'app-processing-status--centered': props.centered,\r\n  'app-processing-status--compact': props.compact\r\n}))\r\n</script>\r\n\r\n<style scoped>\r\n.app-processing-status {\r\n  width: 100%;\r\n}\r\n\r\n.app-processing-status--centered {\r\n  text-align: center;\r\n  margin-top: 20px;\r\n}\r\n\r\n.app-processing-status--compact {\r\n  margin-top: 12px;\r\n}\r\n\r\n.prompt-id,\r\n.processing-time {\r\n  margin-top: 8px;\r\n  color: rgba(255, 255, 255, 0.8);\r\n  font-size: 0.9rem;\r\n}\r\n\r\n.prompt-id small,\r\n.processing-time small {\r\n  color: inherit;\r\n}\r\n\r\n/* 响应式设计 */\r\n@media (max-width: 768px) {\r\n  .app-processing-status--centered {\r\n    margin-top: 16px;\r\n  }\r\n\r\n  .prompt-id,\r\n  .processing-time {\r\n    font-size: 0.8rem;\r\n  }\r\n}\r\n</style>\r\n"
+        }
+    ]
+}

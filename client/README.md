@@ -54,7 +54,6 @@ client/
 │   │   ├── HomePage.vue         # 首页
 │   │   ├── Profile.vue          # 个人中心
 │   │   ├── ClothesSwap.vue      # 一键褪衣
-│   │   ├── TextToImage.vue      # 文生图
 │   │   └── FaceSwap.vue         # 极速换脸
 │   ├── services/           # API服务层
 │   ├── router/             # 路由配置

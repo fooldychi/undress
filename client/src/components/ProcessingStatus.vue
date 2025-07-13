@@ -23,17 +23,7 @@
       class="progress-bar"
     />
 
-    <!-- 处理信息 -->
-    <div v-if="showInfo && (promptId || processingTime)" class="process-info">
-      <div v-if="promptId" class="info-item">
-        <span class="info-label">任务ID:</span>
-        <span class="info-value">{{ promptId }}</span>
-      </div>
-      <div v-if="processingTime" class="info-item">
-        <span class="info-label">处理时间:</span>
-        <span class="info-value">{{ processingTime }}</span>
-      </div>
-    </div>
+
   </div>
 </template>
 
@@ -63,18 +53,7 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
-  showInfo: {
-    type: Boolean,
-    default: true
-  },
-  promptId: {
-    type: String,
-    default: ''
-  },
-  processingTime: {
-    type: String,
-    default: ''
-  }
+
 })
 
 const isLoading = computed(() => props.status === 'loading')
@@ -130,29 +109,7 @@ const isError = computed(() => props.status === 'error')
   margin-bottom: 16px;
 }
 
-.process-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 16px;
-}
 
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-}
-
-.info-label {
-  color: var(--text-light);
-}
-
-.info-value {
-  color: var(--text-color);
-  font-weight: 500;
-  font-family: monospace;
-}
 
 @media (max-width: 768px) {
   .processing-status {
@@ -163,10 +120,6 @@ const isError = computed(() => props.status === 'error')
     gap: 12px;
   }
 
-  .info-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
+
 }
 </style>

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 17,
+            "activePatchIndex": 19,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -76,6 +76,14 @@
                 {
                     "date": 1752411497329,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -116,8 +116,13 @@\n     app.mount('#app')\r\n \r\n     console.log('✅ Vue应用启动成功!')\r\n \r\n+    // 在开发环境中暴露测试函数\r\n+    if (import.meta.env.DEV) {\r\n+      exposeTestFunctions()\r\n+    }\r\n+\r\n   } catch (error) {\r\n     console.error('❌ Vue应用启动失败:', error)\r\n \r\n     // 显示启动失败页面\r\n"
+                },
+                {
+                    "date": 1752436287887,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,8 +18,9 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n+import './styles/overrides.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752436317134,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,8 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n-import './styles/overrides.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
                 }
             ],
             "date": 1752330016769,

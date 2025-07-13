@@ -271,12 +271,7 @@ const handleUserLogout = () => {
   border: 1px solid rgba(240, 147, 251, 0.3);
 }
 
-.texttoimage-icon {
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(79, 172, 254, 0.1));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(79, 172, 254, 0.3);
-}
+
 
 .feature-content {
   display: flex;
@@ -329,7 +324,6 @@ const handleUserLogout = () => {
 
 /* 页面底部样式 */
 .home-footer {
-  margin-top: 40px;
   padding: 24px 0;
   text-align: center;
 }
@@ -386,10 +380,6 @@ const handleUserLogout = () => {
     font-size: 14px;
   }
 
-  .home-footer {
-    margin-top: 32px;
-    padding: 20px 0;
-  }
 }
 
 /* 深色主题适配 */
@@ -404,10 +394,7 @@ const handleUserLogout = () => {
     border-color: rgba(240, 147, 251, 0.4);
   }
 
-  .texttoimage-icon {
-    background: linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(79, 172, 254, 0.1));
-    border-color: rgba(79, 172, 254, 0.4);
-  }
+
 }
 
 /* 减少动画在低性能设备上的影响 */
