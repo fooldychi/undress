@@ -11,6 +11,9 @@ class LevelCardPointsManager {
     this.pointsInfo = null
     this.lastUpdateTime = 0
     this.updateInterval = 30000 // 30秒更新一次
+    this.retryCount = 0
+    this.maxRetries = 3
+    this.retryDelay = 1000 // 初始重试延迟1秒
   }
 
   // 检查用户是否已登录
@@ -33,17 +36,22 @@ class LevelCardPointsManager {
       }
 
       // 从API获取最新积分信息
-      const response = await pointsApi.getUserPoints()
+      const response = await this.fetchPointsWithRetry()
 
       if (response.success) {
         this.pointsInfo = response.data
         this.lastUpdateTime = now
+        this.retryCount = 0 // 重置重试计数
         return this.formatPointsStatus(this.pointsInfo)
       } else {
         console.error('获取积分信息失败:', response.message)
         // 如果是认证错误，返回未登录状态
         if (response.message && response.message.includes('令牌')) {
           return this.getDefaultStatus()
+        }
+        // 使用缓存数据（如果有）
+        if (this.pointsInfo) {
+          return this.formatPointsStatus(this.pointsInfo)
         }
         return this.getDefaultStatus()
       }
@@ -53,7 +61,30 @@ class LevelCardPointsManager {
       if (error.message && (error.message.includes('令牌') || error.message.includes('401'))) {
         return this.getDefaultStatus()
       }
+      // 使用缓存数据（如果有）
+      if (this.pointsInfo) {
+        return this.formatPointsStatus(this.pointsInfo)
+      }
       return this.getDefaultStatus()
+    }
+  }
+
+  // 带重试机制的积分获取
+  async fetchPointsWithRetry(attempt = 0) {
+    try {
+      return await pointsApi.getUserPoints()
+    } catch (error) {
+      if (attempt < this.maxRetries &&
+          (error.message.includes('网络') ||
+           error.message.includes('超时') ||
+           error.message.includes('认证验证失败'))) {
+        // 指数退避重试
+        const delay = this.retryDelay * Math.pow(2, attempt)
+        console.log(`积分获取失败，${delay}ms后重试 (${attempt + 1}/${this.maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        return this.fetchPointsWithRetry(attempt + 1)
+      }
+      throw error
     }
   }
 

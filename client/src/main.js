@@ -6,10 +6,8 @@ import router from './router'
 import configService from './services/configService.js'
 import loadBalancer from './services/loadBalancer.js'
 
-// 开发环境下引入配置测试工具和修复工具
+// 开发环境下引入测试工具
 if (import.meta.env.DEV) {
-  import('./utils/testConfig.js')
-  import('./utils/fixLoadBalancer.js')
   import('./utils/testPointsConsumption.js')
 }
 

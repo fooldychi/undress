@@ -1,0 +1,22 @@
+{
+    "sourceFile": "client/src/views/TestMobile.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752373279029,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752373305341,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -56,11 +56,36 @@\n   </MobileLayout>\n </template>\n \n <script setup>\n+import { ref } from 'vue'\n+import { Toast } from 'vant'\n import MobileLayout from '../components/MobileLayout.vue'\n import MobileCard from '../components/MobileCard.vue'\n import MobileTabbar from '../components/MobileTabbar.vue'\n+\n+// 响应式数据\n+const count = ref(0)\n+const popupVisible = ref(false)\n+const modalVisible = ref(false)\n+\n+// 方法\n+const showToast = () => {\n+  Toast.success('测试提示显示成功！')\n+}\n+\n+const showModal = () => {\n+  modalVisible.value = true\n+}\n+\n+const showPopup = () => {\n+  popupVisible.value = true\n+}\n+\n+const increment = () => {\n+  count.value++\n+  Toast.success(`计数增加到 ${count.value}`)\n+}\n </script>\n \n <style scoped>\n /* 测试页面样式 */\n"
+                }
+            ],
+            "date": 1752373279029,
+            "name": "Commit-0",
+            "content": "<template>\n  <MobileLayout\n    title=\"测试页面\"\n    :show-back=\"true\"\n    :show-tabbar=\"true\"\n  >\n    <MobileCard\n      title=\"组件测试\"\n      subtitle=\"测试移动端组件是否正常工作\"\n      icon=\"home-o\"\n      variant=\"primary\"\n    >\n      <p>移动端组件测试页面</p>\n      <van-button type=\"primary\" block @click=\"showToast\">显示提示</van-button>\n    </MobileCard>\n\n    <MobileCard\n      title=\"模态框测试\"\n      subtitle=\"测试模态框显示\"\n      icon=\"setting-o\"\n      variant=\"success\"\n    >\n      <van-button type=\"primary\" block @click=\"showModal\">显示模态框</van-button>\n      <van-button type=\"default\" block style=\"margin-top: 12px;\" @click=\"showPopup\">显示弹窗</van-button>\n    </MobileCard>\n\n    <MobileCard\n      title=\"状态测试\"\n      subtitle=\"测试响应式状态\"\n      icon=\"diamond-o\"\n      variant=\"warning\"\n    >\n      <p>计数器: {{ count }}</p>\n      <van-button type=\"primary\" block @click=\"increment\">增加计数</van-button>\n    </MobileCard>\n\n    <!-- 测试弹窗 -->\n    <van-popup v-model:show=\"popupVisible\" position=\"center\" style=\"padding: 20px; border-radius: 12px;\">\n      <h3>测试弹窗</h3>\n      <p>这是一个测试弹窗</p>\n      <van-button type=\"primary\" @click=\"popupVisible = false\">关闭</van-button>\n    </van-popup>\n\n    <!-- 测试模态框 -->\n    <van-dialog\n      v-model:show=\"modalVisible\"\n      title=\"测试模态框\"\n      message=\"这是一个测试模态框\"\n      show-cancel-button\n      @confirm=\"modalVisible = false\"\n      @cancel=\"modalVisible = false\"\n    />\n\n    <!-- 底部导航 -->\n    <MobileTabbar />\n  </MobileLayout>\n</template>\n\n<script setup>\nimport MobileLayout from '../components/MobileLayout.vue'\nimport MobileCard from '../components/MobileCard.vue'\nimport MobileTabbar from '../components/MobileTabbar.vue'\n</script>\n\n<style scoped>\n/* 测试页面样式 */\n</style>\n"
+        }
+    ]
+}

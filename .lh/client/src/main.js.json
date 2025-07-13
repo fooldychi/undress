@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 12,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -56,6 +56,18 @@
                 {
                     "date": 1752368903166,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,9 +19,8 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n-import './styles/mobile-template.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752369208528,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,8 +19,9 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n+import './styles/mobile-layout.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752373807699,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,9 +19,8 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n-import './styles/mobile-layout.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752374205984,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,12 +5,10 @@\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n \r\n-// 开发环境下引入配置测试工具和修复工具\r\n+// 开发环境下引入测试工具\r\n if (import.meta.env.DEV) {\r\n-  import('./utils/testConfig.js')\r\n-  import('./utils/fixLoadBalancer.js')\r\n   import('./utils/testPointsConsumption.js')\r\n }\r\n \r\n // 引入Vant UI\r\n"
                 }
             ],
             "date": 1752330016769,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 7,
             "patches": [
                 {
                     "date": 1752288021271,
@@ -24,6 +24,18 @@
                 {
                     "date": 1752342614789,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -141,8 +141,15 @@\n     this.lastUpdateTime = 0\n     return await this.getPointsStatus()\n   }\n \n+  // 强制清除缓存\n+  clearCache() {\n+    this.pointsInfo = null\n+    this.lastUpdateTime = 0\n+    console.log('🗑️ 积分缓存已清除')\n+  }\n+\n   // 绑定等级卡\n   async bindLevelCard(cardNumber, cardPassword) {\n     if (!this.isLoggedIn()) {\n       throw new Error('请先登录')\n"
+                },
+                {
+                    "date": 1752376526264,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,8 +10,11 @@\n   constructor() {\n     this.pointsInfo = null\n     this.lastUpdateTime = 0\n     this.updateInterval = 30000 // 30秒更新一次\n+    this.retryCount = 0\n+    this.maxRetries = 3\n+    this.retryDelay = 1000 // 初始重试延迟1秒\n   }\n \n   // 检查用户是否已登录\n   isLoggedIn() {\n"
+                },
+                {
+                    "date": 1752376570327,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -35,28 +35,37 @@\n         return this.formatPointsStatus(this.pointsInfo)\n       }\n \n       // 从API获取最新积分信息\n-      const response = await pointsApi.getUserPoints()\n+      const response = await this.fetchPointsWithRetry()\n \n       if (response.success) {\n         this.pointsInfo = response.data\n         this.lastUpdateTime = now\n+        this.retryCount = 0 // 重置重试计数\n         return this.formatPointsStatus(this.pointsInfo)\n       } else {\n         console.error('获取积分信息失败:', response.message)\n         // 如果是认证错误，返回未登录状态\n         if (response.message && response.message.includes('令牌')) {\n           return this.getDefaultStatus()\n         }\n+        // 使用缓存数据（如果有）\n+        if (this.pointsInfo) {\n+          return this.formatPointsStatus(this.pointsInfo)\n+        }\n         return this.getDefaultStatus()\n       }\n     } catch (error) {\n       console.error('获取积分状态失败:', error)\n       // 如果是认证错误，返回未登录状态\n       if (error.message && (error.message.includes('令牌') || error.message.includes('401'))) {\n         return this.getDefaultStatus()\n       }\n+      // 使用缓存数据（如果有）\n+      if (this.pointsInfo) {\n+        return this.formatPointsStatus(this.pointsInfo)\n+      }\n       return this.getDefaultStatus()\n     }\n   }\n \n"
+                },
+                {
+                    "date": 1752376585399,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -68,8 +68,27 @@\n       return this.getDefaultStatus()\n     }\n   }\n \n+  // 带重试机制的积分获取\n+  async fetchPointsWithRetry(attempt = 0) {\n+    try {\n+      return await pointsApi.getUserPoints()\n+    } catch (error) {\n+      if (attempt < this.maxRetries &&\n+          (error.message.includes('网络') ||\n+           error.message.includes('超时') ||\n+           error.message.includes('认证验证失败'))) {\n+        // 指数退避重试\n+        const delay = this.retryDelay * Math.pow(2, attempt)\n+        console.log(`积分获取失败，${delay}ms后重试 (${attempt + 1}/${this.maxRetries})`)\n+        await new Promise(resolve => setTimeout(resolve, delay))\n+        return this.fetchPointsWithRetry(attempt + 1)\n+      }\n+      throw error\n+    }\n+  }\n+\n   // 格式化积分状态\n   formatPointsStatus(pointsInfo) {\n     const totalPoints = pointsInfo.total_points || 0\n     const generationCost = 20 // 每次生成消耗20积分\n"
                 }
             ],
             "date": 1752288021271,

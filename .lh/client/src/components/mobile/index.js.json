@@ -1,0 +1,26 @@
+{
+    "sourceFile": "client/src/components/mobile/index.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1752383670124,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752393258247,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,6 +9,12 @@\n export { default as VantMultiImageUpload } from '../common/VantMultiImageUpload.vue'\n export { default as VantImageComparison } from '../common/VantImageComparison.vue'\n export { default as VantTextInput } from '../common/VantTextInput.vue'\n \n+// 新的统一组件\n+export { default as UnifiedImageUploadPanel } from '../common/UnifiedImageUploadPanel.vue'\n+export { default as SingleImageUpload } from '../common/SingleImageUpload.vue'\n+export { default as MultiImageUpload } from '../common/MultiImageUpload.vue'\n+\n // 模板组件\n export { default as AIProcessingTemplate } from '../templates/AIProcessingTemplate.vue'\n+export { default as UnifiedImageProcessingTemplate } from '../templates/UnifiedImageProcessingTemplate.vue'\n"
+                },
+                {
+                    "date": 1752394827543,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,18 +3,21 @@\n export { default as MobileCard } from './MobileCard.vue'\n export { default as MobileActionButton } from './MobileActionButton.vue'\n export { default as MobileStatusCard } from './MobileStatusCard.vue'\n \n-// 通用组件\n+// 通用组件 (保留旧组件以兼容性)\n export { default as VantImageUpload } from '../common/VantImageUpload.vue'\n export { default as VantMultiImageUpload } from '../common/VantMultiImageUpload.vue'\n export { default as VantImageComparison } from '../common/VantImageComparison.vue'\n export { default as VantTextInput } from '../common/VantTextInput.vue'\n \n-// 新的统一组件\n+// 新的统一组件系统\n export { default as UnifiedImageUploadPanel } from '../common/UnifiedImageUploadPanel.vue'\n export { default as SingleImageUpload } from '../common/SingleImageUpload.vue'\n export { default as MultiImageUpload } from '../common/MultiImageUpload.vue'\n \n // 模板组件\n export { default as AIProcessingTemplate } from '../templates/AIProcessingTemplate.vue'\n export { default as UnifiedImageProcessingTemplate } from '../templates/UnifiedImageProcessingTemplate.vue'\n+\n+// 配置管理\n+export { getImageProcessingConfig, fetchImageProcessingConfigFromAPI } from '../../config/imageProcessingConfigs.js'\n"
+                }
+            ],
+            "date": 1752383670124,
+            "name": "Commit-0",
+            "content": "// 移动端组件库\nexport { default as MobilePageContainer } from './MobilePageContainer.vue'\nexport { default as MobileCard } from './MobileCard.vue'\nexport { default as MobileActionButton } from './MobileActionButton.vue'\nexport { default as MobileStatusCard } from './MobileStatusCard.vue'\n\n// 通用组件\nexport { default as VantImageUpload } from '../common/VantImageUpload.vue'\nexport { default as VantMultiImageUpload } from '../common/VantMultiImageUpload.vue'\nexport { default as VantImageComparison } from '../common/VantImageComparison.vue'\nexport { default as VantTextInput } from '../common/VantTextInput.vue'\n\n// 模板组件\nexport { default as AIProcessingTemplate } from '../templates/AIProcessingTemplate.vue'\n"
+        }
+    ]
+}

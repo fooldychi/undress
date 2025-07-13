@@ -1,66 +1,143 @@
 <template>
-  <div class="top-navigation">
-    <!-- 积分显示（左边） - 仅在登录时显示 -->
-    <div
-      v-if="isLoggedIn"
-      class="nav-item nav-points"
-      @click="showPointsModal = true"
-      title="点击查看积分详情"
-    >
-      <div class="nav-icon">
-        <van-icon name="diamond-o" size="18" />
+  <van-nav-bar
+    :left-arrow="showBackButton"
+    @click-left="handleLeftClick"
+    class="top-navigation"
+    fixed
+    placeholder
+  >
+    <!-- 左侧插槽 -->
+    <template #left>
+      <div class="nav-left">
+        <template v-if="showBackButton">
+          <!-- Make back button visible -->
+          <div class="back-button">
+            <van-icon name="arrow-left" size="18" color="#fff" />
+          </div>
+        </template>
+        <template v-else>
+          <!-- New left side branding with emoji -->
+          <div class="nav-branding" @click="goToHome">
+            <span class="palette-emoji">🎨</span>
+            <span class="brand-text">AI Magic</span>
+          </div>
+        </template>
       </div>
-      <span v-if="!pointsLoading" class="nav-text">{{ pointsStatus.current }}</span>
-      <van-loading v-else size="14" color="var(--primary-color)" />
-    </div>
+    </template>
 
-    <!-- 用户信息（右边） -->
-    <div class="nav-item nav-user">
-      <!-- 未登录状态 -->
-      <div v-if="!isLoggedIn" class="nav-login" @click="showLoginModal" title="点击登录">
-        <div class="nav-icon nav-icon-user">
-          <van-icon name="user-o" size="18" />
+    <!-- 标题插槽 - 移除中间标题 -->
+    <template #title>
+      <!-- Title removed -->
+    </template>
+
+    <!-- 右侧插槽保持不变 -->
+    <template #right>
+      <div class="nav-right">
+        <!-- 积分显示 - 仅在登录时显示 -->
+        <div
+          v-if="isLoggedIn"
+          class="nav-points"
+          @click="showPointsModal = true"
+          title="点击查看积分详情"
+        >
+          <van-icon name="diamond-o" size="16" />
+          <span v-if="!pointsLoading" class="points-text">{{ pointsStatus.current }}</span>
+          <van-loading v-else size="12" color="var(--primary-color)" />
         </div>
-        <span class="nav-text">登录</span>
-      </div>
 
-      <!-- 已登录状态 -->
-      <div v-else class="nav-avatar" @click="goToProfile" title="点击进入个人中心">
-        <div class="nav-icon nav-icon-user">
-          <van-icon name="user-o" size="18" />
+        <!-- 用户信息 -->
+        <div class="nav-user">
+          <!-- 未登录状态 -->
+          <div v-if="!isLoggedIn" @click="showLoginModal" title="点击登录">
+            <van-icon name="user-o" size="16" />
+            <span class="user-text">登录</span>
+          </div>
+          <!-- 已登录状态 -->
+          <div v-else @click="goToProfile" title="点击进入个人中心">
+            <van-icon name="user-o" size="16" />
+          </div>
         </div>
       </div>
-    </div>
+    </template>
+  </van-nav-bar>
 
-    <!-- 积分弹窗 -->
-    <PointsModal
-      v-model:show="showPointsModal"
-      @points-updated="handlePointsUpdated"
-    />
+  <!-- 积分弹窗 -->
+  <PointsModal
+    v-model:show="showPointsModal"
+    @points-updated="handlePointsUpdated"
+  />
 
-    <!-- 登录注册弹窗 -->
-    <AuthModal
-      v-model:show="showAuthModal"
-      :default-mode="authMode"
-      @success="handleAuthSuccess"
-    />
-  </div>
+  <!-- 登录注册弹窗 -->
+  <AuthModal
+    v-model:show="showAuthModal"
+    :default-mode="authMode"
+    @success="handleAuthSuccess"
+  />
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Toast } from 'vant'
 import { authApi } from '../services/api.js'
 import levelCardPointsManager from '../utils/levelCardPointsManager.js'
 import PointsModal from './PointsModal.vue'
 import AuthModal from './AuthModal.vue'
 
+// 定义props
+const props = defineProps({
+  title: {
+    type: String,
+    default: ''
+  },
+  showBack: {
+    type: Boolean,
+    default: null // null表示自动判断
+  }
+})
+
 // 定义事件
 const emit = defineEmits(['login', 'logout'])
 
 // 路由
 const router = useRouter()
+const route = useRoute()
+
+// 计算属性
+const pageTitle = computed(() => {
+  if (props.title) return props.title
+
+  // 根据路由自动生成标题
+  const routeTitleMap = {
+    '/': 'AI Magic',
+    '/clothes-swap': '一键换衣',
+    '/face-swap': '极速换脸',
+    '/text-to-image': '文生图',
+    '/profile': '个人中心'
+  }
+
+  return routeTitleMap[route.path] || 'AI Magic'
+})
+
+const showBackButton = computed(() => {
+  if (props.showBack !== null) return props.showBack
+
+  // 自动判断：首页不显示返回按钮，其他页面显示
+  return route.path !== '/'
+})
+
+// 获取标题图标 - 不再需要此函数
+// const getTitleIcon = () => {
+//   const iconMap = {
+//     '/': 'home-o',
+//     '/clothes-swap': 'user-o',
+//     '/face-swap': 'friends-o',
+//     '/text-to-image': 'photo-o',
+//     '/profile': 'manager-o'
+//   }
+//
+//   return iconMap[route.path] || 'apps-o'
+// }
 
 // 响应式数据
 const showPointsModal = ref(false)
@@ -165,6 +242,23 @@ const handleAuthSuccess = async (data) => {
   showAuthModal.value = false
 }
 
+// 处理左侧点击事件
+const handleLeftClick = () => {
+  if (showBackButton.value) {
+    // 返回上一页
+    if (window.history.length > 1) {
+      router.go(-1)
+    } else {
+      router.push('/')
+    }
+  }
+}
+
+// 跳转到首页
+const goToHome = () => {
+  router.push('/')
+}
+
 // 跳转到个人中心
 const goToProfile = () => {
   router.push('/profile')
@@ -194,10 +288,27 @@ const initUserInfo = () => {
     pointsStatus.isLoggedIn = true
     console.log('✅ 设置用户信息:', userInfo.value)
     console.log('✅ 设置登录状态为true')
+
+    // 验证token有效性（静默验证，不影响用户体验）
+    validateTokenSilently()
   } else {
     console.log('❌ 未找到有效的登录信息')
     userInfo.value = null
     pointsStatus.isLoggedIn = false
+  }
+}
+
+// 静默验证token
+const validateTokenSilently = async () => {
+  try {
+    const response = await authApi.getCurrentUser()
+    if (!response.success) {
+      console.warn('Token验证失败，但不立即登出用户')
+      // 不立即清除token，等待下一次API调用时再处理
+    }
+  } catch (error) {
+    console.warn('Token验证出错，但不立即登出用户:', error)
+    // 不立即清除token，等待下一次API调用时再处理
   }
 }
 
@@ -221,14 +332,27 @@ onMounted(() => {
 
   // 每30秒更新一次状态
   statusUpdateTimer = setInterval(updatePointsStatus, 30000)
-})
 
-// 组件卸载时清理
-onUnmounted(() => {
-  window.removeEventListener('storage', handleStorageChange)
-  if (statusUpdateTimer) {
-    clearInterval(statusUpdateTimer)
-  }
+  // 定期检查登录状态（防止token过期等问题）
+  const checkInterval = setInterval(() => {
+    const token = authApi.getToken()
+    const localUserInfo = authApi.getLocalUserInfo()
+
+    // 状态不一致时重新初始化
+    if ((token && !userInfo.value) || (!token && userInfo.value)) {
+      console.log('检测到登录状态不一致，重新初始化')
+      initUserInfo()
+    }
+  }, 5000) // 每5秒检查一次
+
+  // 清理定时器
+  onUnmounted(() => {
+    window.removeEventListener('storage', handleStorageChange)
+    if (statusUpdateTimer) {
+      clearInterval(statusUpdateTimer)
+    }
+    clearInterval(checkInterval)
+  })
 })
 
 // 暴露给父组件的方法
@@ -244,127 +368,209 @@ defineExpose({
 </script>
 
 <style scoped>
+/* Vant NavBar 自定义样式 */
 .top-navigation {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+  background: var(--van-nav-bar-background, #fff);
+  border-bottom: 1px solid var(--van-border-color, #ebedf0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 64px !important; /* 增加高度到64px */
+  z-index: 9999 !important; /* 确保在最前面 */
+  position: fixed !important; /* 确保固定定位 */
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* 确保导航栏内容垂直居中 */
+.top-navigation :deep(.van-nav-bar__content) {
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.top-navigation :deep(.van-nav-bar__left),
+.top-navigation :deep(.van-nav-bar__title),
+.top-navigation :deep(.van-nav-bar__right) {
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* 左侧区域 */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--van-text-color, #323233);
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
+}
+
+/* 标题区域 */
+.nav-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.title-icon {
+  flex-shrink: 0;
+}
+
+/* 右侧区域 */
+.nav-right {
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 1000;
 }
 
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: #1989fa;
-  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.2);
-  transform: translateY(-1px);
-}
-
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  color: #1989fa;
-}
-
-/* 用户图标样式 - 与积分图标保持一致 */
-.nav-icon-user {
-  color: #1989fa !important;
-  background: none !important;
-  border: none !important;
-}
-
-.nav-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #323233;
-  white-space: nowrap;
-}
-
+/* 积分显示 */
 .nav-points {
-  order: 1; /* 积分在左边 */
-}
-
-.nav-user {
-  order: 2; /* 用户在右边 */
-}
-
-.nav-login {
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.nav-avatar {
-  display: flex;
-  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(25, 137, 250, 0.1);
+  border-radius: 16px;
+  cursor: pointer;
+  min-width: 60px;
+  min-height: 44px;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #1989fa, #1976d2);
-  border-radius: 50%;
-  color: white;
-  margin: -4px;
 }
 
-.nav-avatar:hover {
-  background: linear-gradient(135deg, #1976d2, #1565c0);
-  transform: scale(1.05);
+.points-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--van-primary-color, #1989fa);
+  margin-left: 2px;
+}
+
+/* 用户信息 */
+.nav-user {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.nav-user > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  color: var(--van-text-color, #323233);
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
+}
+
+.user-text {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 /* 深色主题适配 */
 @media (prefers-color-scheme: dark) {
-  .nav-item {
-    background: rgba(30, 30, 30, 0.95);
-    border-color: rgba(255, 255, 255, 0.1);
+  .top-navigation {
+    background: var(--van-nav-bar-background, #1e1e1e);
+    border-bottom-color: var(--van-border-color, #333);
   }
 
-  .nav-item:hover {
-    background: rgba(40, 40, 40, 1);
-    border-color: #1989fa;
-  }
-
-  .nav-text {
-    color: #ffffff;
+  .nav-points {
+    background: rgba(25, 137, 250, 0.2);
   }
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .top-navigation {
-    top: 15px;
-    right: 15px;
+    height: 60px !important; /* 移动端稍微降低高度但仍比默认高 */
+  }
+
+  .top-navigation :deep(.van-nav-bar__content) {
+    height: 60px !important;
+  }
+
+  .top-navigation :deep(.van-nav-bar__left),
+  .top-navigation :deep(.van-nav-bar__title),
+  .top-navigation :deep(.van-nav-bar__right) {
+    height: 60px !important;
+  }
+
+  .nav-right {
     gap: 8px;
   }
 
-  .nav-item {
+  .nav-points {
     padding: 6px 10px;
+    min-width: 50px;
+    min-height: 40px;
   }
 
-  .nav-text {
-    font-size: 13px;
+  .nav-user > div {
+    padding: 6px 10px;
+    min-height: 40px;
+    min-width: 40px;
   }
 
-  .nav-icon {
-    width: 20px;
-    height: 20px;
+  .nav-logo {
+    padding: 6px 10px;
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .points-text,
+  .user-text {
+    font-size: 11px;
   }
 }
+
+/* Add new styles for the branding */
+.nav-branding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.brand-text {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-color, #fff);
+}
+
+.palette-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Add styles for back button */
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 64px; /* 匹配导航栏高度 */
+  cursor: pointer;
+}
 </style>
+
+
+
+
+
+
+
+
+
+

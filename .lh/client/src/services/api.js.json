@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 20,
+            "activePatchIndex": 24,
             "patches": [
                 {
                     "date": 1752283330589,
@@ -88,6 +88,22 @@
                 {
                     "date": 1752354036749,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -564,12 +564,6 @@\n     console.log('🔄 API_CONFIG.TIMEOUT 已更新为:', API_CONFIG.TIMEOUT)\r\n   }\r\n }\r\n \r\n-// 为了向后兼容，导出简化的函数名\r\n-export const getUserInfo = authApi.getCurrentUser\r\n-export const getUserPoints = pointsApi.getUserPoints\r\n-export const getUserLevelCards = levelCardApi.getMyCards\r\n-export const getUserPointsRecords = (page = 1, limit = 10) => pointsApi.getPointsHistory(page, limit, true)\r\n-\r\n // 导出配置，方便其他地方使用\r\n export { API_CONFIG, BACKEND_API_CONFIG }\r\n"
+                },
+                {
+                    "date": 1752376142305,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -263,8 +263,24 @@\n       throw new Error(`服务器返回非JSON响应: ${text}`)\r\n     }\r\n \r\n     if (!response.ok) {\r\n+      // 特殊处理401错误，区分真正的认证失败和临时网络问题\r\n+      if (response.status === 401) {\r\n+        const errorMessage = data?.message || ''\r\n+        // 只有在明确的认证错误时才清除token\r\n+        if (errorMessage.includes('令牌已过期') ||\r\n+            errorMessage.includes('无效的访问令牌') ||\r\n+            errorMessage.includes('用户不存在') ||\r\n+            errorMessage.includes('账户已被禁用')) {\r\n+          localStorage.removeItem('auth_token')\r\n+          localStorage.removeItem('user_info')\r\n+          throw new Error('登录已过期，请重新登录')\r\n+        }\r\n+        // 其他401错误可能是临时问题，不清除token\r\n+        throw new Error(errorMessage || '认证验证失败，请稍后重试')\r\n+      }\r\n+\r\n       throw new Error(data?.message || `HTTP error! status: ${response.status}`)\r\n     }\r\n \r\n     return data\r\n"
+                },
+                {
+                    "date": 1752376160150,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -289,24 +289,27 @@\n       throw new Error('请求超时，请稍后重试')\r\n     }\r\n \r\n     // 处理网络连接错误 - 尝试重试\r\n-    if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) && retryCount < 2) {\r\n+    if ((error.message.includes('Failed to fetch') ||\r\n+         error.message.includes('NetworkError') ||\r\n+         error.message.includes('fetch') ||\r\n+         error.message.includes('认证验证失败')) &&\r\n+         retryCount < 2) {\r\n       console.log(`网络请求失败，正在重试... (${retryCount + 1}/3)`)\r\n       await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // 递增延迟\r\n       return makeBackendRequest(endpoint, options, retryCount + 1)\r\n     }\r\n \r\n-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) {\r\n+    if (error.message.includes('Failed to fetch') ||\r\n+        error.message.includes('NetworkError') ||\r\n+        error.message.includes('fetch')) {\r\n       throw new Error('网络连接异常，请检查网络或稍后重试')\r\n     }\r\n \r\n-    // 处理认证错误\r\n-    if (error.message.includes('认证过程中发生错误') || error.message.includes('401')) {\r\n-      // 清除无效的token\r\n-      localStorage.removeItem('auth_token')\r\n-      localStorage.removeItem('user_info')\r\n-      throw new Error('登录已过期，请重新登录')\r\n+    // 只有明确的认证错误才抛出登录过期\r\n+    if (error.message.includes('登录已过期')) {\r\n+      throw error\r\n     }\r\n \r\n     throw new Error(`请求失败: ${error.message}`)\r\n   }\r\n"
+                },
+                {
+                    "date": 1752379072959,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,10 +12,10 @@\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 使用代理，开发环境下会自动转发到 http://localhost:3006\r\n-  BASE_URL: '',\r\n+  // 后端服务器URL - 指向后端服务器\r\n+  BASE_URL: 'http://localhost:3007',\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1752379098804,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,10 +12,10 @@\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 指向后端服务器\r\n-  BASE_URL: 'http://localhost:3007',\r\n+  // 后端服务器URL - 开发环境使用代理，生产环境使用完整URL\r\n+  BASE_URL: import.meta.env.DEV ? '' : 'http://localhost:3007',\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
                 }
             ],
             "date": 1752283330589,

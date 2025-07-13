@@ -1,155 +1,138 @@
 <template>
-  <div class="home">
-    <!-- 顶部导航 -->
-    <TopNavigation
-      ref="topNavigationRef"
-      @login="handleUserLogin"
-      @logout="handleUserLogout"
-    />
+  <MobilePageContainer
+    title="AI Magic"
+    @login="handleUserLogin"
+    @logout="handleUserLogout"
+  >
+    <!-- 页面头部 -->
+    <template #header>
+      <div class="home-header">
+        <div class="welcome-section">
+          <h1 class="app-title">
+            <van-icon name="magic" size="32" color="#FFD700" />
+            AI Magic
+          </h1>
+          <p class="app-subtitle">智能图像处理，释放创意无限可能</p>
+        </div>
+      </div>
+    </template>
 
-    <div class="container">
-      <header class="header">
-        <h1 class="title">
-          <Palette :size="48" color="var(--primary-color)" class="logo-icon" />
-          AI Magic
-        </h1>
-        <p class="subtitle">AI驱动的图像处理应用</p>
-      </header>
-
-      <main class="main">
-        <div class="features">
-          <div class="feature-card" @click="navigateTo('/clothes-swap')">
-            <div class="feature-content">
-              <div class="feature-icon">
-                <UndressWomanIcon :size="48" color="var(--primary-color)" />
-              </div>
-              <h2 class="feature-title">一键褪衣</h2>
-              <p class="feature-description">智能识别人物轮廓，快速移除照片中的服装</p>
-              <div class="feature-arrow">
-                <ChevronRight :size="20" color="var(--text-light)" />
-              </div>
-            </div>
+    <!-- 主要内容 -->
+    <div class="features-section">
+      <!-- 动态渲染功能卡片 -->
+      <MobileCard
+        v-for="feature in featureConfigs"
+        :key="feature.id"
+        :title="feature.title"
+        :clickable="true"
+        :show-arrow="true"
+        inset
+        @click="navigateTo(feature)"
+        class="feature-card"
+      >
+        <template #icon>
+          <div class="feature-icon" :class="feature.iconClass">
+            <!-- 自定义SVG图标 -->
+            <component
+              v-if="feature.icon.type === 'custom'"
+              :is="feature.icon.component"
+              :size="feature.icon.size"
+              :color="feature.icon.color"
+            />
+            <!-- Vant图标 -->
+            <van-icon
+              v-else-if="feature.icon.type === 'vant'"
+              :name="feature.icon.name"
+              :size="feature.icon.size"
+              :color="feature.icon.color"
+            />
           </div>
+        </template>
 
-          <!-- 文生图功能暂时隐藏 -->
-          <!-- <div class="feature-card" @click="navigateTo('/text-to-image')">
-            <div class="feature-content">
-              <div class="feature-icon">
-                <van-icon name="photo-o" size="48" color="#07c160" />
-              </div>
-              <h2 class="feature-title">文生图</h2>
-              <p class="feature-description">通过自然语言描述，AI生成高质量的创意图像</p>
-              <div class="feature-arrow">
-                <van-icon name="arrow" size="20" color="#969799" />
-              </div>
-            </div>
-          </div> -->
-
-          <div class="feature-card" @click="navigateTo('/face-swap')">
-            <div class="feature-content">
-              <div class="feature-icon">
-                <FaceSwapIcon :size="48" color="var(--warning-color)" />
-              </div>
-              <h2 class="feature-title">极速换脸</h2>
-              <p class="feature-description">精准面部识别技术，实现自然的人脸替换效果</p>
-              <div class="feature-arrow">
-                <ChevronRight :size="20" color="var(--text-light)" />
-              </div>
-            </div>
+        <div class="feature-content">
+          <div class="feature-description">
+            {{ feature.description }}
+          </div>
+          <div class="feature-tags">
+            <van-tag
+              v-for="tag in feature.tags"
+              :key="tag.text"
+              :type="tag.type"
+              size="small"
+            >
+              {{ tag.text }}
+            </van-tag>
           </div>
         </div>
-      </main>
-
-      <footer class="footer">
-        <p>&copy; 2024 AI Magic. AI图像处理应用（仅供个人娱乐，请勿在互联网传播，否则后果自负）</p>
-        <div class="footer-actions">
-          <van-button
-            @click="showConfigModal = !showConfigModal"
-            type="default"
-            size="small"
-            plain
-            round
-          >
-            ⚙️ 配置
-          </van-button>
-          <van-button
-            @click="refreshConfig"
-            type="default"
-            size="small"
-            plain
-            round
-            :loading="configLoading"
-          >
-            🔄 刷新配置
-          </van-button>
-          <van-button
-            @click="showLoadBalancerStatus = !showLoadBalancerStatus"
-            type="default"
-            size="small"
-            plain
-            round
-          >
-            📊 服务器状态
-          </van-button>
-          <van-button
-            @click="$router.push('/load-balancer-test')"
-            type="default"
-            size="small"
-            plain
-            round
-          >
-            🧪 负载均衡测试
-          </van-button>
-        </div>
-      </footer>
-
-      <!-- 负载均衡器状态 -->
-      <LoadBalancerStatus v-if="showLoadBalancerStatus" />
-
-      <!-- 配置模态框 -->
-      <ConfigModal
-        :visible="showConfigModal"
-        @close="showConfigModal = false"
-        @saved="onConfigSaved"
-      />
+      </MobileCard>
     </div>
-  </div>
+
+    <!-- 页面底部 -->
+    <template #footer>
+      <div class="home-footer">
+        <div class="footer-content">
+          <p class="copyright">© 2025 AI Magic 智能图像处理应用</p>
+          <p class="disclaimer">(仅供个人娱乐，请勿在互联网传播，否则后果自负)</p>
+        </div>
+      </div>
+    </template>
+  </MobilePageContainer>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Palette, ChevronRight } from 'lucide-vue-next'
 import { Toast } from 'vant'
-import ConfigModal from '../components/ConfigModal.vue'
-import LoadBalancerStatus from '../components/LoadBalancerStatus.vue'
-import TopNavigation from '../components/TopNavigation.vue'
-import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'
+import { MobilePageContainer, MobileCard } from '../components/mobile'
 import { authApi } from '../services/api.js'
-import configService from '../services/configService.js'
+import { fetchFeaturesFromAPI } from '../config/features.js'
+import { generateIconStyle, isDarkTheme, injectCSS, createCSSRule } from '../utils/styleGenerator.js'
 
 const router = useRouter()
 
-// 配置模态框状态
-const showConfigModal = ref(false)
+// 功能配置 - 从配置文件获取
+const featureConfigs = ref([])
 
-// TopNavigation组件引用
-const topNavigationRef = ref(null)
+// 动态生成CSS样式
+const generateDynamicStyles = () => {
+  const isDark = isDarkTheme()
+  let cssRules = []
 
-// 配置加载状态
-const configLoading = ref(false)
+  featureConfigs.value.forEach(feature => {
+    if (feature.iconClass && feature.icon.color) {
+      const iconStyle = generateIconStyle({
+        color: feature.icon.color,
+        opacity: 0.2
+      }, isDark)
 
-// 负载均衡器状态显示
-const showLoadBalancerStatus = ref(false)
+      const rule = createCSSRule(`.${feature.iconClass}`, iconStyle)
+      cssRules.push(rule)
+    }
+  })
+
+  if (cssRules.length > 0) {
+    injectCSS(cssRules.join('\n\n'), 'feature-icon-styles')
+  }
+}
+
+// 初始化功能配置
+onMounted(async () => {
+  try {
+    featureConfigs.value = await fetchFeaturesFromAPI()
+    // 生成动态样式
+    generateDynamicStyles()
+  } catch (error) {
+    console.error('获取功能配置失败:', error)
+    Toast.fail('加载功能列表失败')
+  }
+})
 
 // 检查登录状态并导航
-const navigateTo = (path) => {
-  console.log('🔥 点击事件触发，准备导航到:', path)
+const navigateTo = (featureConfig) => {
+  const { route, requireLogin, title } = featureConfig
+  console.log('🔥 点击事件触发，准备导航到:', route)
 
-  // 检查是否为需要登录的页面
-  const requireLoginPages = ['/clothes-swap', '/text-to-image', '/face-swap']
-
-  if (requireLoginPages.includes(path)) {
+  if (requireLogin) {
     // 检查登录状态
     if (!authApi.isLoggedIn()) {
       console.log('❌ 未登录，显示登录提示')
@@ -164,52 +147,18 @@ const navigateTo = (path) => {
   }
 
   try {
-    console.log('🚀 开始导航到:', path)
-    router.push(path)
+    console.log('🚀 开始导航到:', route)
+    router.push(route)
     console.log('✅ 导航成功')
   } catch (error) {
     console.error('❌ 导航失败:', error)
-    Toast.fail(`导航到 ${path} 失败，请刷新页面重试`)
+    Toast.fail(`导航到 ${title} 失败，请刷新页面重试`)
   }
 }
 
-// 刷新配置
-const refreshConfig = async () => {
-  configLoading.value = true
-  try {
-    console.log('🔄 手动刷新配置...')
 
-    // 清除配置缓存并重新获取
-    configService.clearCache()
-    await configService.syncComfyUIConfig()
 
-    Toast.success('配置刷新成功')
-    console.log('✅ 配置刷新完成')
-  } catch (error) {
-    console.error('❌ 配置刷新失败:', error)
-    Toast.fail('配置刷新失败: ' + error.message)
-  } finally {
-    configLoading.value = false
-  }
-}
 
-// 配置保存回调
-const onConfigSaved = (config) => {
-  console.log('配置已保存:', config)
-  showConfigModal.value = false
-  Toast.success('配置已保存')
-}
-
-// 组件挂载时初始化
-onMounted(async () => {
-  try {
-    // 确保配置服务已初始化
-    await configService.getConfig()
-    console.log('✅ 首页配置检查完成')
-  } catch (error) {
-    console.warn('⚠️ 首页配置检查失败:', error)
-  }
-})
 
 // 用户登录成功回调
 const handleUserLogin = (data) => {
@@ -228,199 +177,251 @@ const handleUserLogout = () => {
 </script>
 
 <style scoped>
-.home {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  position: relative;
-}
-
-/* 顶部导航样式已在TopNavigation组件中定义 */
-
-.container {
-  max-width: 1200px;
-  width: 100%;
+/* 页面头部样式 */
+.home-header {
   text-align: center;
+  padding: 24px 0;
 }
 
-.header {
-  margin-bottom: 60px;
+.welcome-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
-.title {
-  font-size: 4rem;
-  font-weight: 700;
-  color: var(--text-color);
-  margin-bottom: 16px;
+.app-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  margin: 0;
 }
 
-.logo-icon {
-  flex-shrink: 0;
+.app-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin: 0;
+  text-align: center;
+  line-height: 1.5;
 }
 
-.subtitle {
-  font-size: 1.5rem;
-  color: var(--text-light);
-  font-weight: 300;
-}
-
-.main {
-  margin-bottom: 60px;
-}
-
-
-
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 32px;
-  margin-top: 40px;
+/* 功能区域样式 */
+.features-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 4px;
 }
 
 .feature-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  position: relative;
-  height: 100%;
-}
-
-.feature-content {
-  padding: 32px;
-  text-align: center;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.feature-icon {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  margin: 0 auto 20px;
-}
-
-.feature-title {
-  color: var(--text-color);
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.feature-description {
-  color: var(--text-light);
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  flex-grow: 1;
-}
-
-.feature-arrow {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: auto;
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(25, 137, 250, 0.2), transparent);
-  transition: left 0.6s;
-  pointer-events: none; /* 确保伪元素不阻挡点击事件 */
-}
-
-.feature-card:hover::before {
-  left: 100%;
 }
 
 .feature-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  border-color: var(--primary-color);
+  transform: translateY(-4px);
 }
 
-/* 这些样式已在上面的.feature-content中定义，删除重复 */
-
-.feature-card:hover .feature-arrow {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.footer {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
-}
-
-.footer-actions {
-  margin-top: 16px;
+.feature-icon {
   display: flex;
+  align-items: center;
   justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-icon::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: rotate(45deg) translate(-100%, -100%);
+  transition: transform 0.6s ease;
+}
+
+.feature-card:hover .feature-icon::before {
+  transform: rotate(45deg) translate(50%, 50%);
+}
+
+/* 动态图标样式 */
+.undress-icon {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(102, 126, 234, 0.1));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.faceswap-icon {
+  background: linear-gradient(135deg, rgba(240, 147, 251, 0.2), rgba(240, 147, 251, 0.1));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(240, 147, 251, 0.3);
+}
+
+.texttoimage-icon {
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(79, 172, 254, 0.1));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(79, 172, 254, 0.3);
+}
+
+.feature-content {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+}
+
+.feature-description {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.feature-tags {
+  display: flex;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.config-btn, .debug-btn {
-  display: inline-block;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: var(--transition);
+.feature-tags .van-tag {
+  opacity: 0.7; /* 降低不透明度 */
+  font-weight: normal; /* 减轻字体粗细 */
+  font-size: 10px; /* 减小字体大小 */
+  padding: 0 8px; /* 调整内边距 */
+  border-radius: 4px; /* 圆角更柔和 */
+  background: rgba(255, 255, 255, 0.1); /* 半透明背景 */
+  border: 1px solid rgba(255, 255, 255, 0.15); /* 添加细边框 */
+  color: rgba(255, 255, 255, 0.85); /* 文字颜色更柔和 */
 }
 
-.config-btn:hover, .debug-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  transform: translateY(-2px);
+/* 覆盖不同类型标签的样式 */
+.feature-tags .van-tag--primary {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: rgba(102, 126, 234, 0.9);
 }
 
+.feature-tags .van-tag--success {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: rgba(16, 185, 129, 0.9);
+}
 
+.feature-tags .van-tag--warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: rgba(245, 158, 11, 0.9);
+}
 
+/* 页面底部样式 */
+.home-footer {
+  margin-top: 40px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copyright {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.disclaimer {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 移动端优化 */
 @media (max-width: 768px) {
-  .title {
-    font-size: 2.5rem;
+  .home-header {
+    padding: 20px 0;
   }
 
-  .logo {
-    font-size: 3rem;
+  .app-title {
+    font-size: 24px;
+    gap: 10px;
   }
 
-  .subtitle {
-    font-size: 1.2rem;
+  .app-subtitle {
+    font-size: 15px;
   }
 
-  .features {
-    grid-template-columns: 1fr;
-    gap: 24px;
+  .features-section {
+    gap: 16px;
+    padding: 0 2px;
   }
 
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  .feature-description {
+    font-size: 14px;
+  }
+
+  .home-footer {
+    margin-top: 32px;
+    padding: 20px 0;
+  }
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .undress-icon {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1));
+    border-color: rgba(102, 126, 234, 0.4);
+  }
+
+  .faceswap-icon {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.3), rgba(240, 147, 251, 0.1));
+    border-color: rgba(240, 147, 251, 0.4);
+  }
+
+  .texttoimage-icon {
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(79, 172, 254, 0.1));
+    border-color: rgba(79, 172, 254, 0.4);
+  }
+}
+
+/* 减少动画在低性能设备上的影响 */
+@media (prefers-reduced-motion: reduce) {
   .feature-card {
-    padding: 32px 24px;
+    transition: none;
+  }
+
+  .feature-card:hover {
+    transform: none;
+  }
+
+  .feature-icon::before {
+    display: none;
   }
 }
 </style>

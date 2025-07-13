@@ -6,7 +6,7 @@ const ClothesSwap = () => import('../views/ClothesSwap.vue')
 const TextToImage = () => import('../views/TextToImage.vue')
 const FaceSwap = () => import('../views/FaceSwap.vue')
 const Profile = () => import('../views/Profile.vue')
-const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')
+
 
 
 
@@ -49,14 +49,6 @@ const routes = [
     component: Profile,
     meta: {
       title: '个人中心 - Imagic'
-    }
-  },
-  {
-    path: '/load-balancer-test',
-    name: 'LoadBalancerTest',
-    component: LoadBalancerTest,
-    meta: {
-      title: '负载均衡器测试 - AI Magic'
     }
   },
 

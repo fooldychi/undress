@@ -1,0 +1,30 @@
+{
+    "sourceFile": "server/scripts/test-login-api.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1752379306767,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752379439866,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,9 +5,9 @@\n   console.log('🧪 测试登录API...');\n \n   const postData = JSON.stringify({\n     username: 'admin',\n-    password: 'admin123456'\n+    password: 'admin123'\n   });\n \n   const options = {\n     hostname: 'localhost',\n"
+                },
+                {
+                    "date": 1752379535745,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,10 +44,16 @@\n   });\n \n   req.on('error', (error) => {\n     console.log(`❌ 请求失败: ${error.message}`);\n+    console.log('错误详情:', error);\n   });\n \n+  req.on('timeout', () => {\n+    console.log('⏰ 请求超时');\n+    req.destroy();\n+  });\n+\n   req.write(postData);\n   req.end();\n };\n \n"
+                },
+                {
+                    "date": 1752379660936,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n \n   const options = {\n     hostname: 'localhost',\n     port: 3007,\n-    path: '/api/auth/login',\n+    path: '/api/admin-auth/login',\n     method: 'POST',\n     headers: {\n       'Content-Type': 'application/json',\n       'Content-Length': Buffer.byteLength(postData)\n"
+                }
+            ],
+            "date": 1752379306767,
+            "name": "Commit-0",
+            "content": "// 测试登录API\nconst http = require('http');\n\nconst testLoginAPI = () => {\n  console.log('🧪 测试登录API...');\n\n  const postData = JSON.stringify({\n    username: 'admin',\n    password: 'admin123456'\n  });\n\n  const options = {\n    hostname: 'localhost',\n    port: 3007,\n    path: '/api/auth/login',\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'Content-Length': Buffer.byteLength(postData)\n    }\n  };\n\n  const req = http.request(options, (res) => {\n    let data = '';\n\n    console.log(`📊 状态码: ${res.statusCode}`);\n    console.log(`📊 响应头:`, res.headers);\n\n    res.on('data', (chunk) => {\n      data += chunk;\n    });\n\n    res.on('end', () => {\n      console.log('📊 响应数据:', data);\n\n      try {\n        const jsonData = JSON.parse(data);\n        console.log('✅ JSON解析成功:', JSON.stringify(jsonData, null, 2));\n      } catch (error) {\n        console.log('❌ JSON解析失败:', error.message);\n        console.log('原始响应:', data);\n      }\n    });\n  });\n\n  req.on('error', (error) => {\n    console.log(`❌ 请求失败: ${error.message}`);\n  });\n\n  req.write(postData);\n  req.end();\n};\n\ntestLoginAPI();\n"
+        }
+    ]
+}

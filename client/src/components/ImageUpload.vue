@@ -108,6 +108,9 @@ const handleFileChange = (event) => {
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: var(--transition);
+  width: 100%;
+  /* Removed max-width */
+  margin: 0 auto;
 }
 
 .image-upload-card:hover {

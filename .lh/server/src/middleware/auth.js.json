@@ -1,0 +1,18 @@
+{
+    "sourceFile": "server/src/middleware/auth.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752376697755,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752376697755,
+            "name": "Commit-0",
+            "content": "const jwt = require('jsonwebtoken');\nconst { query } = require('../config/database');\n\n// JWT认证中间件\nconst authenticateToken = async (req, res, next) => {\n  try {\n    const authHeader = req.headers['authorization'];\n    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN\n\n    if (!token) {\n      return res.status(401).json({\n        success: false,\n        message: '访问令牌缺失'\n      });\n    }\n\n    // 验证JWT令牌\n    const decoded = jwt.verify(token, process.env.JWT_SECRET);\n\n    // 查询用户信息\n    const users = await query(\n      'SELECT id, username, status FROM users WHERE id = ?',\n      [decoded.userId]\n    );\n\n    if (users.length === 0) {\n      return res.status(401).json({\n        success: false,\n        message: '用户不存在'\n      });\n    }\n\n    const user = users[0];\n\n    // 检查用户状态\n    if (user.status !== 'active') {\n      return res.status(401).json({\n        success: false,\n        message: '用户账户已被禁用'\n      });\n    }\n\n    // 将用户信息添加到请求对象\n    req.user = {\n      ...user,\n      userId: user.id // 添加userId字段以保持兼容性\n    };\n    next();\n  } catch (error) {\n    if (error.name === 'JsonWebTokenError') {\n      return res.status(401).json({\n        success: false,\n        message: '无效的访问令牌',\n        code: 'INVALID_TOKEN'\n      });\n    }\n\n    if (error.name === 'TokenExpiredError') {\n      return res.status(401).json({\n        success: false,\n        message: '访问令牌已过期',\n        code: 'TOKEN_EXPIRED'\n      });\n    }\n\n    console.error('认证中间件错误:', error);\n    res.status(500).json({\n      success: false,\n      message: '认证过程中发生错误',\n      code: 'AUTH_ERROR'\n    });\n  }\n};\n\n// 可选认证中间件（不强制要求登录）\nconst optionalAuth = async (req, res, next) => {\n  try {\n    const authHeader = req.headers['authorization'];\n    const token = authHeader && authHeader.split(' ')[1];\n\n    if (token) {\n      const decoded = jwt.verify(token, process.env.JWT_SECRET);\n      const users = await query(\n        'SELECT id, username, status FROM users WHERE id = ?',\n        [decoded.userId]\n      );\n\n      if (users.length > 0 && users[0].status === 'active') {\n        req.user = {\n          ...users[0],\n          userId: users[0].id\n        };\n      }\n    }\n\n    next();\n  } catch (error) {\n    // 可选认证失败时不阻止请求继续\n    next();\n  }\n};\n\nmodule.exports = {\n  authenticateToken,\n  optionalAuth\n};\n"
+        }
+    ]
+}

@@ -2,7 +2,7 @@
   <van-popup
     v-model:show="visible"
     position="center"
-    :style="{ width: '90%', maxWidth: '500px', borderRadius: '16px' }"
+    :style="{ width: '90%', maxWidth: '400px', borderRadius: '16px' }"
     :close-on-click-overlay="false"
   >
     <div class="points-modal">
@@ -51,93 +51,70 @@
               <div class="points-number">{{ pointsInfo?.total_points || 0 }}</div>
               <div class="points-label">总积分</div>
             </div>
-            <div class="points-stats">
-              <div class="stat-item">
-                <span class="stat-value">{{ pointsInfo?.cards_count || 0 }}</span>
-                <span class="stat-label">等级卡</span>
-              </div>
+            
+            <!-- 购买等级卡按钮 - 移到积分概览内 -->
+            <div class="purchase-btn-container">
+              <van-button
+                type="primary"
+                round
+                @click="showPurchaseModal = true"
+                class="purchase-btn"
+              >
+                <van-icon name="shopping-cart-o" size="14" />
+                购买等级卡
+              </van-button>
             </div>
           </div>
-
-        <!-- 等级卡明细 - 移除显示 -->
-        <!-- <div v-if="pointsInfo?.cards_breakdown?.length" class="cards-section">
-          <h3 class="section-title">我的等级卡</h3>
-          <div class="cards-list">
-            <div
-              v-for="(card, index) in pointsInfo.cards_breakdown"
-              :key="index"
-              class="card-item"
-            >
-              <div class="card-info">
-                <span class="card-type">{{ card.type }}</span>
-                <span class="card-points">{{ card.points }} 积分</span>
-              </div>
-            </div>
-          </div>
-        </div> -->
 
           <!-- 绑定等级卡 -->
           <div class="bind-section">
-            <h3 class="section-title">绑定等级卡</h3>
-            <p class="section-desc">输入卡号和卡密来绑定新的等级卡</p>
+            <h3 class="section-title">
+              <van-icon name="credit-pay" size="16" />
+              绑定等级卡
+            </h3>
 
             <!-- 体验卡限制提示 -->
             <div v-if="hasUnusedExperienceCard" class="experience-card-notice">
               <van-notice-bar
                 left-icon="info-o"
                 color="#ff6b35"
-                background="#fff7f0"
-                text="提示：您已有可用的体验卡，体验卡在使用前不可叠加绑定。其他等级卡可正常叠加。"
+                background="rgba(255, 107, 53, 0.1)"
+                text="提示：您已有可用的体验卡，体验卡在使用前不可叠加绑定。"
               />
             </div>
-
 
             <form @submit.prevent="handleBindCard" class="bind-form">
               <BaseInput
                 v-model="bindForm.cardNumber"
-                label="卡号"
-                placeholder="请输入等级卡卡号"
+                placeholder="请输入卡号"
                 :rules="cardNumberRules"
                 clearable
+                class="bind-input-full"
               />
 
               <BaseInput
                 v-model="bindForm.cardPassword"
                 type="password"
-                label="卡密"
-                placeholder="请输入等级卡卡密"
+                placeholder="请输入卡密"
                 :rules="cardPasswordRules"
                 clearable
+                class="bind-input-full"
               />
 
               <div class="bind-actions">
                 <van-button
                   type="primary"
                   native-type="submit"
-                  block
                   round
+                  block
                   :loading="bindLoading"
                   :disabled="bindLoading"
                   class="bind-button"
                 >
-                  {{ bindLoading ? '绑定中...' : '绑定等级卡' }}
+                  {{ bindLoading ? '绑定中...' : '绑定' }}
                 </van-button>
               </div>
             </form>
-          </div>
-
-          <!-- 购买等级卡按钮 -->
-          <div class="purchase-section">
-            <van-button
-              type="primary"
-              block
-              round
-              @click="showPurchaseModal = true"
-              class="purchase-btn"
-            >
-              <van-icon name="shopping-cart-o" size="16" />
-              购买等级卡
-            </van-button>
           </div>
         </template>
       </div>
@@ -148,7 +125,7 @@
   <van-popup
     v-model:show="showPurchaseModal"
     position="center"
-    :style="{ width: '90%', maxWidth: '500px', borderRadius: '16px' }"
+    :style="{ width: '95%', maxWidth: '450px', borderRadius: '16px' }"
     :close-on-click-overlay="false"
   >
     <div class="purchase-modal">
@@ -192,7 +169,7 @@
 
         <!-- 兑换流程 -->
         <div class="exchange-process">
-          <h3 class="process-title">兑换流程</h3>
+          <h4 class="process-title">兑换流程</h4>
           <div class="process-steps">
             <div class="process-step">
               <div class="step-number">1</div>
@@ -201,17 +178,17 @@
             <div class="process-arrow">→</div>
             <div class="process-step">
               <div class="step-number">2</div>
-              <div class="step-text">发口令红包</div>
+              <div class="step-text">发红包</div>
             </div>
             <div class="process-arrow">→</div>
             <div class="process-step">
               <div class="step-number">3</div>
-              <div class="step-text">收到卡号</div>
+              <div class="step-text">收卡号</div>
             </div>
             <div class="process-arrow">→</div>
             <div class="process-step">
               <div class="step-number">4</div>
-              <div class="step-text">绑定获得等级卡</div>
+              <div class="step-text">绑定</div>
             </div>
           </div>
         </div>
@@ -220,13 +197,12 @@
         <div class="contact-section">
           <van-button
             type="primary"
-            block
             round
             @click="contactCustomerService"
             class="contact-btn"
           >
-            <van-icon name="chat-o" size="16" />
-            联系客服 (Telegram: tgcomfy)
+            <van-icon name="chat-o" size="14" />
+            联系客服
           </van-button>
         </div>
       </div>
@@ -522,42 +498,43 @@ export default {
 <style scoped>
 .points-modal {
   padding: 0;
-  background: white;
+  background: rgba(10, 10, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 30, 60, 0.5);
   border-radius: 16px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-height: 90vh; /* 增加最大高度 */
+  overflow: hidden;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #ebedf0;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(30, 30, 60, 0.5);
+  background: rgba(15, 15, 30, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 .modal-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #323233;
+  color: var(--van-text-color, #f7f8fa);
   margin: 0;
 }
 
 .close-btn {
-  color: #969799;
+  color: var(--van-text-color-2, #969799);
   cursor: pointer;
   transition: color 0.3s;
 }
 
 .close-btn:hover {
-  color: #323233;
+  color: var(--van-text-color, #f7f8fa);
 }
 
 .loading-center {
@@ -568,7 +545,9 @@ export default {
 }
 
 .modal-content {
-  padding: 24px;
+  padding: 0 16px 16px;
+  max-height: calc(90vh - 60px); /* 减去头部高度 */
+  overflow-y: auto;
 }
 
 /* 登录提示 */
@@ -607,12 +586,13 @@ export default {
 .points-overview {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 24px;
-  background: linear-gradient(135deg, #1989fa, #1976d2);
-  border-radius: 16px;
-  color: white;
-  margin-bottom: 24px;
+  justify-content: space-between; /* 改为两端对齐 */
+  padding: 16px; /* 减小内边距 */
+  background: rgba(15, 15, 30, 0.8);
+  border: 1px solid rgba(30, 30, 60, 0.5);
+  border-radius: 12px;
+  color: var(--van-text-color, #f7f8fa);
+  margin-bottom: 12px; /* 减小底部间距 */
 }
 
 .points-total {
@@ -620,7 +600,7 @@ export default {
 }
 
 .points-number {
-  font-size: 36px;
+  font-size: 32px; /* 减小字体大小 */
   font-weight: 700;
   line-height: 1;
   margin-bottom: 4px;
@@ -655,21 +635,24 @@ export default {
 
 /* 区块标题 */
 .section-title {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 600;
-  color: #323233;
-  margin: 0 0 16px 0;
+  color: var(--van-text-color, #f7f8fa);
+  margin: 0 0 10px 0; /* 减小底部间距 */
 }
 
 .section-desc {
-  font-size: 14px;
-  color: #969799;
-  margin: 0 0 16px 0;
+  font-size: 12px;
+  color: var(--van-text-color-2, #969799);
+  margin: 0 0 12px 0;
 }
 
 /* 体验卡提示 */
 .experience-card-notice {
-  margin-bottom: 16px;
+  margin-bottom: 12px; /* 减小底部间距 */
 }
 
 /* 等级卡明细 */
@@ -709,17 +692,21 @@ export default {
 
 /* 绑定区块 */
 .bind-section {
-  margin-bottom: 24px;
-  padding: 24px;
-  background: linear-gradient(135deg, #f7f8fa 0%, #ffffff 100%);
-  border-radius: 16px;
-  border: 1px solid #ebedf0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px; /* 减小底部间距 */
+  padding: 12px; /* 减小内边距 */
+  background: rgba(15, 15, 30, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(30, 30, 60, 0.5);
 }
 
 /* 绑定表单 */
 .bind-form {
-  margin-top: 20px;
+  margin-top: 10px; /* 减小顶部间距 */
+}
+
+.bind-input-full {
+  width: 100%;
+  margin-bottom: 10px; /* 减小底部间距 */
 }
 
 .form-field {
@@ -787,77 +774,68 @@ export default {
 
 /* 绑定按钮 */
 .bind-actions {
-  margin-top: 24px;
+  margin-top: 16px;
+  width: 100%; /* 确保容器占据整行 */
 }
 
 .bind-button {
-  height: 48px;
-  font-size: 16px;
+  height: 36px;
+  font-size: 14px;
   font-weight: 600;
   background: linear-gradient(135deg, #1989fa, #1976d2);
   border: none;
-  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.3);
-  transition: all 0.3s ease;
-}
-
-.bind-button:hover {
-  background: linear-gradient(135deg, #1976d2, #1565c0);
-  box-shadow: 0 6px 16px rgba(25, 137, 250, 0.4);
-  transform: translateY(-1px);
-}
-
-.bind-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(25, 137, 250, 0.3);
+  width: 100%; /* 确保按钮占据整行 */
 }
 
 /* 购买区块 */
 .purchase-section {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #ebedf0;
+  margin: 12px 0;
+  text-align: center;
 }
 
 .purchase-btn {
   background: linear-gradient(135deg, #ff6b6b, #ee5a24);
   border: none;
   font-weight: 600;
-  height: 48px;
-}
-
-.purchase-btn:hover {
-  background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+  height: 36px;
+  font-size: 14px;
+  min-width: 120px;
 }
 
 /* 购买弹窗样式 */
 .purchase-modal {
   padding: 0;
-  background: white;
+  background: rgba(10, 10, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 30, 60, 0.5);
   border-radius: 16px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-height: 70vh;
+  overflow: hidden;
 }
 
-/* 等级卡类型网格（三列横排） */
+/* 等级卡类型网格（三列横排，固定布局） */
 .card-types-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  min-width: 360px;
 }
 
 .card-type-card {
-  padding: 16px 8px;
-  background: #f7f8fa;
+  flex: 1;
+  padding: 12px 8px;
+  background: rgba(15, 15, 30, 0.6);
+  border: 1px solid rgba(30, 30, 60, 0.5);
   border-radius: 12px;
   text-align: center;
-  border: 2px solid transparent;
   transition: all 0.3s;
+  min-width: 100px;
 }
 
 .card-type-card:hover {
-  border-color: #1989fa;
-  background: #e3f2fd;
+  border-color: var(--van-primary-color, #1989fa);
+  background: rgba(25, 137, 250, 0.1);
 }
 
 .card-icon {
@@ -868,7 +846,7 @@ export default {
 .card-name {
   font-size: 14px;
   font-weight: 600;
-  color: #323233;
+  color: var(--van-text-color, #f7f8fa);
   margin-bottom: 4px;
 }
 
@@ -881,22 +859,23 @@ export default {
 
 .card-points {
   font-size: 12px;
-  color: #969799;
+  color: var(--van-text-color-2, #969799);
 }
 
 /* 兑换流程 */
 .exchange-process {
-  margin-bottom: 24px;
-  padding: 20px;
-  background: #f7f8fa;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(15, 15, 30, 0.6);
+  border: 1px solid rgba(30, 30, 60, 0.5);
   border-radius: 12px;
 }
 
 .process-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #323233;
-  margin: 0 0 16px 0;
+  color: var(--van-text-color, #f7f8fa);
+  margin: 0 0 8px 0;
   text-align: center;
 }
 
@@ -904,55 +883,89 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: hidden; /* 改为 hidden 以隐藏滚动条 */
+  min-width: 0;
+  padding: 5px 0; /* 添加一些内边距 */
 }
 
 .process-step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 60px;
+  min-width: 45px;
+  flex-shrink: 0;
 }
 
 .step-number {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   background: #1989fa;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .step-text {
-  font-size: 11px;
-  color: #323233;
+  font-size: 10px;
+  color: var(--van-text-color, #f7f8fa);
   text-align: center;
   line-height: 1.2;
 }
 
 .process-arrow {
   color: #1989fa;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 4px;
+  margin: 0 2px;
+}
+
+/* 确保在小屏幕上步骤能够适当缩小 */
+@media (max-width: 768px) {
+  .process-steps {
+    justify-content: space-between; /* 在小屏幕上均匀分布 */
+    gap: 2px; /* 减小间距 */
+  }
+  
+  .process-step {
+    min-width: 40px; /* 减小最小宽度 */
+  }
+  
+  .process-arrow {
+    margin: 0 1px; /* 减小箭头边距 */
+    font-size: 12px; /* 减小箭头大小 */
+  }
+  
+  .step-number {
+    width: 18px; /* 减小步骤数字圆圈大小 */
+    height: 18px;
+    font-size: 9px;
+  }
+  
+  .step-text {
+    font-size: 9px; /* 减小文字大小 */
+  }
 }
 
 /* 联系客服 */
 .contact-section {
-  margin-top: 24px;
+  margin-top: 16px;
+  text-align: center;
 }
 
 .contact-btn {
   background: linear-gradient(135deg, #00d2ff, #3a7bd5);
   border: none;
   font-weight: 600;
-  height: 48px;
+  height: 36px;
+  font-size: 14px;
+  min-width: 120px;
 }
 
 .contact-btn:hover {
@@ -985,8 +998,8 @@ export default {
     font-size: 28px;
   }
 
-  /* 移动端流程步骤调整 */
-  .process-steps {
+  /* 删除以下移动端流程步骤调整，保持横向布局 */
+  /* .process-steps {
     flex-direction: column;
     gap: 12px;
   }
@@ -994,7 +1007,7 @@ export default {
   .process-arrow {
     transform: rotate(90deg);
     margin: 4px 0;
-  }
+  } */
 
   .step-text {
     font-size: 12px;
@@ -1043,3 +1056,8 @@ export default {
   }
 }
 </style>
+
+
+
+
+

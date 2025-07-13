@@ -205,10 +205,16 @@ watch(() => props.modelValue, (newValue) => {
 <style scoped>
 .multi-image-upload {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .upload-area-container {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .hidden {
@@ -227,6 +233,8 @@ watch(() => props.modelValue, (newValue) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  width: 100%;
+  /* Removed max-width */
 }
 
 .main-upload-area:hover {
@@ -277,6 +285,8 @@ watch(() => props.modelValue, (newValue) => {
   padding: 24px;
   box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
   animation: slideIn 0.3s ease-out;
+  width: 100%;
+  /* Removed max-width */
 }
 
 @keyframes slideIn {

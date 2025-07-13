@@ -50,21 +50,24 @@ const authenticateToken = async (req, res, next) => {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
-        message: '无效的访问令牌'
+        message: '无效的访问令牌',
+        code: 'INVALID_TOKEN'
       });
     }
 
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: '访问令牌已过期'
+        message: '访问令牌已过期',
+        code: 'TOKEN_EXPIRED'
       });
     }
 
     console.error('认证中间件错误:', error);
     res.status(500).json({
       success: false,
-      message: '认证过程中发生错误'
+      message: '认证过程中发生错误',
+      code: 'AUTH_ERROR'
     });
   }
 };

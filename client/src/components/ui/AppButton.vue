@@ -100,7 +100,7 @@ const handleClick = (event) => {
 
 /* 颜色变体 */
 .app-button--primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
   color: white;
 }
 

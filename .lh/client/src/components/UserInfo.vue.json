@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 23,
+            "activePatchIndex": 24,
             "patches": [
                 {
                     "date": 1752283852248,
@@ -100,6 +100,10 @@
                 {
                     "date": 1752341878789,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,8 +134,14 @@\n       authApi.logout()\n       userInfo.value = null\n       emit('logout')\n       Toast.success('退出登录成功')\n+\n+      // 跳转到首页并显示登录模态框\n+      router.push('/')\n+      setTimeout(() => {\n+        showLoginModal()\n+      }, 500) // 延迟显示登录模态框，确保页面跳转完成\n     }\n \n     // 初始化用户信息\n     const initUserInfo = () => {\n"
+                },
+                {
+                    "date": 1752376513533,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -108,16 +108,20 @@\n           userInfo.value = response.data.user\n         } else {\n           // 如果获取用户信息失败，可能是token过期\n           console.warn('获取用户信息失败:', response.message)\n-          handleLogout()\n+          // 只有在明确的认证错误时才退出登录\n+          if (response.message && (response.message.includes('令牌已过期') ||\n+                                   response.message.includes('无效的访问令牌'))) {\n+            handleLogout()\n+          }\n         }\n       } catch (error) {\n         console.error('刷新用户信息失败:', error)\n-        // 如果是认证错误，自动退出登录\n-        if (error.message.includes('401') || error.message.includes('token')) {\n+        // 只有在明确的认证错误时才自动退出登录\n+        if (error.message.includes('登录已过期')) {\n           handleLogout()\n-        } else {\n+        } else if (!error.message.includes('网络') && !error.message.includes('超时')) {\n           Toast.fail('获取用户信息失败')\n         }\n       } finally {\n         loading.value = false\n"
                 }
             ],
             "date": 1752283852248,

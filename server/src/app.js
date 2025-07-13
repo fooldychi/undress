@@ -7,6 +7,8 @@ require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
+const { healthMonitor } = require('./utils/healthMonitor');
+const { memoryManager } = require('./utils/memoryManager');
 const rateLimiter = require('./middleware/rateLimiter');
 
 // 导入路由
@@ -84,13 +86,27 @@ app.use('/uploads', express.static('uploads'));
 app.use(rateLimiter);
 
 // 健康检查端点
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const healthReport = healthMonitor.getHealthReport();
+    const detailedCheck = await healthMonitor.forceHealthCheck();
+
+    res.json({
+      status: healthReport.current.healthy ? 'OK' : 'UNHEALTHY',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV,
+      pid: process.pid,
+      health: healthReport,
+      detailed: detailedCheck
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // API路由
@@ -127,14 +143,25 @@ async function startServer() {
     }
 
     // 启动HTTP服务器
-    app.listen(PORT, () => {
+    global.httpServer = app.listen(PORT, () => {
       console.log('🚀 Imagic服务器启动成功!');
       console.log(`📍 服务地址: http://localhost:${PORT}`);
       console.log(`🌍 环境: ${process.env.NODE_ENV}`);
       console.log(`⏰ 启动时间: ${new Date().toLocaleString()}`);
+      console.log(`🆔 进程ID: ${process.pid}`);
       if (!dbConnected) {
         console.log('⚠️ 注意：数据库未连接，某些功能可能不可用');
       }
+
+      // 启动内存监控
+      console.log('📊 内存监控已启动，每5分钟报告一次');
+      monitorMemoryUsage(); // 立即执行一次
+
+      // 启动健康监控
+      healthMonitor.start();
+
+      // 启动内存管理
+      memoryManager.start();
     });
   } catch (error) {
     console.error('❌ 服务器启动失败:', error);
@@ -142,15 +169,111 @@ async function startServer() {
   }
 }
 
-// 优雅关闭
+// 全局异常处理
+process.on('uncaughtException', (error) => {
+  console.error('❌ 未捕获的异常:', error);
+  console.error('堆栈信息:', error.stack);
+
+  // 记录错误到日志文件
+  const fs = require('fs');
+  const logEntry = `[${new Date().toISOString()}] UNCAUGHT EXCEPTION: ${error.message}\n${error.stack}\n\n`;
+  fs.appendFileSync('logs/error.log', logEntry, { flag: 'a' });
+
+  // 优雅关闭服务器
+  gracefulShutdown('uncaughtException').catch(error => {
+    console.error('❌ 优雅关闭失败:', error);
+    process.exit(1);
+  });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ 未处理的Promise拒绝:', reason);
+  console.error('Promise:', promise);
+
+  // 记录错误到日志文件
+  const fs = require('fs');
+  const logEntry = `[${new Date().toISOString()}] UNHANDLED REJECTION: ${reason}\nPromise: ${promise}\n\n`;
+  fs.appendFileSync('logs/error.log', logEntry, { flag: 'a' });
+
+  // 对于Promise拒绝，不立即退出，但记录错误
+  console.warn('⚠️ 服务器继续运行，但建议检查上述错误');
+});
+
+// 内存使用监控
+const monitorMemoryUsage = () => {
+  const usage = process.memoryUsage();
+  const formatBytes = (bytes) => (bytes / 1024 / 1024).toFixed(2) + ' MB';
+
+  console.log('📊 内存使用情况:');
+  console.log(`   RSS: ${formatBytes(usage.rss)}`);
+  console.log(`   Heap Used: ${formatBytes(usage.heapUsed)}`);
+  console.log(`   Heap Total: ${formatBytes(usage.heapTotal)}`);
+  console.log(`   External: ${formatBytes(usage.external)}`);
+
+  // 内存使用超过500MB时发出警告
+  if (usage.heapUsed > 500 * 1024 * 1024) {
+    console.warn('⚠️ 内存使用过高，可能存在内存泄漏');
+  }
+};
+
+// 每5分钟监控一次内存使用
+const memoryMonitorInterval = setInterval(monitorMemoryUsage, 5 * 60 * 1000);
+
+// 优雅关闭函数
+const gracefulShutdown = async (signal) => {
+  console.log(`🛑 收到${signal}信号，正在优雅关闭服务器...`);
+
+  // 清理定时器和监控
+  if (memoryMonitorInterval) {
+    clearInterval(memoryMonitorInterval);
+  }
+
+  // 停止健康监控
+  healthMonitor.stop();
+
+  // 停止内存管理
+  memoryManager.stop();
+
+  // 关闭数据库连接池
+  try {
+    const { closePool } = require('./config/database');
+    await closePool();
+  } catch (error) {
+    console.error('❌ 关闭数据库连接池失败:', error);
+  }
+
+  // 设置超时强制退出
+  const forceExitTimer = setTimeout(() => {
+    console.log('⚠️ 强制退出服务器');
+    process.exit(1);
+  }, 10000); // 10秒后强制退出
+
+  // 优雅关闭HTTP服务器
+  if (global.httpServer) {
+    global.httpServer.close(() => {
+      console.log('✅ HTTP服务器已关闭');
+      clearTimeout(forceExitTimer);
+      process.exit(0);
+    });
+  } else {
+    clearTimeout(forceExitTimer);
+    process.exit(0);
+  }
+};
+
+// 信号处理
 process.on('SIGTERM', () => {
-  console.log('🛑 收到SIGTERM信号，正在关闭服务器...');
-  process.exit(0);
+  gracefulShutdown('SIGTERM').catch(error => {
+    console.error('❌ 优雅关闭失败:', error);
+    process.exit(1);
+  });
 });
 
 process.on('SIGINT', () => {
-  console.log('🛑 收到SIGINT信号，正在关闭服务器...');
-  process.exit(0);
+  gracefulShutdown('SIGINT').catch(error => {
+    console.error('❌ 优雅关闭失败:', error);
+    process.exit(1);
+  });
 });
 
 startServer();

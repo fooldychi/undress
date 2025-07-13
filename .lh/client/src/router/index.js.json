@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1752283813378,
@@ -28,6 +28,42 @@
                 {
                     "date": 1752354037803,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,13 +1,13 @@\n import { createRouter, createWebHistory } from 'vue-router'\r\n \r\n-// 使用静态导入避免动态导入问题\r\n-import HomePage from '../views/HomePage.vue'\r\n-import ClothesSwap from '../views/ClothesSwap.vue'\r\n-import TextToImage from '../views/TextToImage.vue'\r\n-import FaceSwap from '../views/FaceSwap.vue'\r\n-import Profile from '../views/Profile.vue'\r\n-import LoadBalancerTest from '../views/LoadBalancerTest.vue'\r\n+// 使用动态导入避免循环依赖\r\n+const HomePage = () => import('../views/HomePage.vue')\r\n+const ClothesSwap = () => import('../views/ClothesSwap.vue')\r\n+const TextToImage = () => import('../views/TextToImage.vue')\r\n+const FaceSwap = () => import('../views/FaceSwap.vue')\r\n+const Profile = () => import('../views/Profile.vue')\r\n+const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n \r\n \r\n \r\n const routes = [\r\n"
+                },
+                {
+                    "date": 1752372166956,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,8 +6,9 @@\n const TextToImage = () => import('../views/TextToImage.vue')\r\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n+const TestMobile = () => import('../views/TestMobile.vue')\r\n \r\n \r\n \r\n const routes = [\r\n"
+                },
+                {
+                    "date": 1752372192192,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -59,9 +59,16 @@\n     meta: {\r\n       title: '负载均衡器测试 - AI Magic'\r\n     }\r\n   },\r\n-\r\n+  {\r\n+    path: '/test-mobile',\r\n+    name: 'TestMobile',\r\n+    component: TestMobile,\r\n+    meta: {\r\n+      title: '移动端测试 - AI Magic'\r\n+    }\r\n+  }\r\n ]\r\n \r\n const router = createRouter({\r\n   history: createWebHistory(import.meta.env.BASE_URL),\r\n"
+                },
+                {
+                    "date": 1752373435566,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,8 +7,9 @@\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n const TestMobile = () => import('../views/TestMobile.vue')\r\n+const ComponentTest = () => import('../views/ComponentTest.vue')\r\n \r\n \r\n \r\n const routes = [\r\n"
+                },
+                {
+                    "date": 1752373453234,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -67,8 +67,16 @@\n     component: TestMobile,\r\n     meta: {\r\n       title: '移动端测试 - AI Magic'\r\n     }\r\n+  },\r\n+  {\r\n+    path: '/component-test',\r\n+    name: 'ComponentTest',\r\n+    component: ComponentTest,\r\n+    meta: {\r\n+      title: '组件测试 - AI Magic'\r\n+    }\r\n   }\r\n ]\r\n \r\n const router = createRouter({\r\n"
+                },
+                {
+                    "date": 1752373570210,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,8 +8,9 @@\n const Profile = () => import('../views/Profile.vue')\r\n const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n const TestMobile = () => import('../views/TestMobile.vue')\r\n const ComponentTest = () => import('../views/ComponentTest.vue')\r\n+const ErrorDiagnosis = () => import('../views/ErrorDiagnosis.vue')\r\n \r\n \r\n \r\n const routes = [\r\n"
+                },
+                {
+                    "date": 1752373588643,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -76,8 +76,16 @@\n     component: ComponentTest,\r\n     meta: {\r\n       title: '组件测试 - AI Magic'\r\n     }\r\n+  },\r\n+  {\r\n+    path: '/error-diagnosis',\r\n+    name: 'ErrorDiagnosis',\r\n+    component: ErrorDiagnosis,\r\n+    meta: {\r\n+      title: '错误诊断 - AI Magic'\r\n+    }\r\n   }\r\n ]\r\n \r\n const router = createRouter({\r\n"
+                },
+                {
+                    "date": 1752373807694,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,11 +6,8 @@\n const TextToImage = () => import('../views/TextToImage.vue')\r\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n-const TestMobile = () => import('../views/TestMobile.vue')\r\n-const ComponentTest = () => import('../views/ComponentTest.vue')\r\n-const ErrorDiagnosis = () => import('../views/ErrorDiagnosis.vue')\r\n \r\n \r\n \r\n const routes = [\r\n@@ -61,32 +58,9 @@\n     meta: {\r\n       title: '负载均衡器测试 - AI Magic'\r\n     }\r\n   },\r\n-  {\r\n-    path: '/test-mobile',\r\n-    name: 'TestMobile',\r\n-    component: TestMobile,\r\n-    meta: {\r\n-      title: '移动端测试 - AI Magic'\r\n-    }\r\n-  },\r\n-  {\r\n-    path: '/component-test',\r\n-    name: 'ComponentTest',\r\n-    component: ComponentTest,\r\n-    meta: {\r\n-      title: '组件测试 - AI Magic'\r\n-    }\r\n-  },\r\n-  {\r\n-    path: '/error-diagnosis',\r\n-    name: 'ErrorDiagnosis',\r\n-    component: ErrorDiagnosis,\r\n-    meta: {\r\n-      title: '错误诊断 - AI Magic'\r\n-    }\r\n-  }\r\n+\r\n ]\r\n \r\n const router = createRouter({\r\n   history: createWebHistory(import.meta.env.BASE_URL),\r\n"
+                },
+                {
+                    "date": 1752374116854,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,12 +5,12 @@\n const ClothesSwap = () => import('../views/ClothesSwap.vue')\r\n const TextToImage = () => import('../views/TextToImage.vue')\r\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n-const LoadBalancerTest = () => import('../views/LoadBalancerTest.vue')\r\n \r\n \r\n \r\n+\r\n const routes = [\r\n   {\r\n     path: '/',\r\n     name: 'Home',\r\n"
+                },
+                {
+                    "date": 1752374132034,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,16 +50,8 @@\n     meta: {\r\n       title: '个人中心 - Imagic'\r\n     }\r\n   },\r\n-  {\r\n-    path: '/load-balancer-test',\r\n-    name: 'LoadBalancerTest',\r\n-    component: LoadBalancerTest,\r\n-    meta: {\r\n-      title: '负载均衡器测试 - AI Magic'\r\n-    }\r\n-  },\r\n \r\n ]\r\n \r\n const router = createRouter({\r\n"
                 }
             ],
             "date": 1752283813378,

@@ -1,148 +1,160 @@
 <template>
-  <div class="profile-page">
-    <!-- 顶部导航 -->
-    <TopNavigation
-      ref="topNavigationRef"
-      @login="handleUserLogin"
-      @logout="handleUserLogout"
-    />
+  <MobilePageContainer
+    title="个人中心"
+    @login="handleUserLogin"
+    @logout="handleUserLogout"
+  >
+    <!-- 加载状态 -->
+    <div v-if="loading && !userInfo" class="loading-skeleton">
+      <!-- 用户信息骨架屏 -->
+      <MobileCard :inset="true">
+        <van-skeleton title avatar :row="3" />
+      </MobileCard>
 
-    <div class="container">
-      <!-- 页面头部 -->
-      <header class="header">
-        <BackToHomeButton class="back-btn" />
-        <h1 class="title">
-          <van-icon name="user-o" size="32" color="var(--primary-color)" />
-          个人中心
-        </h1>
-      </header>
+      <!-- 积分信息骨架屏 -->
+      <MobileCard :inset="true">
+        <van-skeleton title :row="2" />
+      </MobileCard>
 
-      <!-- 加载状态 -->
-      <van-loading v-if="loading" class="loading-center" size="24px" vertical>
-        加载中...
-      </van-loading>
+      <!-- 等级卡骨架屏 -->
+      <MobileCard :inset="true">
+        <van-skeleton title :row="3" />
+      </MobileCard>
 
-      <!-- 未登录状态 -->
-      <div v-else-if="!isLoggedIn" class="not-logged-in">
-        <van-empty
-          image="https://fastly.jsdelivr.net/npm/@vant/assets/custom-empty-image.png"
-          description="请先登录"
+      <!-- 最近记录骨架屏 -->
+      <MobileCard :inset="true">
+        <van-skeleton title :row="4" />
+      </MobileCard>
+    </div>
+
+    <!-- 传统加载状态（作为后备） -->
+    <van-loading v-else-if="loading" class="loading-center" size="24px" vertical>
+      加载中...
+    </van-loading>
+
+    <!-- 未登录状态 -->
+    <div v-else-if="!isLoggedIn" class="not-logged-in">
+      <van-empty
+        image="https://fastly.jsdelivr.net/npm/@vant/assets/custom-empty-image.png"
+        description="请先登录"
+      >
+        <MobileActionButton type="primary" @click="showLoginModal">
+          立即登录
+        </MobileActionButton>
+      </van-empty>
+    </div>
+
+    <!-- 已登录状态 -->
+    <div v-else class="profile-content">
+        <!-- 用户信息卡片 -->
+        <MobileCard
+          title="用户信息"
+          icon="user-o"
+          :inset="true"
         >
-          <van-button type="primary" round @click="showLoginModal">
-            立即登录
-          </van-button>
-        </van-empty>
-      </div>
-
-      <!-- 已登录状态 -->
-      <div v-else class="profile-content">
-        <!-- 用户信息和积分卡片 - 合并为一个紧凑的卡片 -->
-        <div class="feature-card user-points-card">
-          <div class="feature-content">
-            <!-- 用户基本信息 -->
-            <div class="user-section">
-              <div class="user-avatar">
-                <van-icon name="user-o" size="36" color="var(--primary-color)" />
-              </div>
-              <div class="user-info">
-                <h2 class="username">{{ userInfo?.username }}</h2>
-                <p class="user-id">ID: {{ userInfo?.id }}</p>
-              </div>
+          <!-- 用户基本信息 -->
+          <div class="user-section">
+            <div class="user-avatar">
+              <van-icon name="user-o" size="36" color="var(--van-primary-color)" />
             </div>
-
-            <!-- 积分信息 -->
-            <div class="points-section">
-              <div class="points-header">
-                <van-icon name="diamond-o" size="24" color="var(--primary-color)" />
-                <span class="points-title">我的积分</span>
-              </div>
-              <div class="points-grid">
-                <div class="points-item">
-                  <div class="points-value">{{ pointsInfo?.total_points || 0 }}</div>
-                  <div class="points-label">总积分</div>
-                </div>
-                <div class="points-divider"></div>
-                <div class="points-item">
-                  <div class="points-value">{{ pointsInfo?.cards_count || 0 }}</div>
-                  <div class="points-label">等级卡</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 用户详细信息 -->
-            <div class="user-details">
-              <div class="detail-item">
-                <span class="detail-label">注册时间:</span>
-                <span class="detail-value">{{ formatDate(userInfo?.created_at) }}</span>
-              </div>
-              <div v-if="userInfo?.last_login" class="detail-item">
-                <span class="detail-label">最后登录:</span>
-                <span class="detail-value">{{ formatDate(userInfo?.last_login) }}</span>
-              </div>
+            <div class="user-info">
+              <h2 class="username">{{ userInfo?.username }}</h2>
+              <p class="user-id">ID: {{ userInfo?.id }}</p>
             </div>
           </div>
-        </div>
+
+
+        </MobileCard>
+
+        <!-- 积分信息卡片 -->
+        <MobileCard
+          title="我的积分"
+          icon="diamond-o"
+          :inset="true"
+        >
+          <div class="points-display">
+            <div class="points-item-centered">
+              <div class="points-value">{{ pointsInfo?.total_points || 0 }}</div>
+              <div class="points-label">总积分</div>
+            </div>
+          </div>
+        </MobileCard>
 
         <!-- 我的等级卡 -->
-        <div v-if="levelCards.length > 0" class="feature-card level-cards-section">
-          <div class="feature-content level-cards-content">
-            <div class="section-header">
-              <van-icon name="diamond-o" size="24" color="var(--primary-color)" />
-              <h2 class="section-title">我的等级卡</h2>
-            </div>
-
-            <div class="level-cards-list">
-              <div
+        <MobileCard
+          v-if="levelCards.length > 0"
+          title="我的等级卡"
+          icon="credit-pay"
+          :inset="true"
+        >
+          <div class="level-cards-list">
+            <van-cell-group class="transparent-cell-group">
+              <van-cell
                 v-for="card in levelCards"
                 :key="card.id"
-                class="level-card-item"
+                class="level-card-item transparent-cell"
               >
-                <div class="card-icon">
-                  <span class="card-type-icon">{{ card.icon || '💎' }}</span>
-                </div>
-                <div class="card-info">
+                <template #icon>
+                  <div class="card-icon">
+                    <span class="card-type-icon">{{ card.icon || '💎' }}</span>
+                  </div>
+                </template>
+                <template #title>
                   <div class="card-type">{{ card.type_name }}</div>
+                </template>
+                <template #label>
                   <div class="card-date">{{ formatDate(card.bound_at) }}</div>
-                </div>
-                <div class="card-points">
-                  <span class="points-current">{{ card.remaining_points }}</span>
-                  <span class="points-separator">/</span>
-                  <span class="points-total">{{ card.total_points }}</span>
-                </div>
-              </div>
-            </div>
+                </template>
+                <template #value>
+                  <div class="card-points">
+                    <span class="points-current">{{ card.remaining_points }}</span>
+                    <span class="points-separator">/</span>
+                    <span class="points-total">{{ card.total_points }}</span>
+                  </div>
+                </template>
+              </van-cell>
+            </van-cell-group>
           </div>
-        </div>
+        </MobileCard>
 
         <!-- 最近积分记录 -->
-        <div class="feature-card recent-records">
-          <div class="feature-content records-content">
-            <div class="section-header">
-              <van-icon name="diamond-o" size="24" color="var(--primary-color)" />
-              <h2 class="section-title">最近记录</h2>
-            </div>
+        <MobileCard
+          title="最近记录"
+          icon="orders-o"
+          :inset="true"
+        >
+          <div v-if="recentRecords.length === 0" class="no-records">
+            <van-empty description="暂无记录" />
+          </div>
 
-            <div v-if="recentRecords.length === 0" class="no-records">
-              <van-empty description="暂无记录" />
-            </div>
-
-            <div v-else class="records-list">
-              <div
+          <div v-else>
+            <van-cell-group class="transparent-cell-group">
+              <van-cell
                 v-for="record in recentRecords.slice(0, 3)"
                 :key="record.id"
-                class="record-item"
+                class="record-item transparent-cell"
               >
-                <div class="record-icon">
-                  <van-icon name="diamond-o" size="16" :color="record.action_type === 'consume' ? '#ff4444' : '#07c160'" />
-                </div>
-                <div class="record-info">
+                <template #icon>
+                  <div class="record-icon">
+                    <van-icon
+                      name="diamond-o"
+                      size="16"
+                      :color="record.action_type === 'consume' ? 'var(--van-danger-color)' : 'var(--van-success-color)'"
+                    />
+                  </div>
+                </template>
+                <template #title>
                   <div class="record-desc">{{ record.description }}</div>
+                </template>
+                <template #label>
                   <div class="record-time">{{ formatDate(record.created_at) }}</div>
-                </div>
-                <div class="record-amount" :class="record.action_type">
-                  {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}
-                </div>
-                <div class="record-actions" v-if="record.action_type === 'consume' && record.media_url">
+                </template>
+                <template #value>
+                  <div class="record-amount" :class="record.action_type">
+                    {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}
+                  </div>
+                </template>
+                <template #right-icon v-if="record.action_type === 'consume' && record.media_url">
                   <van-button
                     type="primary"
                     size="mini"
@@ -157,38 +169,38 @@
                   >
                     查看结果
                   </van-button>
-                </div>
-              </div>
-            </div>
+                </template>
+              </van-cell>
+            </van-cell-group>
+          </div>
 
+          <template #footer>
             <div class="records-footer">
-              <van-button
+              <MobileActionButton
                 type="primary"
                 size="small"
-                plain
+                variant="ghost"
                 @click="viewAllRecords"
-                class="view-all-btn"
+                block
               >
-                查看全部
-              </van-button>
+                查看全部记录
+              </MobileActionButton>
             </div>
-          </div>
-        </div>
+          </template>
+        </MobileCard>
 
         <!-- 操作按钮 -->
         <div class="action-buttons">
-          <van-button
+          <MobileActionButton
             type="danger"
             block
-            round
             @click="handleLogout"
             icon="sign"
           >
             退出登录
-          </van-button>
+          </MobileActionButton>
         </div>
       </div>
-    </div>
 
     <!-- 登录注册弹窗 -->
     <AuthModal
@@ -202,9 +214,7 @@
       v-model:show="showResultModal"
       :result-data="currentResult"
     />
-
-
-  </div>
+  </MobilePageContainer>
 </template>
 
 <script>
@@ -212,18 +222,18 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Toast } from 'vant'
 import { authApi, pointsApi, userApi, levelCardApi } from '../services/api.js'
-import TopNavigation from '../components/TopNavigation.vue'
+import { MobilePageContainer, MobileCard, MobileActionButton } from '../components/mobile'
 import ResultModal from '../components/ResultModal.vue'
 import AuthModal from '../components/AuthModal.vue'
-import BackToHomeButton from '../components/BackToHomeButton.vue'
 
 export default {
   name: 'Profile',
   components: {
-    TopNavigation,
+    MobilePageContainer,
+    MobileCard,
+    MobileActionButton,
     ResultModal,
-    AuthModal,
-    BackToHomeButton
+    AuthModal
   },
   setup() {
     const router = useRouter()
@@ -302,6 +312,34 @@ export default {
       }, 500) // 延迟显示登录模态框，确保页面跳转完成
     }
 
+    // 数据缓存
+    const dataCache = {
+      userInfo: { data: null, timestamp: 0, ttl: 5 * 60 * 1000 }, // 5分钟缓存
+      pointsInfo: { data: null, timestamp: 0, ttl: 2 * 60 * 1000 }, // 2分钟缓存
+      levelCards: { data: null, timestamp: 0, ttl: 10 * 60 * 1000 }, // 10分钟缓存
+      recentRecords: { data: null, timestamp: 0, ttl: 3 * 60 * 1000 } // 3分钟缓存
+    }
+
+    // 检查缓存是否有效
+    const isCacheValid = (cacheKey) => {
+      const cache = dataCache[cacheKey]
+      return cache.data && (Date.now() - cache.timestamp) < cache.ttl
+    }
+
+    // 设置缓存
+    const setCache = (cacheKey, data) => {
+      dataCache[cacheKey] = {
+        data,
+        timestamp: Date.now(),
+        ttl: dataCache[cacheKey].ttl
+      }
+    }
+
+    // 获取缓存
+    const getCache = (cacheKey) => {
+      return isCacheValid(cacheKey) ? dataCache[cacheKey].data : null
+    }
+
     // 刷新用户信息
     const refreshUserInfo = async () => {
       if (!isLoggedIn.value) return
@@ -312,13 +350,14 @@ export default {
 
         if (response.success) {
           userInfo.value = response.data.user
-          Toast.success('用户信息已刷新')
+          setCache('userInfo', response.data.user)
+          return response.data.user
         } else {
-          Toast.fail('刷新失败')
+          throw new Error(response.message || '获取用户信息失败')
         }
       } catch (error) {
         console.error('刷新用户信息失败:', error)
-        Toast.fail('刷新失败')
+        throw error
       } finally {
         refreshing.value = false
       }
@@ -334,13 +373,14 @@ export default {
 
         if (response.success) {
           pointsInfo.value = response.data
-          Toast.success('积分信息已刷新')
+          setCache('pointsInfo', response.data)
+          return response.data
         } else {
-          Toast.fail('获取积分信息失败')
+          throw new Error(response.message || '获取积分信息失败')
         }
       } catch (error) {
         console.error('获取积分信息失败:', error)
-        Toast.fail('获取积分信息失败')
+        throw error
       } finally {
         pointsLoading.value = false
       }
@@ -355,9 +395,14 @@ export default {
 
         if (response.success) {
           recentRecords.value = response.data.logs || []
+          setCache('recentRecords', response.data.logs || [])
+          return response.data.logs || []
+        } else {
+          throw new Error(response.message || '获取最近记录失败')
         }
       } catch (error) {
         console.error('获取最近记录失败:', error)
+        throw error
       }
     }
 
@@ -369,9 +414,14 @@ export default {
         const response = await levelCardApi.getMyCards()
         if (response.success) {
           levelCards.value = response.data.cards || []
+          setCache('levelCards', response.data.cards || [])
+          return response.data.cards || []
+        } else {
+          throw new Error(response.message || '获取等级卡失败')
         }
       } catch (error) {
         console.error('获取等级卡失败:', error)
+        throw error
       }
     }
 
@@ -388,7 +438,7 @@ export default {
 
 
 
-    // 初始化数据
+    // 初始化数据（优化版本）
     const initializeData = async () => {
       if (!isLoggedIn.value) {
         loading.value = false
@@ -398,15 +448,49 @@ export default {
       try {
         loading.value = true
 
-        // 并行加载用户信息、积分信息、等级卡和最近记录
-        await Promise.all([
-          refreshUserInfo(),
-          refreshPoints(),
-          loadLevelCards(),
-          loadRecentRecords()
-        ])
+        // 优先使用缓存数据
+        const cachedUserInfo = getCache('userInfo')
+        const cachedPointsInfo = getCache('pointsInfo')
+        const cachedLevelCards = getCache('levelCards')
+        const cachedRecentRecords = getCache('recentRecords')
+
+        if (cachedUserInfo) userInfo.value = cachedUserInfo
+        if (cachedPointsInfo) pointsInfo.value = cachedPointsInfo
+        if (cachedLevelCards) levelCards.value = cachedLevelCards
+        if (cachedRecentRecords) recentRecords.value = cachedRecentRecords
+
+        // 如果所有数据都有缓存，快速显示
+        if (cachedUserInfo && cachedPointsInfo && cachedLevelCards && cachedRecentRecords) {
+          loading.value = false
+        }
+
+        // 并行加载需要更新的数据
+        const loadTasks = []
+
+        if (!isCacheValid('userInfo')) {
+          loadTasks.push(refreshUserInfo().catch(err => console.warn('刷新用户信息失败:', err)))
+        }
+
+        if (!isCacheValid('pointsInfo')) {
+          loadTasks.push(refreshPoints().catch(err => console.warn('刷新积分信息失败:', err)))
+        }
+
+        if (!isCacheValid('levelCards')) {
+          loadTasks.push(loadLevelCards().catch(err => console.warn('加载等级卡失败:', err)))
+        }
+
+        if (!isCacheValid('recentRecords')) {
+          loadTasks.push(loadRecentRecords().catch(err => console.warn('加载最近记录失败:', err)))
+        }
+
+        // 等待所有任务完成，但不阻塞UI
+        if (loadTasks.length > 0) {
+          await Promise.allSettled(loadTasks)
+        }
+
       } catch (error) {
         console.error('初始化数据失败:', error)
+        Toast.fail('数据加载失败，请稍后重试')
       } finally {
         loading.value = false
       }
@@ -460,112 +544,12 @@ export default {
 </script>
 
 <style scoped>
-.profile-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  padding: 20px;
-  padding-top: 80px; /* 为TopNavigation留出空间 */
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* 页面头部 */
-.header {
-  text-align: center;
-  margin-bottom: 60px;
-  position: relative;
-}
-
-.back-btn {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--text-color);
-  backdrop-filter: blur(10px);
-}
-
-.back-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: var(--primary-color);
-}
-
-.title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  color: var(--text-color);
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* 加载状态 */
-.loading-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  color: var(--text-color);
-}
-
-/* 未登录状态 */
-.not-logged-in {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 40px 20px;
-  text-align: center;
-  box-shadow: var(--shadow-lg);
-}
-
-/* 主要内容区域 - 更紧凑的间距 */
-.profile-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-bottom: 40px;
-}
-
-/* 统一的卡片样式 - 与首页保持一致 */
-.feature-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  cursor: default;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  position: relative;
-  height: 100%;
-}
-
-.feature-content {
-  padding: 24px;
-  text-align: left;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* 用户积分卡片样式 */
-.user-points-card .feature-content {
-  gap: 20px;
-}
-
+/* 用户信息样式 */
 .user-section {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
 }
 
 .user-avatar {
@@ -584,730 +568,249 @@ export default {
 }
 
 .username {
-  color: var(--text-color);
-  font-size: 1.25rem;
+  color: var(--van-text-color, #323233);
+  font-size: 18px;
   font-weight: 600;
   margin: 0 0 4px 0;
 }
 
 .user-id {
-  color: var(--text-light);
-  font-size: 0.875rem;
+  color: var(--van-text-color-2, #646566);
+  font-size: 14px;
   margin: 0;
 }
 
-.points-section {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.points-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.points-title {
-  color: var(--text-color);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.points-grid {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.points-item {
-  text-align: center;
-}
-
-.points-value {
-  color: var(--primary-color);
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.points-label {
-  color: var(--text-light);
-  font-size: 0.75rem;
-  margin-top: 4px;
-}
-
-.points-divider {
-  width: 1px;
-  height: 30px;
-  background: var(--border-color);
-}
-
+/* 用户详细信息 */
 .user-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-top: 16px;
 }
 
 .detail-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.875rem;
+  padding: 8px 0;
+  font-size: 14px;
 }
 
 .detail-label {
-  color: var(--text-light);
+  color: var(--van-text-color-2, #646566);
 }
 
 .detail-value {
-  color: var(--text-color);
+  color: var(--van-text-color, #323233);
   font-weight: 500;
 }
 
-.feature-icon {
-  margin-bottom: 20px;
+/* 积分显示 - 居中且无背景 */
+.points-display {
   display: flex;
   justify-content: center;
-  align-items: center;
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  margin: 0 auto 20px;
+  padding: 16px;
 }
 
-.feature-title {
-  color: var(--text-color);
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.feature-description {
-  color: var(--text-light);
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  flex-grow: 1;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-xl);
-  border-color: var(--border-light);
-}
-
-/* 用户信息卡片特定样式 */
-.user-card .user-avatar {
-  background: rgba(102, 102, 255, 0.1);
-}
-
-.user-card .user-info {
-  text-align: left;
-  flex: 1;
-}
-
-.user-card .username {
-  text-align: left;
-  margin-bottom: 8px;
-}
-
-.user-card .user-id {
-  text-align: left;
-  margin-bottom: 16px;
-}
-
-.user-details {
-  text-align: left;
-}
-
-.join-date,
-.last-login {
-  font-size: 14px;
-  color: var(--text-light);
-  margin: 4px 0;
-}
-
-/* 积分卡片特定样式 */
-.points-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.points-item-centered {
   text-align: center;
-}
-
-.points-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.points-header .feature-icon {
-  margin-bottom: 16px;
-}
-
-.points-header .feature-title {
-  margin-bottom: 0;
-}
-
-.points-summary {
-  width: 100%;
-  max-width: 500px;
-}
-
-.points-grid {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-}
-
-.points-item {
-  text-align: center;
-  flex: 1;
 }
 
 .points-value {
   display: block;
-  font-size: 2.5rem;
+  font-size: 24px;
   font-weight: 700;
-  color: var(--primary-color);
-  margin-bottom: 8px;
+  color: var(--van-primary-color, #1989fa);
+  margin-bottom: 4px;
   line-height: 1;
 }
 
 .points-label {
-  font-size: 1rem;
-  color: var(--text-light);
-  font-weight: 500;
-}
-
-.points-divider {
-  width: 2px;
-  height: 60px;
-  background: linear-gradient(to bottom, transparent, var(--border-color), transparent);
-  border-radius: 1px;
-}
-
-/* 等级卡部分 */
-.level-cards-section {
-  margin-bottom: 40px;
-}
-
-.level-cards-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.level-cards-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.level-cards-header .feature-icon {
-  margin-bottom: 16px;
-}
-
-.level-cards-header .feature-title {
-  margin-bottom: 0;
-}
-
-.level-cards-list {
-  width: 100%;
-  margin-bottom: 30px;
-}
-
-.level-card-item-unified {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 12px;
-  transition: all 0.3s ease;
-}
-
-.level-card-item-unified:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
-}
-
-.level-card-item-unified:last-child {
-  margin-bottom: 0;
-}
-
-.level-card-icon {
-  flex-shrink: 0;
-}
-
-.level-card-info {
-  flex: 1;
-  text-align: left;
-}
-
-.level-card-type {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-color);
-  margin-bottom: 4px;
-}
-
-.level-card-date {
   font-size: 14px;
-  color: var(--text-light);
-}
-
-.level-card-points {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  font-weight: 600;
-}
-
-.level-card-points .points-current {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.level-card-points .points-separator {
-  font-size: 1rem;
-  color: var(--text-light);
-}
-
-.level-card-points .points-total {
-  font-size: 1rem;
-  color: var(--text-light);
-}
-
-/* 记录部分样式 */
-.records-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.records-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.records-header .feature-icon {
-  margin-bottom: 16px;
-}
-
-.records-header .feature-title {
-  margin-bottom: 0;
-}
-
-.no-records {
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--text-light);
-}
-
-.records-list {
-  width: 100%;
-  margin-bottom: 30px;
-}
-
-.record-item-unified {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 12px;
-  transition: all 0.3s ease;
-}
-
-.record-item-unified:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
-}
-
-.record-item-unified:last-child {
-  margin-bottom: 0;
-}
-
-.record-info {
-  flex: 1;
-  text-align: left;
-}
-
-.record-desc {
-  font-size: 16px;
+  color: var(--van-text-color-2, #646566);
   font-weight: 500;
-  color: var(--text-color);
-  margin-bottom: 4px;
 }
 
-.record-time {
-  font-size: 14px;
-  color: var(--text-light);
+/* 透明单元格组样式 */
+.transparent-cell-group {
+  background: transparent !important;
 }
 
-.record-amount {
-  font-size: 18px;
-  font-weight: 700;
-  min-width: 80px;
-  text-align: right;
+.transparent-cell {
+  background: transparent !important;
 }
 
-.record-amount.consume {
-  color: #ef4444;
-}
-
-.record-amount.bind,
-.record-amount.purchase {
-  color: #10b981;
-}
-
-.record-actions {
-  flex-shrink: 0;
-  min-width: 80px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.records-footer {
-  text-align: center;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
-  width: 100%;
-}
-
-.view-all-btn {
-  background: rgba(102, 102, 255, 0.1);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.record-time {
-  font-size: 12px;
-  color: #969799;
-}
-
-.record-url {
-  margin-top: 4px;
-}
-
-.record-amount {
-  font-size: 16px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.record-amount.consume {
-  color: #ee0a24;
-}
-
-.record-amount.add,
-.record-amount.purchase,
-.record-amount.daily_reset {
-  color: #07c160;
-}
-
-/* 操作按钮 */
-.action-buttons {
-  margin-top: 40px;
-  text-align: center;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .profile-page {
-    padding: 16px;
-    padding-top: 70px;
-  }
-
-  .container {
-    max-width: 100%;
-  }
-
-  .header {
-    margin-bottom: 40px;
-  }
-
-  .title {
-    font-size: 2rem;
-  }
-
-  .back-btn {
-    position: static;
-    transform: none;
-    margin-bottom: 20px;
-  }
-
-  .profile-content {
-    gap: 20px;
-  }
-
-  .level-cards-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .feature-content {
-    padding: 24px;
-  }
-
-  .feature-icon {
-    width: 60px;
-    height: 60px;
-  }
-
-  .feature-title {
-    font-size: 1.3rem;
-  }
-
-  .points-grid {
-    gap: 16px;
-  }
-
-  .points-value {
-    font-size: 1.5rem;
-  }
-
-  .section-title {
-    font-size: 1.5rem;
-  }
-
-  .points-grid {
-    gap: 20px;
-    padding: 16px;
-  }
-
-  .points-value {
-    font-size: 2rem;
-  }
-
-  .record-item-unified {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .record-amount {
-    align-self: flex-end;
-    min-width: auto;
-  }
-
-  .record-actions {
-    align-self: flex-end;
-    min-width: auto;
-  }
-}
-
-/* 统一的section header样式 */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.section-title {
-  color: var(--text-color);
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* 等级卡列表样式 */
-.level-cards-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.transparent-cell-group .van-cell {
+  background: transparent !important;
 }
 
 .level-card-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  background: transparent !important;
 }
 
-.level-card-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--primary-color);
+.record-item {
+  background: transparent !important;
 }
 
+/* 确保所有相关的 Vant 组件背景透明 */
+.profile-content .van-cell-group {
+  background: transparent !important;
+}
+
+.profile-content .van-cell {
+  background: transparent !important;
+}
+
+/* 等级卡样式 */
 .card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .card-type-icon {
   font-size: 18px;
 }
 
-.card-info {
-  flex: 1;
-}
-
 .card-type {
-  color: var(--text-color);
-  font-size: 0.875rem;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 2px;
+  color: var(--van-text-color, #323233);
 }
 
 .card-date {
-  color: var(--text-light);
-  font-size: 0.75rem;
+  font-size: 12px;
+  color: var(--van-text-color-3, #969799);
+  margin-top: 2px;
 }
 
 .card-points {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .points-current {
-  color: var(--primary-color);
+  color: var(--van-primary-color, #1989fa);
 }
 
 .points-separator {
-  color: var(--text-light);
+  color: var(--van-text-color-3, #969799);
+  margin: 0 2px;
 }
 
 .points-total {
-  color: var(--text-light);
+  color: var(--van-text-color-2, #646566);
 }
 
-/* 记录列表样式 */
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.record-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.record-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--primary-color);
-}
-
+/* 记录样式 */
 .record-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
-  flex-shrink: 0;
-}
-
-.record-info {
-  flex: 1;
+  margin-right: 12px;
 }
 
 .record-desc {
-  color: var(--text-color);
-  font-size: 0.875rem;
+  font-size: 14px;
+  color: var(--van-text-color, #323233);
   font-weight: 500;
-  margin-bottom: 2px;
 }
 
 .record-time {
-  color: var(--text-light);
-  font-size: 0.75rem;
+  font-size: 12px;
+  color: var(--van-text-color-3, #969799);
+  margin-top: 2px;
 }
 
 .record-amount {
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
-  min-width: 60px;
-  text-align: center;
 }
 
 .record-amount.consume {
-  color: #ff4444;
-  background: rgba(255, 68, 68, 0.1);
+  color: var(--van-danger-color, #ee0a24);
 }
 
-.record-amount.recharge {
-  color: #07c160;
-  background: rgba(7, 193, 96, 0.1);
+.record-amount:not(.consume) {
+  color: var(--van-success-color, #07c160);
 }
 
-/* 响应式优化 */
-@media (max-width: 768px) {
-  .user-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    text-align: center;
-  }
-
-  .user-avatar {
-    align-self: center;
-  }
-
-  .points-grid {
-    justify-content: center;
-  }
-
-  .detail-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .level-card-item,
-  .record-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .card-points,
-  .record-amount {
-    align-self: flex-end;
-  }
+.records-footer {
+  margin-top: 12px;
 }
+
+/* 操作按钮 */
+.action-buttons {
+  margin-top: 24px;
+  padding: 0 12px;
+}
+
+/* 加载状态 */
+.loading-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 未登录状态 */
+.not-logged-in {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* 主要内容区域 */
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </style>

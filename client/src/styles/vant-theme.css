@@ -1,3 +1,4 @@
+
 /* VantUI 暗黑主题定制 */
 
 /* 覆盖VantUI默认变量 */
@@ -36,6 +37,17 @@
   --van-shadow-3: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
+/* 上传组件图标颜色 */
+.van-uploader__input-wrapper .van-icon,
+.van-uploader__upload-icon {
+  color: var(--van-text-color) !important;
+}
+
+/* 徽章图标颜色 */
+.van-badge__wrapper .van-icon-info-o {
+  color: var(--van-text-color) !important;
+}
+
 /* Button 组件暗黑主题 */
 .van-button {
   border-radius: 8px;
@@ -67,6 +79,11 @@
   background: linear-gradient(135deg, var(--van-success-color), #059652);
   border: none;
   box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
+}
+
+/* 添加白色文字样式 */
+.van-button--primary.van-button--plain {
+  color: white !important;
 }
 
 /* Card 组件暗黑主题 */

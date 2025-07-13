@@ -172,7 +172,7 @@ const formatDate = (dateString) => {
 // 预览图片
 const previewImage = () => {
   if (!isImage.value) return
-  
+
   ImagePreview({
     images: [props.resultData.mediaUrl],
     showIndex: false,
@@ -220,7 +220,7 @@ const shareResult = () => {
 // 复制到剪贴板
 const copyToClipboard = () => {
   if (!props.resultData?.mediaUrl) return
-  
+
   navigator.clipboard.writeText(props.resultData.mediaUrl).then(() => {
     Toast.success('链接已复制到剪贴板')
   }).catch(() => {
@@ -238,7 +238,7 @@ const handleMediaError = () => {
 const retryLoad = () => {
   error.value = false
   loading.value = true
-  
+
   setTimeout(() => {
     loading.value = false
   }, 1000)
@@ -256,23 +256,30 @@ watch(() => props.show, (newVal) => {
 <style scoped>
 .result-modal {
   padding: 0;
-  max-height: 80vh;
+  max-height: 70vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: rgba(10, 10, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 30, 60, 0.5);
+  border-radius: 16px;
 }
 
 .modal-header {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(30, 30, 60, 0.5);
+  background: rgba(15, 15, 30, 0.8);
+  backdrop-filter: blur(10px);
   flex-shrink: 0;
 }
 
 .modal-header h3 {
   margin: 0 0 8px 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #323233;
+  color: var(--van-text-color, #f7f8fa);
 }
 
 .result-info {
@@ -281,19 +288,19 @@ watch(() => props.show, (newVal) => {
 
 .result-desc {
   font-size: 14px;
-  color: #646566;
+  color: var(--van-text-color-2, #969799);
   margin-bottom: 4px;
 }
 
 .result-time {
   font-size: 12px;
-  color: #969799;
+  color: var(--van-text-color-3, #646566);
 }
 
 .modal-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 20px;
+  padding: 12px 16px 16px;
 }
 
 .loading-state,

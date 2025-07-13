@@ -1,0 +1,30 @@
+{
+    "sourceFile": "server/src/config/database.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1752377172621,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752377189607,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,8 +23,39 @@\n \n // 创建连接池\n const pool = mysql.createPool(dbConfig);\n \n+// 连接池事件监听\n+pool.on('connection', (connection) => {\n+  console.log('🔗 新的数据库连接已建立:', connection.threadId);\n+});\n+\n+pool.on('error', (err) => {\n+  console.error('❌ 数据库连接池错误:', err);\n+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {\n+    console.log('🔄 数据库连接丢失，连接池将自动重连');\n+  }\n+});\n+\n+// 定期检查连接池状态\n+const checkPoolStatus = () => {\n+  const poolInfo = {\n+    allConnections: pool.pool._allConnections.length,\n+    freeConnections: pool.pool._freeConnections.length,\n+    acquiringConnections: pool.pool._acquiringConnections.length\n+  };\n+\n+  console.log('📊 数据库连接池状态:', poolInfo);\n+\n+  // 如果空闲连接过少，发出警告\n+  if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {\n+    console.warn('⚠️ 数据库连接池可能存在连接泄漏');\n+  }\n+};\n+\n+// 每分钟检查一次连接池状态\n+const poolMonitorInterval = setInterval(checkPoolStatus, 60000);\n+\n // 测试数据库连接\n async function testConnection() {\n   try {\n     const connection = await pool.getConnection();\n"
+                },
+                {
+                    "date": 1752377204151,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -69,14 +69,27 @@\n   }\n }\n \n // 执行查询的辅助函数\n-async function query(sql, params = []) {\n+async function query(sql, params = [], retryCount = 0) {\n+  const maxRetries = 3;\n+\n   try {\n     const [rows] = await pool.execute(sql, params);\n     return rows;\n   } catch (error) {\n     console.error('数据库查询错误:', error);\n+\n+    // 对于连接相关错误，尝试重试\n+    if ((error.code === 'PROTOCOL_CONNECTION_LOST' ||\n+         error.code === 'ECONNRESET' ||\n+         error.code === 'ETIMEDOUT') &&\n+         retryCount < maxRetries) {\n+      console.log(`🔄 数据库连接错误，正在重试... (${retryCount + 1}/${maxRetries})`);\n+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));\n+      return query(sql, params, retryCount + 1);\n+    }\n+\n     throw error;\n   }\n }\n \n"
+                },
+                {
+                    "date": 1752377217024,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -108,10 +108,24 @@\n     connection.release();\n   }\n }\n \n+// 清理连接池\n+const closePool = async () => {\n+  try {\n+    if (poolMonitorInterval) {\n+      clearInterval(poolMonitorInterval);\n+    }\n+    await pool.end();\n+    console.log('✅ 数据库连接池已关闭');\n+  } catch (error) {\n+    console.error('❌ 关闭数据库连接池失败:', error);\n+  }\n+};\n+\n module.exports = {\n   pool,\n   query,\n   transaction,\n-  testConnection\n+  testConnection,\n+  closePool\n };\n"
+                }
+            ],
+            "date": 1752377172621,
+            "name": "Commit-0",
+            "content": "const mysql = require('mysql2/promise');\nrequire('dotenv').config();\n\n// 数据库连接配置\nconst dbConfig = {\n  host: process.env.DB_HOST,\n  port: process.env.DB_PORT,\n  user: process.env.DB_USER,\n  password: process.env.DB_PASSWORD,\n  database: process.env.DB_NAME,\n  waitForConnections: true,\n  connectionLimit: 20, // 增加连接池大小\n  queueLimit: 0,\n  charset: 'utf8mb4',\n  acquireTimeout: 60000, // 获取连接超时时间\n  timeout: 60000, // 查询超时时间\n  reconnect: true, // 自动重连\n  idleTimeout: 300000, // 空闲连接超时时间（5分钟）\n  maxIdle: 10, // 最大空闲连接数\n  enableKeepAlive: true, // 启用keep-alive\n  keepAliveInitialDelay: 0\n};\n\n// 创建连接池\nconst pool = mysql.createPool(dbConfig);\n\n// 测试数据库连接\nasync function testConnection() {\n  try {\n    const connection = await pool.getConnection();\n    console.log('✅ 数据库连接成功');\n    console.log(`📍 连接到: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);\n    connection.release();\n    return true;\n  } catch (error) {\n    console.error('❌ 数据库连接失败:', error.message);\n    return false;\n  }\n}\n\n// 执行查询的辅助函数\nasync function query(sql, params = []) {\n  try {\n    const [rows] = await pool.execute(sql, params);\n    return rows;\n  } catch (error) {\n    console.error('数据库查询错误:', error);\n    throw error;\n  }\n}\n\n// 执行事务\nasync function transaction(callback) {\n  const connection = await pool.getConnection();\n  try {\n    await connection.beginTransaction();\n    const result = await callback(connection);\n    await connection.commit();\n    return result;\n  } catch (error) {\n    await connection.rollback();\n    throw error;\n  } finally {\n    connection.release();\n  }\n}\n\nmodule.exports = {\n  pool,\n  query,\n  transaction,\n  testConnection\n};\n"
+        }
+    ]
+}

@@ -13,8 +13,8 @@ const API_CONFIG = {
 
 // 后端API服务配置
 const BACKEND_API_CONFIG = {
-  // 后端服务器URL - 使用代理，开发环境下会自动转发到 http://localhost:3006
-  BASE_URL: '',
+  // 后端服务器URL - 开发环境使用代理，生产环境使用完整URL
+  BASE_URL: import.meta.env.DEV ? '' : 'http://localhost:3007',
   // 请求超时时间（毫秒）
   TIMEOUT: 30000 // 30秒
 }
@@ -264,6 +264,22 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
     }
 
     if (!response.ok) {
+      // 特殊处理401错误，区分真正的认证失败和临时网络问题
+      if (response.status === 401) {
+        const errorMessage = data?.message || ''
+        // 只有在明确的认证错误时才清除token
+        if (errorMessage.includes('令牌已过期') ||
+            errorMessage.includes('无效的访问令牌') ||
+            errorMessage.includes('用户不存在') ||
+            errorMessage.includes('账户已被禁用')) {
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('user_info')
+          throw new Error('登录已过期，请重新登录')
+        }
+        // 其他401错误可能是临时问题，不清除token
+        throw new Error(errorMessage || '认证验证失败，请稍后重试')
+      }
+
       throw new Error(data?.message || `HTTP error! status: ${response.status}`)
     }
 
@@ -274,22 +290,25 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
     }
 
     // 处理网络连接错误 - 尝试重试
-    if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) && retryCount < 2) {
+    if ((error.message.includes('Failed to fetch') ||
+         error.message.includes('NetworkError') ||
+         error.message.includes('fetch') ||
+         error.message.includes('认证验证失败')) &&
+         retryCount < 2) {
       console.log(`网络请求失败，正在重试... (${retryCount + 1}/3)`)
       await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // 递增延迟
       return makeBackendRequest(endpoint, options, retryCount + 1)
     }
 
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) {
+    if (error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('fetch')) {
       throw new Error('网络连接异常，请检查网络或稍后重试')
     }
 
-    // 处理认证错误
-    if (error.message.includes('认证过程中发生错误') || error.message.includes('401')) {
-      // 清除无效的token
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_info')
-      throw new Error('登录已过期，请重新登录')
+    // 只有明确的认证错误才抛出登录过期
+    if (error.message.includes('登录已过期')) {
+      throw error
     }
 
     throw new Error(`请求失败: ${error.message}`)

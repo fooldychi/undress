@@ -109,14 +109,18 @@ export default {
         } else {
           // 如果获取用户信息失败，可能是token过期
           console.warn('获取用户信息失败:', response.message)
-          handleLogout()
+          // 只有在明确的认证错误时才退出登录
+          if (response.message && (response.message.includes('令牌已过期') ||
+                                   response.message.includes('无效的访问令牌'))) {
+            handleLogout()
+          }
         }
       } catch (error) {
         console.error('刷新用户信息失败:', error)
-        // 如果是认证错误，自动退出登录
-        if (error.message.includes('401') || error.message.includes('token')) {
+        // 只有在明确的认证错误时才自动退出登录
+        if (error.message.includes('登录已过期')) {
           handleLogout()
-        } else {
+        } else if (!error.message.includes('网络') && !error.message.includes('超时')) {
           Toast.fail('获取用户信息失败')
         }
       } finally {
