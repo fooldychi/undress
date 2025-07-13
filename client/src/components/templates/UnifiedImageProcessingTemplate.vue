@@ -78,17 +78,40 @@
 
     <!-- 结果展示 -->
     <template #result="{ result }">
-      <div v-if="config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'">
-        <VantImageComparison
+      <div v-if="config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'" class="comparison-result">
+        <!-- 拖拽分割线对比组件 -->
+        <ImageComparison
           v-if="config.resultConfig.comparisonType === 'slider'"
           :original-image="originalImageForComparison"
           :result-image="result"
-          :process-info="processingInfo"
-          @reset="$emit('reset')"
-          @download="$emit('download', $event)"
         />
 
-        <!-- 可以在这里添加其他对比类型的组件 -->
+        <!-- 并排展示对比组件 -->
+        <VantImageComparison
+          v-else-if="config.resultConfig.comparisonType === 'side-by-side'"
+          :original-image="originalImageForComparison"
+          :result-image="result"
+        />
+
+        <!-- 操作按钮 -->
+        <div class="result-actions">
+          <van-button
+            v-if="config.resultConfig?.downloadEnabled"
+            type="primary"
+            size="small"
+            @click="$emit('download', result)"
+          >
+            下载图片
+          </van-button>
+
+          <van-button
+            v-if="config.resultConfig?.resetEnabled"
+            size="small"
+            @click="$emit('reset')"
+          >
+            重新生成
+          </van-button>
+        </div>
       </div>
 
       <!-- 无对比的结果显示 -->
@@ -99,19 +122,17 @@
           <van-button
             v-if="config.resultConfig?.downloadEnabled"
             type="primary"
-            size="large"
+            size="small"
             @click="$emit('download', result)"
           >
-            <van-icon name="down" />
             下载图片
           </van-button>
 
           <van-button
             v-if="config.resultConfig?.resetEnabled"
-            size="large"
+            size="small"
             @click="$emit('reset')"
           >
-            <van-icon name="replay" />
             重新生成
           </van-button>
         </div>
@@ -133,6 +154,7 @@ import {
   AIProcessingTemplate,
   VantImageComparison
 } from '../mobile'
+import ImageComparison from '../ImageComparison.vue'
 import UnifiedImageUploadPanel from '../common/UnifiedImageUploadPanel.vue'
 import { getImageProcessingConfig, fetchImageProcessingConfigFromAPI } from '../../config/imageProcessingConfigs.js'
 
@@ -321,6 +343,13 @@ defineExpose({
 }
 
 
+
+.comparison-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
 
 .simple-result {
   text-align: center;

@@ -13,8 +13,8 @@ const API_CONFIG = {
 
 // 后端API服务配置
 const BACKEND_API_CONFIG = {
-  // 后端服务器URL - 开发环境使用代理，生产环境使用完整URL
-  BASE_URL: import.meta.env.DEV ? '' : 'http://localhost:3007',
+  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量或默认端口
+  BASE_URL: import.meta.env.DEV ? '' : `http://localhost:${import.meta.env.VITE_SERVER_PORT || 3007}`,
   // 请求超时时间（毫秒）
   TIMEOUT: 30000 // 30秒
 }

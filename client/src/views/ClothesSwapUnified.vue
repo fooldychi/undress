@@ -43,7 +43,7 @@ const startTime = ref(null)
 // 处理上传变化
 const handleUploadChange = (panelId, data) => {
   console.log('上传变化:', panelId, data)
-  
+
   if (panelId === 'main-image') {
     selectedImage.value = data
     resultImage.value = null // 清除之前的结果
@@ -69,18 +69,12 @@ const processImage = async () => {
     progressPercent.value = 30
 
     // 调用褪衣处理服务
-    const result = await processUndressImage({
-      image: selectedImage.value,
-      onProgress: (status, percent) => {
-        processingStatus.value = status
-        progressPercent.value = Math.max(progressPercent.value, percent)
-      }
-    })
+    const result = await processUndressImage(selectedImage.value)
 
-    if (result.success && result.imageUrl) {
-      resultImage.value = result.imageUrl
+    if (result.success && result.resultImage) {
+      resultImage.value = result.resultImage
       // 保存原图用于对比
-      originalImageForComparison.value = result.originalImageUrl || selectedImage.value
+      originalImageForComparison.value = result.originalImage || selectedImage.value
       promptId.value = result.promptId || ''
 
       // 计算处理时间
@@ -113,7 +107,7 @@ const resetProcess = () => {
   processingStatus.value = ''
   promptId.value = ''
   processingTime.value = ''
-  
+
   // 重置模板内部状态
   if (templateRef.value) {
     const { uploadData } = templateRef.value
@@ -121,7 +115,7 @@ const resetProcess = () => {
       uploadData['main-image'] = null
     }
   }
-  
+
   Toast.success('已重置，可以重新选择图片')
 }
 

@@ -195,8 +195,14 @@ function getCurrentConfig(forceRefresh = false) {
 }
 
 // 获取API基础URL - 使用负载均衡
-async function getApiBaseUrl() {
+async function getApiBaseUrl(forceReassessment = false) {
   try {
+    // 如果需要强制重新评估，触发负载均衡器重新评估
+    if (forceReassessment) {
+      console.log('🔄 强制重新评估服务器...')
+      await loadBalancer.forceReassessment()
+    }
+
     // 使用负载均衡器选择最优服务器
     const optimalServer = await loadBalancer.getOptimalServer()
     console.log('🎯 负载均衡选择的服务器:', optimalServer)
@@ -303,6 +309,14 @@ async function uploadImageToComfyUI(base64Image) {
 
   } catch (error) {
     console.error('❌ 图片上传失败:', error)
+
+    // 如果是网络错误或服务器错误，记录失败并可能触发重新评估
+    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
+      const currentServer = await getApiBaseUrl()
+      console.log('📝 记录服务器上传失败:', currentServer)
+      await loadBalancer.recordFailure(currentServer)
+    }
+
     throw new Error(`图片上传失败: ${error.message}`)
   }
 }
@@ -423,6 +437,14 @@ async function checkTaskStatus(promptId) {
 
   } catch (error) {
     console.error('状态查询失败:', error)
+
+    // 如果是网络错误或服务器错误，记录失败
+    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
+      const currentServer = await getApiBaseUrl()
+      console.log('📝 记录服务器状态查询失败:', currentServer)
+      await loadBalancer.recordFailure(currentServer)
+    }
+
     throw new Error(`状态查询失败: ${error.message}`)
   }
 }
@@ -538,6 +560,15 @@ async function waitForTaskCompletion(promptId, maxWaitTime = 300000) {
 async function processUndressImage(base64Image) {
   try {
     console.log('🚀 开始处理换衣请求...')
+
+    // 预检查服务器状态
+    console.log('🔍 预检查服务器状态...')
+    const serverStatus = await checkComfyUIServerStatus()
+    if (serverStatus.status === 'error') {
+      console.warn('⚠️ 当前服务器状态异常，触发重新评估...')
+      // 强制重新评估服务器
+      await getApiBaseUrl(true)
+    }
 
     // 检查积分（优先使用等级卡系统）
     console.log('💎 检查积分...')

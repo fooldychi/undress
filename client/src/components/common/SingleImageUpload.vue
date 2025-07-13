@@ -3,7 +3,7 @@
     <div
       class="upload-container"
       :class="{ 'has-image': modelValue, 'disabled': disabled }"
-      :style="{ height: containerHeightValue }"
+      :style="containerStyle"
       @click="!disabled && triggerUpload()"
     >
       <!-- 无图片状态 -->
@@ -26,6 +26,7 @@
             :src="modelValue"
             :alt="uploadText"
             class="uploaded-image"
+            :style="imageStyle"
             @load="onImageLoad"
             @error="onImageError"
           />
@@ -100,8 +101,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
+import { ImageSizeUtils } from '../../config/imageSizeConfig.js'
 
 // Props
 const props = defineProps({
@@ -156,12 +158,17 @@ const loading = ref(false)
 const error = ref('')
 const fileInfo = ref(null)
 const showPreview = ref(false)
+const isMobile = ref(false)
 
 // 计算属性
-const containerHeightValue = computed(() => {
-  return typeof props.containerHeight === 'number'
-    ? `${props.containerHeight}px`
-    : props.containerHeight
+const containerStyle = computed(() => {
+  // 使用统一的上传组件尺寸配置
+  return ImageSizeUtils.getContainerStyle('upload', isMobile.value)
+})
+
+const imageStyle = computed(() => {
+  // 使用统一的图片样式配置
+  return ImageSizeUtils.getImageStyle('upload', isMobile.value)
 })
 
 // 方法
@@ -262,13 +269,19 @@ const previewImage = () => {
   }
 }
 
-const onImageLoad = () => {
+const onImageLoad = (event) => {
   loading.value = false
+  // 不再需要动态调整容器高度，使用统一的固定尺寸
 }
 
 const onImageError = () => {
   loading.value = false
   error.value = '图片加载失败'
+}
+
+// 响应式检测
+const updateMobileStatus = () => {
+  isMobile.value = ImageSizeUtils.isMobile()
 }
 
 // 监听modelValue变化
@@ -277,6 +290,16 @@ watch(() => props.modelValue, (newValue) => {
     fileInfo.value = null
     error.value = ''
   }
+})
+
+// 生命周期
+onMounted(() => {
+  updateMobileStatus()
+  window.addEventListener('resize', updateMobileStatus)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateMobileStatus)
 })
 </script>
 
@@ -288,10 +311,16 @@ watch(() => props.modelValue, (newValue) => {
 .upload-container {
   position: relative;
   border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
 }
 
 .upload-container:hover:not(.disabled) {
@@ -336,6 +365,7 @@ watch(() => props.modelValue, (newValue) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .image-overlay {

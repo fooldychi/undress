@@ -5,6 +5,7 @@ import router from './router'
 // 引入配置服务和负载均衡器
 import configService from './services/configService.js'
 import loadBalancer from './services/loadBalancer.js'
+import { exposeTestFunctions } from './utils/loadBalancerTest.js'
 
 // 开发环境下引入测试工具
 if (import.meta.env.DEV) {
@@ -115,6 +116,11 @@ async function initApp() {
     app.mount('#app')
 
     console.log('✅ Vue应用启动成功!')
+
+    // 在开发环境中暴露测试函数
+    if (import.meta.env.DEV) {
+      exposeTestFunctions()
+    }
 
   } catch (error) {
     console.error('❌ Vue应用启动失败:', error)

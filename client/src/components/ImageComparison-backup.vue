@@ -1,47 +1,74 @@
 <template>
-  <div class="comparison-container" ref="comparisonContainer" :style="containerStyle">
-    <div class="comparison-wrapper">
-      <!-- 原图层 -->
-      <div class="image-layer original-layer">
-        <img
-          :src="originalImage"
-          alt="原图"
-          class="comparison-image"
-          :style="imageStyle"
-          @load="handleImageLoad"
-          ref="originalImageRef"
-        />
-      </div>
+  <div class="result-container">
+    <!-- 使用MobileCard包装，与VantImageComparison保持一致 -->
+    <MobileCard title="处理结果" inset>
+      <div class="comparison-container" ref="comparisonContainer">
+        <div class="comparison-wrapper" :style="containerStyle">
+          <!-- 原图层 -->
+          <div class="image-layer original-layer">
+            <img
+              :src="originalImage"
+              alt="原图"
+              class="comparison-image"
+              @load="handleImageLoad"
+              ref="originalImageRef"
+            />
+          </div>
 
-      <!-- 结果图层 -->
-      <div
-        class="image-layer result-layer"
-        :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
-      >
-        <img :src="resultImage" alt="处理结果" class="comparison-image" :style="imageStyle" />
-      </div>
+          <!-- 结果图层 -->
+          <div
+            class="image-layer result-layer"
+            :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
+          >
+            <img :src="resultImage" alt="处理结果" class="comparison-image" />
+          </div>
 
-      <!-- 拖拽滑块 -->
-      <div
-        class="comparison-slider"
-        :style="{ left: sliderPosition + '%' }"
-        @mousedown="startDragging"
-        @touchstart="startDragging"
-      >
-        <div class="slider-line"></div>
-        <div class="slider-handle">
-          <van-icon name="arrow-left" size="12" color="white" class="slider-arrow left" />
-          <div class="slider-circle"></div>
-          <van-icon name="arrow" size="12" color="white" class="slider-arrow right" />
+          <!-- 拖拽滑块 -->
+          <div
+            class="comparison-slider"
+            :style="{ left: sliderPosition + '%' }"
+            @mousedown="startDragging"
+            @touchstart="startDragging"
+          >
+            <div class="slider-line"></div>
+            <div class="slider-handle">
+              <van-icon name="arrow-left" size="12" color="white" class="slider-arrow left" />
+              <div class="slider-circle"></div>
+              <van-icon name="arrow" size="12" color="white" class="slider-arrow right" />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- 操作按钮 -->
+      <div class="result-actions">
+        <van-button
+          @click="downloadResult"
+          type="primary"
+          size="normal"
+          round
+          icon="down"
+        >
+          下载处理结果
+        </van-button>
+        <van-button
+          @click="resetProcess"
+          type="default"
+          size="normal"
+          round
+          icon="replay"
+        >
+          重新选择图片
+        </van-button>
+      </div>
+    </MobileCard>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { ImageSizeUtils } from '../config/imageSizeConfig.js'
+import { Toast } from 'vant'
+import { MobileCard } from './mobile'
 
 const props = defineProps({
   originalImage: {
@@ -54,22 +81,19 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits([])
+const emit = defineEmits(['reset'])
 
 const sliderPosition = ref(50)
 const isDragging = ref(false)
 const comparisonContainer = ref(null)
 const originalImageRef = ref(null)
 const imageAspectRatio = ref(1) // 默认1:1比例
-const isMobile = ref(false)
 
-// 计算容器样式 - 使用preview配置（只固定高度，宽度自适应保持原图比例）
+// 计算容器样式 - 使用固定1:1比例，与VantImageComparison保持一致
 const containerStyle = computed(() => {
-  return ImageSizeUtils.getContainerStyle('preview', isMobile.value)
-})
-
-const imageStyle = computed(() => {
-  return ImageSizeUtils.getImageStyle('preview', isMobile.value)
+  return {
+    aspectRatio: '1'
+  }
 })
 
 // 处理图片加载
@@ -102,7 +126,7 @@ const handleDrag = (event) => {
   const clientX = event.clientX || (event.touches && event.touches[0].clientX)
   const x = clientX - rect.left
   const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
-
+  
   sliderPosition.value = percentage
 }
 
@@ -114,11 +138,18 @@ const stopDragging = () => {
   document.removeEventListener('touchend', stopDragging)
 }
 
-// 移除下载和重置功能，只保留纯粹的对比功能
+const downloadResult = () => {
+  const link = document.createElement('a')
+  link.href = props.resultImage
+  link.download = `processed-image-${Date.now()}.jpg`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  Toast.success('图片下载已开始')
+}
 
-// 响应式检测
-const updateMobileStatus = () => {
-  isMobile.value = ImageSizeUtils.isMobile()
+const resetProcess = () => {
+  emit('reset')
 }
 
 // 键盘快捷键支持
@@ -131,37 +162,37 @@ const handleKeyPress = (event) => {
 }
 
 onMounted(() => {
-  updateMobileStatus()
-  window.addEventListener('resize', updateMobileStatus)
   document.addEventListener('keydown', handleKeyPress)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateMobileStatus)
   document.removeEventListener('keydown', handleKeyPress)
   stopDragging()
 })
 </script>
 
 <style scoped>
+.result-container {
+  width: 100%;
+}
+
 .comparison-container {
   position: relative;
+  margin: 16px 0;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   user-select: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  width: 100%;
 }
 
 .comparison-wrapper {
   position: relative;
   width: 100%;
-  height: 100%;
   overflow: hidden;
   cursor: col-resize;
   background: #000000;
@@ -178,7 +209,7 @@ onUnmounted(() => {
 .comparison-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   display: block;
 }
@@ -186,8 +217,6 @@ onUnmounted(() => {
 .result-layer {
   transition: clip-path 0.1s ease-out;
 }
-
-
 
 .comparison-slider {
   position: absolute;
@@ -239,23 +268,22 @@ onUnmounted(() => {
   opacity: 0.7;
 }
 
-
+.result-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
 
 @media (max-width: 768px) {
-  .comparison-container {
-    /* height: 60vh; */
-    min-height: 400px;
-    /* max-height: 600px; */
-  }
-
   .result-actions {
     flex-direction: column;
     gap: 12px;
   }
-
+  
   .slider-handle {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 }
 </style>

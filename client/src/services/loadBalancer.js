@@ -12,10 +12,11 @@ class ComfyUILoadBalancer {
     this.lockedServer = null
     this.lastLockTime = 0
     this.lockDuration = 30000 // 30秒锁定时间
-    this.healthCheckTimeout = 10000 // 10秒健康检查超时
-    this.queueCheckTimeout = 5000 // 5秒队列检查超时
+    this.healthCheckTimeout = 15000 // 15秒健康检查超时
+    this.queueCheckTimeout = 8000 // 8秒队列检查超时
     this.lastUpdateTime = 0
-    this.updateInterval = 15000 // 15秒更新间隔
+    this.updateInterval = 10000 // 10秒更新间隔（更频繁的更新）
+    this.forceUpdateThreshold = 30000 // 30秒强制更新阈值
   }
 
   /**
@@ -90,13 +91,19 @@ class ComfyUILoadBalancer {
   /**
    * 更新所有服务器的负载信息
    */
-  async updateServerLoads() {
+  async updateServerLoads(forceUpdate = false) {
     const now = Date.now()
 
-    // 如果距离上次更新时间不足间隔，跳过更新
-    if (now - this.lastUpdateTime < this.updateInterval) {
+    // 如果距离上次更新时间不足间隔，跳过更新（除非强制更新或超过强制更新阈值）
+    if (!forceUpdate && now - this.lastUpdateTime < this.updateInterval && now - this.lastUpdateTime < this.forceUpdateThreshold) {
       console.log('⏭️ 跳过负载更新，距离上次更新时间不足')
       return
+    }
+
+    // 如果超过强制更新阈值，强制更新
+    if (now - this.lastUpdateTime > this.forceUpdateThreshold) {
+      console.log('🔄 强制更新服务器负载信息（超过强制更新阈值）')
+      forceUpdate = true
     }
 
     console.log('🔄 更新服务器负载信息...')
@@ -112,15 +119,20 @@ class ComfyUILoadBalancer {
         const health = healthResult.status === 'fulfilled' ? healthResult.value : { healthy: false }
         const queue = queueResult.status === 'fulfilled' ? queueResult.value : { total: 999, healthy: false }
 
+        // 更智能的健康状态判断
+        const isHealthy = this.determineServerHealth(health, queue, server)
+
         this.serverLoads.set(server.url, {
           ...server,
-          healthy: health.healthy && queue.healthy,
+          healthy: isHealthy,
           queue: queue,
           lastCheck: now,
-          responseTime: health.responseTime || 0
+          responseTime: health.responseTime || 0,
+          healthDetails: { health, queue }
         })
 
-        console.log(`📊 ${server.url}: 健康=${health.healthy}, 队列=${queue.total || 0}`)
+        const queueInfo = queue.healthy ? `队列=${queue.total || 0}(运行:${queue.running || 0},等待:${queue.pending || 0})` : `队列检查失败`
+        console.log(`📊 ${server.url}: 健康=${health.healthy}, ${queueInfo}, 响应时间=${health.responseTime || 0}ms`)
 
       } catch (error) {
         console.error(`❌ 更新服务器负载失败 ${server.url}:`, error)
@@ -138,6 +150,31 @@ class ComfyUILoadBalancer {
     this.lastUpdateTime = now
 
     console.log('✅ 服务器负载信息更新完成')
+  }
+
+  /**
+   * 更智能的服务器健康状态判断
+   */
+  determineServerHealth(health, queue, server) {
+    // 如果健康检查完全失败，标记为不健康
+    if (!health.healthy) {
+      return false
+    }
+
+    // 如果队列检查失败但健康检查通过，仍然认为服务器可用
+    // 这样可以避免因为队列API不可用而错误地标记服务器为不健康
+    if (!queue.healthy) {
+      console.log(`⚠️ 服务器 ${server.url} 队列检查失败，但健康检查通过，仍标记为可用`)
+      return true
+    }
+
+    // 如果队列过长（超过10个任务），降低优先级但不标记为不健康
+    if (queue.total > 10) {
+      console.log(`⚠️ 服务器 ${server.url} 队列较长 (${queue.total})，但仍可用`)
+      return true
+    }
+
+    return true
   }
 
   /**
@@ -271,11 +308,11 @@ class ComfyUILoadBalancer {
         }
       }
 
-      // 更新服务器负载信息
+      // 更新服务器负载信息（如果没有健康服务器，强制更新）
       await this.updateServerLoads()
 
       // 获取所有健康的服务器
-      const healthyServers = Array.from(this.serverLoads.values())
+      let healthyServers = Array.from(this.serverLoads.values())
         .filter(server => server.healthy)
         .sort((a, b) => {
           // 首先按队列数量排序
@@ -286,8 +323,22 @@ class ComfyUILoadBalancer {
           return a.priority - b.priority
         })
 
+      // 如果没有健康服务器，强制更新一次再试
       if (healthyServers.length === 0) {
-        console.warn('⚠️ 没有健康的服务器可用')
+        console.warn('⚠️ 没有健康的服务器可用，强制更新后重试...')
+        await this.updateServerLoads(true) // 强制更新
+
+        healthyServers = Array.from(this.serverLoads.values())
+          .filter(server => server.healthy)
+          .sort((a, b) => {
+            const queueDiff = (a.queue.total || 0) - (b.queue.total || 0)
+            if (queueDiff !== 0) return queueDiff
+            return a.priority - b.priority
+          })
+      }
+
+      if (healthyServers.length === 0) {
+        console.warn('⚠️ 强制更新后仍没有健康的服务器可用')
         return await this.fallbackToAnyServer()
       }
 
@@ -311,7 +362,21 @@ class ComfyUILoadBalancer {
   async fallbackToAnyServer() {
     console.log('🔄 使用备用服务器选择策略...')
 
-    // 按优先级返回第一个服务器
+    // 尝试选择响应时间最快的服务器（即使队列较长）
+    const serversWithResponse = Array.from(this.serverLoads.values())
+      .filter(server => server.responseTime > 0) // 至少有响应
+      .sort((a, b) => {
+        // 按响应时间排序
+        return a.responseTime - b.responseTime
+      })
+
+    if (serversWithResponse.length > 0) {
+      const fastestServer = serversWithResponse[0]
+      console.log(`🆘 选择响应最快的服务器: ${fastestServer.url} (响应时间: ${fastestServer.responseTime}ms, 队列: ${fastestServer.queue.total || 0})`)
+      return fastestServer.url
+    }
+
+    // 如果没有响应数据，按优先级返回第一个服务器
     if (this.servers.length > 0) {
       const fallbackServer = this.servers[0].url
       console.log(`🆘 备用服务器: ${fallbackServer}`)
@@ -421,16 +486,39 @@ class ComfyUILoadBalancer {
   }
 
   /**
+   * 强制重新评估所有服务器
+   */
+  async forceReassessment() {
+    console.log('🔄 强制重新评估所有服务器...')
+
+    // 清除锁定状态
+    this.lockedServer = null
+    this.lastLockTime = 0
+
+    // 强制更新负载信息
+    await this.updateServerLoads(true)
+
+    // 显示当前状态
+    this.logServerStatus()
+
+    console.log('✅ 服务器重新评估完成')
+  }
+
+  /**
    * 显示服务器状态
    */
   logServerStatus() {
     console.log('📊 当前所有服务器状态:')
     for (const [url, info] of this.serverLoads.entries()) {
       const status = info.healthy ? '✅' : '❌'
-      const queue = info.healthy ? `队列:${info.queue.total || 0}` : '不健康'
+      const queueInfo = info.queue ?
+        `队列:${info.queue.total || 0}(运行:${info.queue.running || 0},等待:${info.queue.pending || 0})` :
+        '队列:未知'
       const locked = url === this.lockedServer ? '🔒' : ''
       const priority = `优先级:${info.priority}`
-      console.log(`   ${status} ${url} ${queue} ${priority} ${locked}`)
+      const responseTime = info.responseTime ? `响应:${info.responseTime}ms` : '响应:未知'
+      const lastCheck = info.lastCheck ? `检查:${Math.round((Date.now() - info.lastCheck) / 1000)}s前` : '检查:从未'
+      console.log(`   ${status} ${url} ${queueInfo} ${priority} ${responseTime} ${lastCheck} ${locked}`)
     }
   }
 

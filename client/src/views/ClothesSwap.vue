@@ -71,18 +71,12 @@ const processImage = async () => {
     progressPercent.value = 30
 
     // 调用褪衣处理服务
-    const result = await processUndressImage({
-      image: selectedImage.value,
-      onProgress: (status, percent) => {
-        processingStatus.value = status
-        progressPercent.value = Math.max(progressPercent.value, percent)
-      }
-    })
+    const result = await processUndressImage(selectedImage.value)
 
-    if (result.success && result.imageUrl) {
-      resultImage.value = result.imageUrl
+    if (result.success && result.resultImage) {
+      resultImage.value = result.resultImage
       // 保存原图用于对比
-      originalImageForComparison.value = result.originalImageUrl || selectedImage.value
+      originalImageForComparison.value = result.originalImage || selectedImage.value
       promptId.value = result.promptId || ''
 
       // 计算处理时间
