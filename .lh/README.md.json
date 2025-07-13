@@ -3,11 +3,23 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752329615202,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752407837246,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -81,21 +81,46 @@\n ```\n \n ### 启动项目\n \n+#### 🎯 推荐方式：使用端口管理工具 (新)\n ```bash\n-# 启动后端服务 (端口: 3006)\n+# Windows\n+start-managed.bat\n+\n+# Linux/Mac\n+./start-managed.sh\n+\n+# 或直接使用 Node.js\n+node start-managed.js\n+```\n+\n+#### 📋 传统方式：手动启动\n+```bash\n+# 启动后端服务 (端口: 3007)\n cd server\n npm start\n \n # 启动前端开发服务器 (端口: 3001)\n cd client\n npm run dev\n+\n+# 启动后台管理系统 (端口: 3003)\n+cd admin\n+npm run dev\n ```\n \n+#### ⚡ 端口管理工具优势\n+- ✅ 自动检测端口冲突并处理\n+- ✅ 强制使用指定端口 (3001/3003/3007)\n+- ✅ 统一启动管理，避免配置混乱\n+- ✅ 自动终止冲突进程\n+- ✅ 详细的启动日志和错误处理\n+\n ### 访问应用\n-- 前端应用: http://localhost:3001\n-- 后端API: http://localhost:3006\n+- 客户端前端: http://localhost:3001\n+- 后台管理系统: http://localhost:3003\n+- 后端API: http://localhost:3007\n \n ## 📖 文档\n \n ### 前端开发\n"
+                },
+                {
+                    "date": 1752407874028,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -120,8 +120,35 @@\n - 客户端前端: http://localhost:3001\n - 后台管理系统: http://localhost:3003\n - 后端API: http://localhost:3007\n \n+## 🔧 端口管理工具\n+\n+项目包含统一的端口管理工具，确保端口配置正确，避免冲突：\n+\n+### 端口配置\n+- **客户端前端**: 3001\n+- **后台管理系统**: 3003\n+- **后端API服务**: 3007\n+\n+### 端口管理命令\n+```bash\n+# 检查端口状态\n+node scripts/port-manager.js status\n+\n+# 验证并处理端口冲突\n+node scripts/port-manager.js validate\n+\n+# 启动单个服务\n+node scripts/port-manager.js start server\n+node scripts/port-manager.js start client\n+node scripts/port-manager.js start admin\n+```\n+\n+### 配置文件\n+- `port-config.json` - 统一端口配置\n+- `PORT_MANAGER_GUIDE.md` - 详细使用指南\n+\n ## 📖 文档\n \n ### 前端开发\n - [前端开发原则](./client/docs/FRONTEND_DEVELOPMENT_PRINCIPLES.md)\n"
+                },
+                {
+                    "date": 1752408426935,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -146,9 +146,22 @@\n \n ### 配置文件\n - `port-config.json` - 统一端口配置\n - `PORT_MANAGER_GUIDE.md` - 详细使用指南\n+- `PORT_PROTECTION_GUIDE.md` - 端口配置保护指南\n \n+### 🛡️ 配置保护机制\n+```bash\n+# 检查端口配置完整性和硬编码问题\n+node scripts/protect-port-config.js check\n+\n+# 同步所有配置文件\n+node scripts/sync-port-config.js sync\n+\n+# 安装Git钩子保护\n+node scripts/install-git-hooks.js install\n+```\n+\n ## 📖 文档\n \n ### 前端开发\n - [前端开发原则](./client/docs/FRONTEND_DEVELOPMENT_PRINCIPLES.md)\n"
                 }
             ],
             "date": 1752329615202,

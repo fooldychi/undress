@@ -13,8 +13,19 @@
       </span>
     </div>
 
-    <!-- 上传区域 -->
-    <div class="upload-area">
+    <!-- 对比组件插槽 - 在panel-header和status-section之间 -->
+    <div v-if="$slots.comparison" class="comparison-slot">
+      <!-- 调试信息 - 开发时可启用 -->
+      <!--
+      <div style="background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;">
+        📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}
+      </div>
+      -->
+      <slot name="comparison" />
+    </div>
+
+    <!-- 上传区域 - 始终显示，除非有对比组件且明确隐藏 -->
+    <div v-if="!($slots.comparison && shouldHideUpload)" class="upload-area">
       <!-- 单图上传 -->
       <SingleImageUpload
         v-if="config.uploadType === 'single'"
@@ -111,6 +122,10 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  shouldHideUpload: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -186,6 +201,17 @@ const handleUploadError = (error) => {
 .count-badge {
   font-size: 14px;
   color: var(--van-text-color-2);
+}
+
+/* 对比组件插槽样式 */
+.comparison-slot {
+  margin-bottom: 16px;
+  /* 确保插槽内容能正确显示 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 避免弹性布局导致的宽度问题 */
+  width: 100%;
 }
 
 .upload-area {

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API错误处理修复测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .error-demo {
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .fixed-demo {
+            background: rgba(81, 207, 102, 0.1);
+            border: 2px solid rgba(81, 207, 102, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .error-stack {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #ff6b6b;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .explanation {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .explanation li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .flow-diagram {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .flow-step {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 5px;
+            color: white;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .flow-arrow {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            margin: 0 10px;
+        }
+
+        .error-type {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .solution-type {
+            background: rgba(81, 207, 102, 0.2);
+            border: 1px solid rgba(81, 207, 102, 0.4);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            color: #51cf66;
+            font-weight: bold;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .comparison-table th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+        }
+
+        .status-before {
+            color: #ff6b6b;
+        }
+
+        .status-after {
+            color: #51cf66;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="title">API错误处理修复测试</h1>
+
+        <!-- 错误分析 -->
+        <div class="test-section">
+            <h2 class="section-title">🔍 错误分析</h2>
+            
+            <div class="error-demo">
+                <h3 style="color: #ff6b6b; margin-bottom: 10px;">原始错误信息</h3>
+                <div class="error-stack">levelCardPointsManager.js:164 消耗积分失败: Error: 请求失败: 服务器返回非JSON响应: 
+    at makeBackendRequest (api.js:314:11)
+    at async Object.consumePoints (api.js:457:24)
+    at async LevelCardPointsManager.consumePoints (levelCardPointsManager.js:145:24)
+    at async processUndressImage (comfyui.js:616:26)
+    at async processImage (ClothesSwap.vue:58:20)</div>
+            </div>
+
+            <div class="explanation">
+                <strong>问题特征：</strong>
+                <ul>
+                    <li>🚫 <span class="highlight">偶尔发生</span> - 不是每次都出现</li>
+                    <li>🚫 <span class="highlight">服务器处理成功</span> - 后端实际完成了处理</li>
+                    <li>🚫 <span class="highlight">客户端报错</span> - 前端无法解析响应</li>
+                    <li>🚫 <span class="highlight">非JSON响应</span> - 服务器返回了HTML或其他格式</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 问题根源 -->
+        <div class="test-section">
+            <h2 class="section-title">🎯 问题根源</h2>
+            
+            <div class="flow-diagram">
+                <div class="flow-step">客户端发送请求</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">服务器处理</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step error-type">返回非JSON响应</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">客户端解析失败</div>
+            </div>
+
+            <div class="explanation">
+                <strong>可能的原因：</strong>
+                <ul>
+                    <li>🔍 <span class="highlight">服务器负载高</span> - 返回HTML错误页面</li>
+                    <li>🔍 <span class="highlight">代理服务器问题</span> - 中间件返回非JSON响应</li>
+                    <li>🔍 <span class="highlight">服务器重启</span> - 临时不可用时返回默认页面</li>
+                    <li>🔍 <span class="highlight">Content-Type缺失</span> - 响应头部信息错误</li>
+                    <li>🔍 <span class="highlight">网络波动</span> - 请求被中断或重定向</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 修复方案 -->
+        <div class="test-section">
+            <h2 class="section-title">✅ 修复方案</h2>
+            
+            <div class="fixed-demo">
+                <h3 style="color: #51cf66; margin-bottom: 10px;">改进的错误处理</h3>
+                
+                <div class="flow-diagram">
+                    <div class="flow-step">检测非JSON响应</div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step solution-type">记录详细日志</div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step solution-type">自动重试机制</div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">友好错误提示</div>
+                </div>
+            </div>
+
+            <div class="code-block">
+// 修复前的代码
+} else {
+  const text = await response.text()
+  throw new Error(`服务器返回非JSON响应: ${text}`)
+}
+
+// 修复后的代码
+} else {
+  const text = await response.text()
+  console.error('服务器返回非JSON响应:', {
+    url,
+    status: response.status,
+    contentType,
+    responseText: text.substring(0, 500) // 只记录前500字符
+  })
+  
+  // 如果是HTML错误页面或服务器错误，且可以重试，则重试
+  if ((text.includes('&lt;html&gt;') || text.includes('&lt;!DOCTYPE') || 
+       response.status >= 500) && retryCount < 2) {
+    console.log(`服务器返回非JSON响应，正在重试... (${retryCount + 1}/3)`)
+    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+    return makeBackendRequest(endpoint, options, retryCount + 1)
+  }
+  
+  throw new Error(`服务器暂时不可用，请稍后重试`)
+}
+            </div>
+
+            <div class="explanation">
+                <strong>关键改进：</strong>
+                <ul>
+                    <li>✅ <span class="highlight">详细日志记录</span> - 记录响应状态、内容类型、部分响应文本</li>
+                    <li>✅ <span class="highlight">智能重试机制</span> - 检测HTML错误页面和5xx错误自动重试</li>
+                    <li>✅ <span class="highlight">友好错误信息</span> - 将技术错误转换为用户友好的提示</li>
+                    <li>✅ <span class="highlight">防止日志溢出</span> - 只记录响应文本的前500字符</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 修复对比 -->
+        <div class="test-section">
+            <h2 class="section-title">📊 修复前后对比</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>方面</th>
+                        <th>修复前</th>
+                        <th>修复后</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>错误检测</td>
+                        <td class="status-before">❌ 简单抛出错误</td>
+                        <td class="status-after">✅ 详细分析响应类型</td>
+                    </tr>
+                    <tr>
+                        <td>日志记录</td>
+                        <td class="status-before">❌ 无详细日志</td>
+                        <td class="status-after">✅ 记录URL、状态、内容类型</td>
+                    </tr>
+                    <tr>
+                        <td>重试机制</td>
+                        <td class="status-before">❌ 不重试非JSON响应</td>
+                        <td class="status-after">✅ 智能检测并重试</td>
+                    </tr>
+                    <tr>
+                        <td>错误信息</td>
+                        <td class="status-before">❌ 技术性错误信息</td>
+                        <td class="status-after">✅ 用户友好的提示</td>
+                    </tr>
+                    <tr>
+                        <td>稳定性</td>
+                        <td class="status-before">❌ 偶尔失败</td>
+                        <td class="status-after">✅ 自动恢复</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 重试策略 -->
+        <div class="test-section">
+            <h2 class="section-title">🔄 重试策略</h2>
+            
+            <div class="explanation">
+                <strong>重试条件：</strong>
+                <ul>
+                    <li>🔄 <span class="highlight">HTML错误页面</span> - 响应包含 &lt;html&gt; 或 &lt;!DOCTYPE</li>
+                    <li>🔄 <span class="highlight">服务器错误</span> - HTTP状态码 >= 500</li>
+                    <li>🔄 <span class="highlight">网络错误</span> - Failed to fetch, NetworkError等</li>
+                    <li>🔄 <span class="highlight">最大重试次数</span> - 最多重试2次</li>
+                    <li>🔄 <span class="highlight">递增延迟</span> - 1秒、2秒、3秒的延迟</li>
+                </ul>
+            </div>
+
+            <div class="code-block">
+// 重试逻辑
+if ((error.message.includes('Failed to fetch') ||
+     error.message.includes('NetworkError') ||
+     error.message.includes('fetch') ||
+     error.message.includes('认证验证失败') ||
+     error.message.includes('服务器返回非JSON响应')) &&
+     retryCount < 2) {
+  console.log(`请求失败，正在重试... (${retryCount + 1}/3)`, error.message)
+  await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+  return makeBackendRequest(endpoint, options, retryCount + 1)
+}
+            </div>
+        </div>
+
+        <!-- 用户体验改进 -->
+        <div class="test-section">
+            <h2 class="section-title">🎯 用户体验改进</h2>
+            
+            <div class="explanation">
+                <strong>改进效果：</strong>
+                <ul>
+                    <li>🎯 <span class="highlight">自动恢复</span> - 大部分临时错误会自动重试成功</li>
+                    <li>🎯 <span class="highlight">友好提示</span> - "服务器暂时不可用，请稍后重试"</li>
+                    <li>🎯 <span class="highlight">减少失败率</span> - 通过重试机制显著降低错误发生率</li>
+                    <li>🎯 <span class="highlight">开发调试</span> - 详细日志帮助快速定位问题</li>
+                    <li>🎯 <span class="highlight">系统稳定性</span> - 提高整体系统的容错能力</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 监控建议 -->
+        <div class="test-section">
+            <h2 class="section-title">📈 监控建议</h2>
+            
+            <div class="explanation">
+                <strong>后续监控：</strong>
+                <ul>
+                    <li>📈 <span class="highlight">错误频率</span> - 监控非JSON响应错误的发生频率</li>
+                    <li>📈 <span class="highlight">重试成功率</span> - 统计重试机制的成功率</li>
+                    <li>📈 <span class="highlight">服务器状态</span> - 监控服务器负载和响应时间</li>
+                    <li>📈 <span class="highlight">用户反馈</span> - 收集用户对错误处理的反馈</li>
+                    <li>📈 <span class="highlight">日志分析</span> - 定期分析错误日志找出模式</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对比组件调试测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .debug-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .debug-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #f8f8f2;
+            line-height: 1.4;
+        }
+
+        .debug-item {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .debug-item:last-child {
+            border-bottom: none;
+        }
+
+        .debug-label {
+            color: #66d9ef;
+            font-weight: bold;
+        }
+
+        .debug-value {
+            color: #a6e22e;
+        }
+
+        .debug-value.false {
+            color: #f92672;
+        }
+
+        .debug-value.true {
+            color: #a6e22e;
+        }
+
+        .debug-value.null {
+            color: #fd971f;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .test-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .test-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .test-btn.active {
+            background: #1989fa;
+            border-color: #1989fa;
+        }
+
+        .checklist {
+            color: white;
+            line-height: 1.6;
+        }
+
+        .checklist li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .checklist li::before {
+            content: "❌";
+            position: absolute;
+            left: 0;
+        }
+
+        .checklist li.check::before {
+            content: "✅";
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="title">对比组件调试测试</h1>
+
+        <!-- 测试按钮 -->
+        <div class="test-buttons">
+            <button class="test-btn active" onclick="setTestState('initial')">
+                初始状态
+            </button>
+            <button class="test-btn" onclick="setTestState('processing')">
+                处理中
+            </button>
+            <button class="test-btn" onclick="setTestState('completed')">
+                处理完成
+            </button>
+        </div>
+
+        <!-- 调试信息 -->
+        <div class="debug-section">
+            <h2 class="section-title">🔍 当前状态调试信息</h2>
+            
+            <div class="debug-info" id="debugInfo">
+                <!-- 动态生成调试信息 -->
+            </div>
+        </div>
+
+        <!-- 条件检查 -->
+        <div class="debug-section">
+            <h2 class="section-title">📋 对比组件显示条件检查</h2>
+            
+            <ul class="checklist" id="checklist">
+                <li id="check-resultData">resultData 存在且不为空</li>
+                <li id="check-config">config.resultConfig 已加载</li>
+                <li id="check-showComparison">config.resultConfig.showComparison = true</li>
+                <li id="check-comparisonType">config.resultConfig.comparisonType !== 'none'</li>
+                <li id="check-originalImage">originalImageForComparison 存在</li>
+                <li id="check-slot">插槽 #comparison 被正确识别</li>
+                <li id="check-shouldHide">shouldHideUpload 计算正确</li>
+            </ul>
+        </div>
+
+        <!-- 可能的问题 -->
+        <div class="debug-section">
+            <h2 class="section-title">⚠️ 可能的问题和解决方案</h2>
+            
+            <div style="color: white; line-height: 1.6;">
+                <h3 style="color: #ff6b6b; margin-bottom: 10px;">常见问题：</h3>
+                <ul>
+                    <li><span class="highlight">resultData 为空</span> - 检查处理完成后是否正确设置了 resultImage.value</li>
+                    <li><span class="highlight">originalImageForComparison 为空</span> - 检查是否在处理完成时设置了原图</li>
+                    <li><span class="highlight">配置未加载</span> - 检查 imageProcessingConfigs.js 中的配置是否正确</li>
+                    <li><span class="highlight">插槽未识别</span> - 检查 UnifiedImageUploadPanel 的插槽实现</li>
+                    <li><span class="highlight">条件判断错误</span> - 检查 v-if 条件是否正确</li>
+                </ul>
+
+                <h3 style="color: #51cf66; margin: 20px 0 10px 0;">调试步骤：</h3>
+                <ol>
+                    <li>在浏览器开发者工具中查看 Vue DevTools</li>
+                    <li>检查 UnifiedImageProcessingTemplate 组件的 props</li>
+                    <li>查看 UnifiedImageUploadPanel 的插槽内容</li>
+                    <li>确认 ImageComparison 组件是否被正确导入</li>
+                    <li>检查控制台是否有错误信息</li>
+                </ol>
+
+                <h3 style="color: #ffd93d; margin: 20px 0 10px 0;">临时解决方案：</h3>
+                <ul>
+                    <li>移除 v-if 条件，强制显示对比组件</li>
+                    <li>使用固定的测试图片 URL</li>
+                    <li>在模板中直接硬编码对比组件</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 代码示例 -->
+        <div class="debug-section">
+            <h2 class="section-title">💻 关键代码检查</h2>
+            
+            <div class="debug-info">
+                <div style="color: #66d9ef; margin-bottom: 10px;">UnifiedImageProcessingTemplate.vue:</div>
+                <div style="color: #f8f8f2;">
+&lt;template #comparison&gt;<br>
+&nbsp;&nbsp;&lt;div v-if="resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'"&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;ImageComparison<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v-if="config.resultConfig.comparisonType === 'slider'"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:original-image="originalImageForComparison"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:result-image="resultData"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;/&gt;<br>
+&nbsp;&nbsp;&lt;/div&gt;<br>
+&lt;/template&gt;
+                </div>
+            </div>
+
+            <div class="debug-info">
+                <div style="color: #66d9ef; margin-bottom: 10px;">ClothesSwap.vue 处理完成:</div>
+                <div style="color: #f8f8f2;">
+if (result.success && result.resultImage) {<br>
+&nbsp;&nbsp;resultImage.value = result.resultImage<br>
+&nbsp;&nbsp;originalImageForComparison.value = result.originalImage || selectedImage.value<br>
+&nbsp;&nbsp;// 这里应该触发对比组件显示<br>
+}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟的状态数据
+        const testStates = {
+            initial: {
+                resultData: null,
+                originalImageForComparison: null,
+                configLoaded: true,
+                showComparison: true,
+                comparisonType: 'slider'
+            },
+            processing: {
+                resultData: null,
+                originalImageForComparison: 'data:image/jpeg;base64,test-original',
+                configLoaded: true,
+                showComparison: true,
+                comparisonType: 'slider'
+            },
+            completed: {
+                resultData: 'data:image/jpeg;base64,test-result',
+                originalImageForComparison: 'data:image/jpeg;base64,test-original',
+                configLoaded: true,
+                showComparison: true,
+                comparisonType: 'slider'
+            }
+        };
+
+        let currentState = 'initial';
+
+        function setTestState(state) {
+            currentState = state;
+            updateDebugInfo();
+            updateChecklist();
+            updateButtons();
+        }
+
+        function updateDebugInfo() {
+            const state = testStates[currentState];
+            const debugInfo = document.getElementById('debugInfo');
+            
+            debugInfo.innerHTML = `
+                <div class="debug-item">
+                    <span class="debug-label">当前状态:</span> 
+                    <span class="debug-value">${currentState}</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">resultData:</span> 
+                    <span class="debug-value ${state.resultData ? 'true' : 'false'}">${state.resultData ? '存在' : '空'}</span>
+                    <span style="color: #75715e;"> (${typeof state.resultData})</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">originalImageForComparison:</span> 
+                    <span class="debug-value ${state.originalImageForComparison ? 'true' : 'false'}">${state.originalImageForComparison ? '存在' : '空'}</span>
+                    <span style="color: #75715e;"> (${typeof state.originalImageForComparison})</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">config.resultConfig?.showComparison:</span> 
+                    <span class="debug-value ${state.showComparison ? 'true' : 'false'}">${state.showComparison}</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">config.resultConfig?.comparisonType:</span> 
+                    <span class="debug-value">'${state.comparisonType}'</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">条件判断结果:</span> 
+                    <span class="debug-value ${checkCondition(state) ? 'true' : 'false'}">${checkCondition(state) ? '应该显示' : '不显示'}</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">shouldHideUpload:</span> 
+                    <span class="debug-value ${checkCondition(state) ? 'true' : 'false'}">${checkCondition(state)}</span>
+                </div>
+            `;
+        }
+
+        function checkCondition(state) {
+            return state.resultData && 
+                   state.configLoaded && 
+                   state.showComparison && 
+                   state.comparisonType !== 'none';
+        }
+
+        function updateChecklist() {
+            const state = testStates[currentState];
+            const checks = [
+                { id: 'check-resultData', condition: !!state.resultData },
+                { id: 'check-config', condition: state.configLoaded },
+                { id: 'check-showComparison', condition: state.showComparison },
+                { id: 'check-comparisonType', condition: state.comparisonType !== 'none' },
+                { id: 'check-originalImage', condition: !!state.originalImageForComparison },
+                { id: 'check-slot', condition: true }, // 假设插槽正常
+                { id: 'check-shouldHide', condition: checkCondition(state) }
+            ];
+
+            checks.forEach(check => {
+                const element = document.getElementById(check.id);
+                if (check.condition) {
+                    element.classList.add('check');
+                } else {
+                    element.classList.remove('check');
+                }
+            });
+        }
+
+        function updateButtons() {
+            const buttons = document.querySelectorAll('.test-btn');
+            buttons.forEach((btn, index) => {
+                const states = ['initial', 'processing', 'completed'];
+                if (states[index] === currentState) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            setTestState('initial');
+        });
+    </script>
+</body>
+</html>

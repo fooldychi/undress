@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 15,
+            "activePatchIndex": 17,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -68,6 +68,14 @@
                 {
                     "date": 1752374205984,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,12 +5,10 @@\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n \r\n-// 开发环境下引入配置测试工具和修复工具\r\n+// 开发环境下引入测试工具\r\n if (import.meta.env.DEV) {\r\n-  import('./utils/testConfig.js')\r\n-  import('./utils/fixLoadBalancer.js')\r\n   import('./utils/testPointsConsumption.js')\r\n }\r\n \r\n // 引入Vant UI\r\n"
+                },
+                {
+                    "date": 1752411451557,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,8 +4,9 @@\n \r\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n+import { exposeTestFunctions } from './utils/loadBalancerTest.js'\r\n \r\n // 开发环境下引入测试工具\r\n if (import.meta.env.DEV) {\r\n   import('./utils/testPointsConsumption.js')\r\n"
+                },
+                {
+                    "date": 1752411497329,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -116,8 +116,13 @@\n     app.mount('#app')\r\n \r\n     console.log('✅ Vue应用启动成功!')\r\n \r\n+    // 在开发环境中暴露测试函数\r\n+    if (import.meta.env.DEV) {\r\n+      exposeTestFunctions()\r\n+    }\r\n+\r\n   } catch (error) {\r\n     console.error('❌ Vue应用启动失败:', error)\r\n \r\n     // 显示启动失败页面\r\n"
                 }
             ],
             "date": 1752330016769,

@@ -21,7 +21,7 @@ const adminAuthRoutes = require('./routes/adminAuth');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3007;
 
 // 中间件配置
 app.use(helmet()); // 安全头
@@ -31,18 +31,20 @@ app.use(morgan('combined')); // 日志记录
 // CORS配置 - 支持动态端口
 app.use(cors({
   origin: function (origin, callback) {
-    // 允许的域名列表
+    // 从环境变量获取端口配置
+    const CLIENT_PORT = process.env.CLIENT_PORT || 3001;
+    const ADMIN_PORT = process.env.ADMIN_PORT || 3003;
+
+    // 允许的域名列表 - 使用环境变量配置端口
     const allowedOrigins = [
       'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',  // 后台管理系统端口
-      'http://localhost:3007',  // Vue 管理后台端口
+      `http://localhost:${CLIENT_PORT}`,  // 客户端端口
+      `http://localhost:${ADMIN_PORT}`,   // 后台管理系统端口
       'http://localhost:5173',  // Vite 默认端口
       'http://localhost:5174',  // Vite 备用端口
       'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      'http://127.0.0.1:3002',  // 后台管理系统端口
-      'http://127.0.0.1:3007',  // Vue 管理后台端口
+      `http://127.0.0.1:${CLIENT_PORT}`,  // 客户端端口
+      `http://127.0.0.1:${ADMIN_PORT}`,   // 后台管理系统端口
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174'
     ];

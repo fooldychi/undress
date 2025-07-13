@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 58,
             "patches": [
                 {
                     "date": 1752384971595,
@@ -20,6 +20,226 @@
                 {
                     "date": 1752385047151,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -299,10 +299,10 @@\n     font-size: 13px;\n   }\n \n   .divider {\n-    width: 28px;\n-    height: 28px;\n+    width: 36px;\n+    height: 36px;\n   }\n \n   .action-buttons {\n     gap: 6px;\n@@ -315,12 +315,25 @@\n \n /* 深色主题适配 */\n @media (prefers-color-scheme: dark) {\n   .image-wrapper {\n-    background: var(--van-background-2, #1e1e1e);\n+    background: rgba(0, 0, 0, 0.3);\n+    border-color: rgba(255, 255, 255, 0.1);\n   }\n \n   .divider {\n-    background: var(--van-background-2, #1e1e1e);\n+    background: rgba(0, 0, 0, 0.3);\n+    border-color: rgba(255, 255, 255, 0.1);\n   }\n }\n+\n+/* 减少动画在低性能设备上的影响 */\n+@media (prefers-reduced-motion: reduce) {\n+  .comparison-image {\n+    transition: none;\n+  }\n+\n+  .comparison-image:hover {\n+    transform: none;\n+  }\n+}\n </style>\n"
+                },
+                {
+                    "date": 1752414148100,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -126,10 +126,12 @@\n   </div>\n </template>\n \n <script setup>\n+import { ref, computed, onMounted, onUnmounted } from 'vue'\n import { ImagePreview, Toast } from 'vant'\n import { MobileCard } from '../mobile'\n+import { ImageSizeUtils } from '../../config/imageSizeConfig.js'\n \n // Props\n const props = defineProps({\n   originalImage: {\n"
+                },
+                {
+                    "date": 1752414166864,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -154,8 +154,25 @@\n \n // Events\n const emit = defineEmits(['reset', 'download'])\n \n+// 响应式数据\n+const isMobile = ref(false)\n+\n+// 计算属性\n+const containerStyle = computed(() => {\n+  return ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n+})\n+\n+const imageWrapperStyle = computed(() => {\n+  // 为并排展示调整样式\n+  const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n+  return {\n+    ...baseStyle,\n+    width: '100%'\n+  }\n+})\n+\n // Methods\n const previewImage = (imageUrl, title) => {\n   ImagePreview({\n     images: [imageUrl],\n"
+                },
+                {
+                    "date": 1752414182611,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,9 +9,9 @@\n           <div class=\"image-header\">\n             <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n             <span class=\"image-title\">原图</span>\n           </div>\n-          <div class=\"image-wrapper\">\n+          <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n             <van-image\n               :src=\"originalImage\"\n               fit=\"cover\"\n               :show-loading=\"true\"\n"
+                },
+                {
+                    "date": 1752414201548,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -39,9 +39,9 @@\n           <div class=\"image-header\">\n             <van-icon name=\"star\" size=\"16\" color=\"#FFD700\" />\n             <span class=\"image-title\">结果</span>\n           </div>\n-          <div class=\"image-wrapper\">\n+          <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n             <van-image\n               :src=\"resultImage\"\n               fit=\"cover\"\n               :show-loading=\"true\"\n"
+                },
+                {
+                    "date": 1752414222354,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -218,8 +218,23 @@\n     hour: '2-digit',\n     minute: '2-digit'\n   })\n }\n+\n+// 响应式检测\n+const updateMobileStatus = () => {\n+  isMobile.value = ImageSizeUtils.isMobile()\n+}\n+\n+// 生命周期\n+onMounted(() => {\n+  updateMobileStatus()\n+  window.addEventListener('resize', updateMobileStatus)\n+})\n+\n+onUnmounted(() => {\n+  window.removeEventListener('resize', updateMobileStatus)\n+})\n </script>\n \n <style scoped>\n .vant-image-comparison {\n"
+                },
+                {
+                    "date": 1752414239524,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -273,9 +273,8 @@\n \n .image-wrapper {\n   position: relative;\n   width: 100%;\n-  aspect-ratio: 1;\n   border-radius: 12px;\n   overflow: hidden;\n   background: rgba(255, 255, 255, 0.1);\n   backdrop-filter: blur(10px);\n"
+                },
+                {
+                    "date": 1752415095992,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,10 +1,8 @@\n <template>\n   <div class=\"vant-image-comparison\">\n-    <!-- 结果标题 -->\n-    <MobileCard title=\"处理结果\" inset>\n-      <!-- 图片对比区域 -->\n-      <div class=\"comparison-container\">\n+    <!-- 纯粹的图片对比区域，无外部容器 -->\n+    <div class=\"comparison-container\">\n         <!-- 原图 -->\n         <div class=\"image-section\">\n           <div class=\"image-header\">\n             <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n"
+                },
+                {
+                    "date": 1752415147964,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -56,43 +56,10 @@\n             </van-image>\n           </div>\n         </div>\n       </div>\n+    </div>\n \n-      <!-- 操作按钮 -->\n-      <div class=\"action-buttons\">\n-        <van-button\n-          type=\"primary\"\n-          size=\"small\"\n-          icon=\"down\"\n-          @click=\"downloadImage\"\n-          class=\"action-btn\"\n-        >\n-          下载图片\n-        </van-button>\n-\n-        <van-button\n-          type=\"default\"\n-          size=\"small\"\n-          icon=\"photo-o\"\n-          @click=\"previewBoth\"\n-          class=\"action-btn\"\n-        >\n-          预览对比\n-        </van-button>\n-\n-        <van-button\n-          type=\"warning\"\n-          size=\"small\"\n-          icon=\"replay\"\n-          @click=\"$emit('reset')\"\n-          class=\"action-btn\"\n-        >\n-          重新处理\n-        </van-button>\n-      </div>\n-    </MobileCard>\n-\n     <!-- 处理信息 -->\n     <MobileCard v-if=\"showProcessInfo && processInfo\" title=\"处理信息\" inset>\n       <van-cell-group inset>\n         <van-cell\n"
+                },
+                {
+                    "date": 1752415177829,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -57,11 +57,10 @@\n           </div>\n         </div>\n       </div>\n     </div>\n-\n-    <!-- 处理信息 -->\n-    <MobileCard v-if=\"showProcessInfo && processInfo\" title=\"处理信息\" inset>\n+  </div>\n+</template>\n       <van-cell-group inset>\n         <van-cell\n           v-if=\"processInfo.processingTime\"\n           title=\"处理时间\"\n"
+                },
+                {
+                    "date": 1752415202651,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -59,37 +59,8 @@\n       </div>\n     </div>\n   </div>\n </template>\n-      <van-cell-group inset>\n-        <van-cell\n-          v-if=\"processInfo.processingTime\"\n-          title=\"处理时间\"\n-          :value=\"`${Math.floor(processInfo.processingTime / 1000)}秒`\"\n-          icon=\"clock-o\"\n-        />\n-        <van-cell\n-          v-if=\"processInfo.promptId\"\n-          title=\"任务ID\"\n-          :value=\"processInfo.promptId\"\n-          icon=\"orders-o\"\n-        />\n-        <van-cell\n-          v-if=\"processInfo.model\"\n-          title=\"使用模型\"\n-          :value=\"processInfo.model\"\n-          icon=\"setting-o\"\n-        />\n-        <van-cell\n-          v-if=\"processInfo.timestamp\"\n-          title=\"完成时间\"\n-          :value=\"formatTime(processInfo.timestamp)\"\n-          icon=\"calendar-o\"\n-        />\n-      </van-cell-group>\n-    </MobileCard>\n-  </div>\n-</template>\n \n <script setup>\n import { ref, computed, onMounted, onUnmounted } from 'vue'\n import { ImagePreview, Toast } from 'vant'\n"
+                },
+                {
+                    "date": 1752415220693,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -62,10 +62,9 @@\n </template>\n \n <script setup>\n import { ref, computed, onMounted, onUnmounted } from 'vue'\n-import { ImagePreview, Toast } from 'vant'\n-import { MobileCard } from '../mobile'\n+import { ImagePreview } from 'vant'\n import { ImageSizeUtils } from '../../config/imageSizeConfig.js'\n \n // Props\n const props = defineProps({\n"
+                },
+                {
+                    "date": 1752415245579,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -74,21 +74,13 @@\n   },\n   resultImage: {\n     type: String,\n     required: true\n-  },\n-  showProcessInfo: {\n-    type: Boolean,\n-    default: true\n-  },\n-  processInfo: {\n-    type: Object,\n-    default: () => ({})\n   }\n })\n \n // Events\n-const emit = defineEmits(['reset', 'download'])\n+const emit = defineEmits([])\n \n // 响应式数据\n const isMobile = ref(false)\n \n"
+                },
+                {
+                    "date": 1752415264299,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -83,19 +83,20 @@\n \n // 响应式数据\n const isMobile = ref(false)\n \n-// 计算属性\n+// 计算属性 - 使用与预览展示完全相同的尺寸配置\n const containerStyle = computed(() => {\n-  return ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n+  return ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n })\n \n const imageWrapperStyle = computed(() => {\n-  // 为并排展示调整样式\n-  const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n+  // 为并排展示调整样式，每个图片占一半宽度\n+  const baseStyle = ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n   return {\n     ...baseStyle,\n-    width: '100%'\n+    width: '48%', // 并排展示，每个占48%，留2%间距\n+    flex: '0 0 48%'\n   }\n })\n \n // Methods\n"
+                },
+                {
+                    "date": 1752415294892,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,56 +98,17 @@\n     flex: '0 0 48%'\n   }\n })\n \n-// Methods\n+// Methods - 只保留预览功能\n const previewImage = (imageUrl, title) => {\n   ImagePreview({\n     images: [imageUrl],\n     showIndex: false,\n     closeable: true\n   })\n }\n \n-const previewBoth = () => {\n-  ImagePreview({\n-    images: [props.originalImage, props.resultImage],\n-    startPosition: 0,\n-    showIndex: true,\n-    closeable: true\n-  })\n-}\n-\n-const downloadImage = async () => {\n-  try {\n-    // 创建下载链接\n-    const link = document.createElement('a')\n-    link.href = props.resultImage\n-    link.download = `ai-result-${Date.now()}.jpg`\n-    document.body.appendChild(link)\n-    link.click()\n-    document.body.removeChild(link)\n-\n-    Toast.success('开始下载图片')\n-    emit('download', props.resultImage)\n-  } catch (error) {\n-    console.error('下载失败:', error)\n-    Toast.fail('下载失败，请重试')\n-  }\n-}\n-\n-const formatTime = (timestamp) => {\n-  if (!timestamp) return ''\n-  const date = new Date(timestamp)\n-  return date.toLocaleString('zh-CN', {\n-    year: 'numeric',\n-    month: '2-digit',\n-    day: '2-digit',\n-    hour: '2-digit',\n-    minute: '2-digit'\n-  })\n-}\n-\n // 响应式检测\n const updateMobileStatus = () => {\n   isMobile.value = ImageSizeUtils.isMobile()\n }\n"
+                },
+                {
+                    "date": 1752415321130,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -125,18 +125,19 @@\n </script>\n \n <style scoped>\n .vant-image-comparison {\n+  width: 100%;\n   display: flex;\n-  flex-direction: column;\n-  gap: 16px;\n+  justify-content: center;\n+  align-items: center;\n }\n \n .comparison-container {\n   display: flex;\n   align-items: center;\n-  gap: 12px;\n-  padding: 16px 0;\n+  gap: 4%;\n+  width: 100%;\n }\n \n .image-section {\n   flex: 1;\n"
+                },
+                {
+                    "date": 1752416134833,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,62 +1,60 @@\n <template>\n   <div class=\"vant-image-comparison\">\n-    <!-- 纯粹的图片对比区域，无外部容器 -->\n     <div class=\"comparison-container\">\n-        <!-- 原图 -->\n-        <div class=\"image-section\">\n-          <div class=\"image-header\">\n-            <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n-            <span class=\"image-title\">原图</span>\n-          </div>\n-          <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n-            <van-image\n-              :src=\"originalImage\"\n-              fit=\"cover\"\n-              :show-loading=\"true\"\n-              :show-error=\"true\"\n-              class=\"comparison-image\"\n-              @click=\"previewImage(originalImage, '原图')\"\n-            >\n-              <template #loading>\n-                <van-loading type=\"spinner\" size=\"20\" />\n-              </template>\n-              <template #error>\n-                <van-icon name=\"photo-fail\" size=\"32\" />\n-              </template>\n-            </van-image>\n-          </div>\n+      <!-- 原图 -->\n+      <div class=\"image-section\">\n+        <div class=\"image-header\">\n+          <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n+          <span class=\"image-title\">原图</span>\n         </div>\n-\n-        <!-- 分隔线 -->\n-        <div class=\"divider\">\n-          <van-icon name=\"arrow\" size=\"16\" color=\"rgba(255, 255, 255, 0.9)\" />\n+        <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n+          <van-image\n+            :src=\"originalImage\"\n+            fit=\"cover\"\n+            :show-loading=\"true\"\n+            :show-error=\"true\"\n+            class=\"comparison-image\"\n+            @click=\"previewImage(originalImage, '原图')\"\n+          >\n+            <template #loading>\n+              <van-loading type=\"spinner\" size=\"20\" />\n+            </template>\n+            <template #error>\n+              <van-icon name=\"photo-fail\" size=\"32\" />\n+            </template>\n+          </van-image>\n         </div>\n+      </div>\n \n-        <!-- 结果图 -->\n-        <div class=\"image-section\">\n-          <div class=\"image-header\">\n-            <van-icon name=\"star\" size=\"16\" color=\"#FFD700\" />\n-            <span class=\"image-title\">结果</span>\n-          </div>\n-          <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n-            <van-image\n-              :src=\"resultImage\"\n-              fit=\"cover\"\n-              :show-loading=\"true\"\n-              :show-error=\"true\"\n-              class=\"comparison-image\"\n-              @click=\"previewImage(resultImage, '处理结果')\"\n-            >\n-              <template #loading>\n-                <van-loading type=\"spinner\" size=\"20\" />\n-              </template>\n-              <template #error>\n-                <van-icon name=\"photo-fail\" size=\"32\" />\n-              </template>\n-            </van-image>\n-          </div>\n+      <!-- 分隔线 -->\n+      <div class=\"divider\">\n+        <van-icon name=\"arrow\" size=\"16\" color=\"rgba(255, 255, 255, 0.9)\" />\n+      </div>\n+\n+      <!-- 结果图 -->\n+      <div class=\"image-section\">\n+        <div class=\"image-header\">\n+          <van-icon name=\"star\" size=\"16\" color=\"#FFD700\" />\n+          <span class=\"image-title\">结果</span>\n         </div>\n+        <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n+          <van-image\n+            :src=\"resultImage\"\n+            fit=\"cover\"\n+            :show-loading=\"true\"\n+            :show-error=\"true\"\n+            class=\"comparison-image\"\n+            @click=\"previewImage(resultImage, '处理结果')\"\n+          >\n+            <template #loading>\n+              <van-loading type=\"spinner\" size=\"20\" />\n+            </template>\n+            <template #error>\n+              <van-icon name=\"photo-fail\" size=\"32\" />\n+            </template>\n+          </van-image>\n+        </div>\n       </div>\n     </div>\n   </div>\n </template>\n"
+                },
+                {
+                    "date": 1752417334017,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -55,8 +55,28 @@\n           </van-image>\n         </div>\n       </div>\n     </div>\n+\n+    <!-- 操作按钮 -->\n+    <div class=\"result-actions\">\n+      <van-button\n+        type=\"primary\"\n+        size=\"large\"\n+        @click=\"handleDownload\"\n+        icon=\"down\"\n+      >\n+        下载图片\n+      </van-button>\n+\n+      <van-button\n+        size=\"large\"\n+        @click=\"handleReset\"\n+        icon=\"replay\"\n+      >\n+        重新生成\n+      </van-button>\n+    </div>\n   </div>\n </template>\n \n <script setup>\n"
+                },
+                {
+                    "date": 1752417348485,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -96,9 +96,9 @@\n   }\n })\n \n // Events\n-const emit = defineEmits([])\n+const emit = defineEmits(['reset', 'download'])\n \n // 响应式数据\n const isMobile = ref(false)\n \n"
+                },
+                {
+                    "date": 1752417364138,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -116,17 +116,27 @@\n     flex: '0 0 48%'\n   }\n })\n \n-// Methods - 只保留预览功能\n+// Methods\n const previewImage = (imageUrl, title) => {\n   ImagePreview({\n     images: [imageUrl],\n     showIndex: false,\n     closeable: true\n   })\n }\n \n+// 下载处理\n+const handleDownload = () => {\n+  emit('download', props.resultImage)\n+}\n+\n+// 重置处理\n+const handleReset = () => {\n+  emit('reset')\n+}\n+\n // 响应式检测\n const updateMobileStatus = () => {\n   isMobile.value = ImageSizeUtils.isMobile()\n }\n"
+                },
+                {
+                    "date": 1752417382378,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -225,8 +225,16 @@\n   border: 1px solid rgba(255, 255, 255, 0.3);\n   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n }\n \n+.result-actions {\n+  display: flex;\n+  gap: 16px;\n+  justify-content: center;\n+  margin-top: 24px;\n+  padding: 0 16px;\n+}\n+\n .action-buttons {\n   display: flex;\n   gap: 8px;\n   margin-top: 16px;\n"
+                },
+                {
+                    "date": 1752417888897,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -101,16 +101,16 @@\n \n // 响应式数据\n const isMobile = ref(false)\n \n-// 计算属性 - 使用与预览展示完全相同的尺寸配置\n+// 计算属性 - 使用与上传组件相同的尺寸配置（固定3:4比例）\n const containerStyle = computed(() => {\n-  return ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n+  return ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n })\n \n const imageWrapperStyle = computed(() => {\n   // 为并排展示调整样式，每个图片占一半宽度\n-  const baseStyle = ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n+  const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n   return {\n     ...baseStyle,\n     width: '48%', // 并排展示，每个占48%，留2%间距\n     flex: '0 0 48%'\n"
+                },
+                {
+                    "date": 1752418018730,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,8 @@\n <template>\n   <div class=\"vant-image-comparison\">\n-    <div class=\"comparison-container\">\n+    <!-- 图片对比区域 -->\n+    <div class=\"comparison-container\" :style=\"containerStyle\">\n       <!-- 原图 -->\n       <div class=\"image-section\">\n         <div class=\"image-header\">\n           <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n@@ -56,9 +57,9 @@\n         </div>\n       </div>\n     </div>\n \n-    <!-- 操作按钮 -->\n+    <!-- 操作按钮 - 显示在图片下方 -->\n     <div class=\"result-actions\">\n       <van-button\n         type=\"primary\"\n         size=\"large\"\n"
+                },
+                {
+                    "date": 1752418037161,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -156,17 +156,17 @@\n <style scoped>\n .vant-image-comparison {\n   width: 100%;\n   display: flex;\n-  justify-content: center;\n+  flex-direction: column;\n   align-items: center;\n+  gap: 24px;\n }\n \n .comparison-container {\n   display: flex;\n   align-items: center;\n   gap: 4%;\n-  width: 100%;\n }\n \n .image-section {\n   flex: 1;\n"
+                },
+                {
+                    "date": 1752418055441,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -230,9 +230,8 @@\n .result-actions {\n   display: flex;\n   gap: 16px;\n   justify-content: center;\n-  margin-top: 24px;\n   padding: 0 16px;\n }\n \n .action-buttons {\n"
+                },
+                {
+                    "date": 1752418493402,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -102,16 +102,16 @@\n \n // 响应式数据\n const isMobile = ref(false)\n \n-// 计算属性 - 使用与上传组件相同的尺寸配置（固定3:4比例）\n+// 计算属性 - 使用preview配置（只固定高度，宽度自适应保持原图比例）\n const containerStyle = computed(() => {\n-  return ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n+  return ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n })\n \n const imageWrapperStyle = computed(() => {\n   // 为并排展示调整样式，每个图片占一半宽度\n-  const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n+  const baseStyle = ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n   return {\n     ...baseStyle,\n     width: '48%', // 并排展示，每个占48%，留2%间距\n     flex: '0 0 48%'\n"
+                },
+                {
+                    "date": 1752418526659,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,82 +1,59 @@\n <template>\n-  <div class=\"vant-image-comparison\">\n-    <!-- 图片对比区域 -->\n-    <div class=\"comparison-container\" :style=\"containerStyle\">\n-      <!-- 原图 -->\n-      <div class=\"image-section\">\n-        <div class=\"image-header\">\n-          <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n-          <span class=\"image-title\">原图</span>\n-        </div>\n-        <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n-          <van-image\n-            :src=\"originalImage\"\n-            fit=\"cover\"\n-            :show-loading=\"true\"\n-            :show-error=\"true\"\n-            class=\"comparison-image\"\n-            @click=\"previewImage(originalImage, '原图')\"\n-          >\n-            <template #loading>\n-              <van-loading type=\"spinner\" size=\"20\" />\n-            </template>\n-            <template #error>\n-              <van-icon name=\"photo-fail\" size=\"32\" />\n-            </template>\n-          </van-image>\n-        </div>\n+  <div class=\"comparison-container\" :style=\"containerStyle\">\n+    <!-- 原图 -->\n+    <div class=\"image-section\">\n+      <div class=\"image-header\">\n+        <van-icon name=\"photo-o\" size=\"16\" color=\"rgba(255, 255, 255, 0.8)\" />\n+        <span class=\"image-title\">原图</span>\n       </div>\n-\n-      <!-- 分隔线 -->\n-      <div class=\"divider\">\n-        <van-icon name=\"arrow\" size=\"16\" color=\"rgba(255, 255, 255, 0.9)\" />\n+      <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n+        <van-image\n+          :src=\"originalImage\"\n+          fit=\"contain\"\n+          :show-loading=\"true\"\n+          :show-error=\"true\"\n+          class=\"comparison-image\"\n+          @click=\"previewImage(originalImage, '原图')\"\n+        >\n+          <template #loading>\n+            <van-loading type=\"spinner\" size=\"20\" />\n+          </template>\n+          <template #error>\n+            <van-icon name=\"photo-fail\" size=\"32\" />\n+          </template>\n+        </van-image>\n       </div>\n+    </div>\n \n-      <!-- 结果图 -->\n-      <div class=\"image-section\">\n-        <div class=\"image-header\">\n-          <van-icon name=\"star\" size=\"16\" color=\"#FFD700\" />\n-          <span class=\"image-title\">结果</span>\n-        </div>\n-        <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n-          <van-image\n-            :src=\"resultImage\"\n-            fit=\"cover\"\n-            :show-loading=\"true\"\n-            :show-error=\"true\"\n-            class=\"comparison-image\"\n-            @click=\"previewImage(resultImage, '处理结果')\"\n-          >\n-            <template #loading>\n-              <van-loading type=\"spinner\" size=\"20\" />\n-            </template>\n-            <template #error>\n-              <van-icon name=\"photo-fail\" size=\"32\" />\n-            </template>\n-          </van-image>\n-        </div>\n-      </div>\n+    <!-- 分隔线 -->\n+    <div class=\"divider\">\n+      <van-icon name=\"arrow\" size=\"16\" color=\"rgba(255, 255, 255, 0.9)\" />\n     </div>\n \n-    <!-- 操作按钮 - 显示在图片下方 -->\n-    <div class=\"result-actions\">\n-      <van-button\n-        type=\"primary\"\n-        size=\"large\"\n-        @click=\"handleDownload\"\n-        icon=\"down\"\n-      >\n-        下载图片\n-      </van-button>\n-\n-      <van-button\n-        size=\"large\"\n-        @click=\"handleReset\"\n-        icon=\"replay\"\n-      >\n-        重新生成\n-      </van-button>\n+    <!-- 结果图 -->\n+    <div class=\"image-section\">\n+      <div class=\"image-header\">\n+        <van-icon name=\"star\" size=\"16\" color=\"#FFD700\" />\n+        <span class=\"image-title\">结果</span>\n+      </div>\n+      <div class=\"image-wrapper\" :style=\"imageWrapperStyle\">\n+        <van-image\n+          :src=\"resultImage\"\n+          fit=\"contain\"\n+          :show-loading=\"true\"\n+          :show-error=\"true\"\n+          class=\"comparison-image\"\n+          @click=\"previewImage(resultImage, '处理结果')\"\n+        >\n+          <template #loading>\n+            <van-loading type=\"spinner\" size=\"20\" />\n+          </template>\n+          <template #error>\n+            <van-icon name=\"photo-fail\" size=\"32\" />\n+          </template>\n+        </van-image>\n+      </div>\n     </div>\n   </div>\n </template>\n \n"
+                },
+                {
+                    "date": 1752418547105,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -74,9 +74,9 @@\n   }\n })\n \n // Events\n-const emit = defineEmits(['reset', 'download'])\n+const emit = defineEmits([])\n \n // 响应式数据\n const isMobile = ref(false)\n \n"
+                },
+                {
+                    "date": 1752418563816,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -94,27 +94,17 @@\n     flex: '0 0 48%'\n   }\n })\n \n-// Methods\n+// Methods - 只保留预览功能\n const previewImage = (imageUrl, title) => {\n   ImagePreview({\n     images: [imageUrl],\n     showIndex: false,\n     closeable: true\n   })\n }\n \n-// 下载处理\n-const handleDownload = () => {\n-  emit('download', props.resultImage)\n-}\n-\n-// 重置处理\n-const handleReset = () => {\n-  emit('reset')\n-}\n-\n // 响应式检测\n const updateMobileStatus = () => {\n   isMobile.value = ImageSizeUtils.isMobile()\n }\n"
+                },
+                {
+                    "date": 1752418583874,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -120,20 +120,13 @@\n })\n </script>\n \n <style scoped>\n-.vant-image-comparison {\n-  width: 100%;\n-  display: flex;\n-  flex-direction: column;\n-  align-items: center;\n-  gap: 24px;\n-}\n-\n .comparison-container {\n   display: flex;\n   align-items: center;\n   gap: 4%;\n+  width: 100%;\n }\n \n .image-section {\n   flex: 1;\n"
+                },
+                {
+                    "date": 1752418602522,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -186,27 +186,10 @@\n   border: 1px solid rgba(255, 255, 255, 0.3);\n   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n }\n \n-.result-actions {\n-  display: flex;\n-  gap: 16px;\n-  justify-content: center;\n-  padding: 0 16px;\n-}\n \n-.action-buttons {\n-  display: flex;\n-  gap: 8px;\n-  margin-top: 16px;\n-  flex-wrap: wrap;\n-}\n \n-.action-btn {\n-  flex: 1;\n-  min-width: 0;\n-}\n-\n /* 移动端优化 */\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n"
+                },
+                {
+                    "date": 1752421242864,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -85,10 +85,10 @@\n   return ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n })\n \n const imageWrapperStyle = computed(() => {\n-  // 为并排展示调整样式，每个图片占一半宽度\n-  const baseStyle = ImageSizeUtils.getContainerStyle('preview', isMobile.value)\n+  // 为并排展示调整样式，每个图片占一半宽度，高度根据配置响应式调整\n+  const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n   return {\n     ...baseStyle,\n     width: '48%', // 并排展示，每个占48%，留2%间距\n     flex: '0 0 48%'\n"
+                },
+                {
+                    "date": 1752421886645,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -158,13 +158,19 @@\n   backdrop-filter: blur(10px);\n   -webkit-backdrop-filter: blur(10px);\n   border: 1px solid rgba(255, 255, 255, 0.2);\n   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);\n+  display: flex;\n+  align-items: center;\n+  justify-content: center;\n }\n \n .comparison-image {\n-  width: 100%;\n-  height: 100%;\n+  max-width: 100%;\n+  max-height: 100%;\n+  width: auto;\n+  height: auto;\n+  object-fit: contain;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n }\n \n"
+                },
+                {
+                    "date": 1752422825754,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -88,11 +88,12 @@\n const imageWrapperStyle = computed(() => {\n   // 为并排展示调整样式，每个图片占一半宽度，高度根据配置响应式调整\n   const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n   return {\n-    ...baseStyle,\n-    width: '48%', // 并排展示，每个占48%，留2%间距\n-    flex: '0 0 48%'\n+    minHeight: baseStyle.minHeight,\n+    maxHeight: baseStyle.maxHeight,\n+    flex: '1', // 使用flex: 1让两个图片平分空间\n+    minWidth: '0' // 防止flex子项收缩问题\n   }\n })\n \n // Methods - 只保留预览功能\n"
+                },
+                {
+                    "date": 1752422845667,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -123,18 +123,21 @@\n \n <style scoped>\n .comparison-container {\n   display: flex;\n-  align-items: center;\n-  gap: 4%;\n+  align-items: stretch;\n+  gap: 16px;\n   width: 100%;\n+  min-height: 300px;\n+  max-height: 500px;\n }\n \n .image-section {\n   flex: 1;\n   display: flex;\n   flex-direction: column;\n   gap: 8px;\n+  min-width: 0; /* 防止flex子项收缩问题 */\n }\n \n .image-header {\n   display: flex;\n"
+                },
+                {
+                    "date": 1752422867642,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -155,8 +155,9 @@\n \n .image-wrapper {\n   position: relative;\n   width: 100%;\n+  flex: 1;\n   border-radius: 12px;\n   overflow: hidden;\n   background: rgba(255, 255, 255, 0.1);\n   backdrop-filter: blur(10px);\n@@ -165,8 +166,10 @@\n   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);\n   display: flex;\n   align-items: center;\n   justify-content: center;\n+  min-height: 300px;\n+  max-height: 500px;\n }\n \n .comparison-image {\n   max-width: 100%;\n"
+                },
+                {
+                    "date": 1752422906025,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -206,10 +206,17 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n+    min-height: 300px;\n+    max-height: 400px;\n   }\n \n+  .image-wrapper {\n+    min-height: 300px;\n+    max-height: 400px;\n+  }\n+\n   .image-title {\n     font-size: 13px;\n   }\n \n"
+                },
+                {
+                    "date": 1752424930197,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -88,12 +88,11 @@\n const imageWrapperStyle = computed(() => {\n   // 为并排展示调整样式，每个图片占一半宽度，高度根据配置响应式调整\n   const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)\n   return {\n-    minHeight: baseStyle.minHeight,\n-    maxHeight: baseStyle.maxHeight,\n-    flex: '1', // 使用flex: 1让两个图片平分空间\n-    minWidth: '0' // 防止flex子项收缩问题\n+    ...baseStyle,\n+    width: '48%', // 并排展示，每个占48%，留2%间距\n+    flex: '0 0 48%'\n   }\n })\n \n // Methods - 只保留预览功能\n@@ -123,21 +122,18 @@\n \n <style scoped>\n .comparison-container {\n   display: flex;\n-  align-items: stretch;\n-  gap: 16px;\n+  align-items: center;\n+  gap: 4%;\n   width: 100%;\n-  min-height: 300px;\n-  max-height: 500px;\n }\n \n .image-section {\n   flex: 1;\n   display: flex;\n   flex-direction: column;\n   gap: 8px;\n-  min-width: 0; /* 防止flex子项收缩问题 */\n }\n \n .image-header {\n   display: flex;\n@@ -155,9 +151,8 @@\n \n .image-wrapper {\n   position: relative;\n   width: 100%;\n-  flex: 1;\n   border-radius: 12px;\n   overflow: hidden;\n   background: rgba(255, 255, 255, 0.1);\n   backdrop-filter: blur(10px);\n@@ -166,10 +161,8 @@\n   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);\n   display: flex;\n   align-items: center;\n   justify-content: center;\n-  min-height: 300px;\n-  max-height: 500px;\n }\n \n .comparison-image {\n   max-width: 100%;\n@@ -206,17 +199,10 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n-    min-height: 300px;\n-    max-height: 400px;\n   }\n \n-  .image-wrapper {\n-    min-height: 300px;\n-    max-height: 400px;\n-  }\n-\n   .image-title {\n     font-size: 13px;\n   }\n \n"
+                },
+                {
+                    "date": 1752425071438,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -163,22 +163,29 @@\n   align-items: center;\n   justify-content: center;\n }\n \n+/* van-image组件样式 */\n .comparison-image {\n+  width: 100%;\n+  height: 100%;\n+  cursor: pointer;\n+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n+}\n+\n+.comparison-image:hover {\n+  transform: scale(1.02);\n+}\n+\n+/* 深度选择器确保样式应用到van-image内部 */\n+.comparison-image :deep(.van-image__img) {\n   max-width: 100%;\n   max-height: 100%;\n   width: auto;\n   height: auto;\n   object-fit: contain;\n-  cursor: pointer;\n-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n }\n \n-.comparison-image:hover {\n-  transform: scale(1.05);\n-}\n-\n .divider {\n   display: flex;\n   align-items: center;\n   justify-content: center;\n"
+                },
+                {
+                    "date": 1752425949118,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -125,8 +125,11 @@\n   display: flex;\n   align-items: center;\n   gap: 4%;\n   width: 100%;\n+  min-height: 300px;\n+  max-height: 500px;\n+  margin: 0 auto;\n }\n \n .image-section {\n   flex: 1;\n"
+                },
+                {
+                    "date": 1752425975443,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -154,8 +154,10 @@\n \n .image-wrapper {\n   position: relative;\n   width: 100%;\n+  min-height: 300px;\n+  max-height: 500px;\n   border-radius: 12px;\n   overflow: hidden;\n   background: rgba(255, 255, 255, 0.1);\n   backdrop-filter: blur(10px);\n"
+                },
+                {
+                    "date": 1752426012148,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -211,10 +211,17 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n+    min-height: 300px;\n+    max-height: 400px;\n   }\n \n+  .image-wrapper {\n+    min-height: 300px;\n+    max-height: 400px;\n+  }\n+\n   .image-title {\n     font-size: 13px;\n   }\n \n"
+                },
+                {
+                    "date": 1752428392358,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -123,13 +123,15 @@\n <style scoped>\n .comparison-container {\n   display: flex;\n   align-items: center;\n+  justify-content: center;\n   gap: 4%;\n-  width: 100%;\n+  width: 100% !important; /* 强制设置宽度，防止被覆盖 */\n   min-height: 300px;\n   max-height: 500px;\n   margin: 0 auto;\n+  box-sizing: border-box;\n }\n \n .image-section {\n   flex: 1;\n"
+                },
+                {
+                    "date": 1752428407166,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -137,8 +137,10 @@\n   flex: 1;\n   display: flex;\n   flex-direction: column;\n   gap: 8px;\n+  min-width: 0; /* 确保flex子项可以收缩 */\n+  max-width: 50%; /* 限制最大宽度，确保两个图片平分空间 */\n }\n \n .image-header {\n   display: flex;\n"
+                },
+                {
+                    "date": 1752428423366,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -158,10 +158,9 @@\n \n .image-wrapper {\n   position: relative;\n   width: 100%;\n-  min-height: 300px;\n-  max-height: 500px;\n+  height: 400px; /* 固定高度，确保两个图片高度一致 */\n   border-radius: 12px;\n   overflow: hidden;\n   background: rgba(255, 255, 255, 0.1);\n   backdrop-filter: blur(10px);\n"
+                },
+                {
+                    "date": 1752428439164,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -173,10 +173,10 @@\n }\n \n /* van-image组件样式 */\n .comparison-image {\n-  width: 100%;\n-  height: 100%;\n+  width: 100% !important;\n+  height: 100% !important;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n }\n \n@@ -184,14 +184,18 @@\n   transform: scale(1.02);\n }\n \n /* 深度选择器确保样式应用到van-image内部 */\n+.comparison-image :deep(.van-image) {\n+  width: 100% !important;\n+  height: 100% !important;\n+}\n+\n .comparison-image :deep(.van-image__img) {\n-  max-width: 100%;\n-  max-height: 100%;\n-  width: auto;\n-  height: auto;\n+  width: 100% !important;\n+  height: 100% !important;\n   object-fit: contain;\n+  object-position: center;\n }\n \n .divider {\n   display: flex;\n"
+                },
+                {
+                    "date": 1752428455866,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -218,17 +218,19 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n-    min-height: 300px;\n-    max-height: 400px;\n+    width: 100% !important;\n   }\n \n   .image-wrapper {\n-    min-height: 300px;\n-    max-height: 400px;\n+    height: 300px; /* 移动端固定较小高度 */\n   }\n \n+  .image-section {\n+    max-width: 48%; /* 移动端稍微减少最大宽度，留出更多间距 */\n+  }\n+\n   .image-title {\n     font-size: 13px;\n   }\n \n"
+                },
+                {
+                    "date": 1752429336739,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -121,13 +121,14 @@\n </script>\n \n <style scoped>\n .comparison-container {\n-  display: flex;\n+  /* 使用CSS Grid布局，更适合并排对比 */\n+  display: grid;\n+  grid-template-columns: 1fr auto 1fr;\n   align-items: center;\n-  justify-content: center;\n   gap: 4%;\n-  width: 100% !important; /* 强制设置宽度，防止被覆盖 */\n+  width: 100%;\n   min-height: 300px;\n   max-height: 500px;\n   margin: 0 auto;\n   box-sizing: border-box;\n"
+                },
+                {
+                    "date": 1752429352230,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,14 +134,11 @@\n   box-sizing: border-box;\n }\n \n .image-section {\n-  flex: 1;\n-  display: flex;\n-  flex-direction: column;\n-  gap: 8px;\n-  min-width: 0; /* 确保flex子项可以收缩 */\n-  max-width: 50%; /* 限制最大宽度，确保两个图片平分空间 */\n+  /* Grid子项，自动占用可用空间 */\n+  display: block;\n+  width: 100%;\n }\n \n .image-header {\n   display: flex;\n"
+                },
+                {
+                    "date": 1752429390766,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -171,10 +171,10 @@\n }\n \n /* van-image组件样式 */\n .comparison-image {\n-  width: 100% !important;\n-  height: 100% !important;\n+  width: 100%;\n+  height: 100%;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n }\n \n@@ -183,15 +183,15 @@\n }\n \n /* 深度选择器确保样式应用到van-image内部 */\n .comparison-image :deep(.van-image) {\n-  width: 100% !important;\n-  height: 100% !important;\n+  width: 100%;\n+  height: 100%;\n }\n \n .comparison-image :deep(.van-image__img) {\n-  width: 100% !important;\n-  height: 100% !important;\n+  width: 100%;\n+  height: 100%;\n   object-fit: contain;\n   object-position: center;\n }\n \n"
+                },
+                {
+                    "date": 1752429417919,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -216,19 +216,14 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n-    width: 100% !important;\n   }\n \n   .image-wrapper {\n     height: 300px; /* 移动端固定较小高度 */\n   }\n \n-  .image-section {\n-    max-width: 48%; /* 移动端稍微减少最大宽度，留出更多间距 */\n-  }\n-\n   .image-title {\n     font-size: 13px;\n   }\n \n"
+                },
+                {
+                    "date": 1752429610228,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -121,14 +121,13 @@\n </script>\n \n <style scoped>\n .comparison-container {\n-  /* 使用CSS Grid布局，更适合并排对比 */\n-  display: grid;\n-  grid-template-columns: 1fr auto 1fr;\n+  display: flex;\n   align-items: center;\n+  justify-content: center;\n   gap: 4%;\n-  width: 100%;\n+  width: 100% !important; /* 强制设置宽度，防止被覆盖 */\n   min-height: 300px;\n   max-height: 500px;\n   margin: 0 auto;\n   box-sizing: border-box;\n"
+                },
+                {
+                    "date": 1752429630918,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -133,11 +133,14 @@\n   box-sizing: border-box;\n }\n \n .image-section {\n-  /* Grid子项，自动占用可用空间 */\n-  display: block;\n-  width: 100%;\n+  flex: 1;\n+  display: flex;\n+  flex-direction: column;\n+  gap: 8px;\n+  min-width: 0; /* 确保flex子项可以收缩 */\n+  max-width: 50%; /* 限制最大宽度，确保两个图片平分空间 */\n }\n \n .image-header {\n   display: flex;\n"
+                },
+                {
+                    "date": 1752429658047,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -173,10 +173,10 @@\n }\n \n /* van-image组件样式 */\n .comparison-image {\n-  width: 100%;\n-  height: 100%;\n+  width: 100% !important;\n+  height: 100% !important;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n }\n \n@@ -185,15 +185,15 @@\n }\n \n /* 深度选择器确保样式应用到van-image内部 */\n .comparison-image :deep(.van-image) {\n-  width: 100%;\n-  height: 100%;\n+  width: 100% !important;\n+  height: 100% !important;\n }\n \n .comparison-image :deep(.van-image__img) {\n-  width: 100%;\n-  height: 100%;\n+  width: 100% !important;\n+  height: 100% !important;\n   object-fit: contain;\n   object-position: center;\n }\n \n"
+                },
+                {
+                    "date": 1752429678857,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -218,14 +218,19 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n+    width: 100% !important;\n   }\n \n   .image-wrapper {\n     height: 300px; /* 移动端固定较小高度 */\n   }\n \n+  .image-section {\n+    max-width: 48%; /* 移动端稍微减少最大宽度，留出更多间距 */\n+  }\n+\n   .image-title {\n     font-size: 13px;\n   }\n \n"
+                },
+                {
+                    "date": 1752429880606,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -121,9 +121,9 @@\n </script>\n \n <style scoped>\n .comparison-container {\n-  display: flex;\n+  display: inline-flex; /* 改为inline-flex，确保可以被text-align: center居中 */\n   align-items: center;\n   justify-content: center;\n   gap: 4%;\n   width: 100% !important; /* 强制设置宽度，防止被覆盖 */\n"
                 }
             ],
             "date": 1752384971595,

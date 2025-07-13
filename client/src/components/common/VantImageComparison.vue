@@ -86,8 +86,8 @@ const containerStyle = computed(() => {
 })
 
 const imageWrapperStyle = computed(() => {
-  // 为并排展示调整样式，每个图片占一半宽度
-  const baseStyle = ImageSizeUtils.getContainerStyle('preview', isMobile.value)
+  // 为并排展示调整样式，每个图片占一半宽度，高度根据配置响应式调整
+  const baseStyle = ImageSizeUtils.getContainerStyle('comparison', isMobile.value)
   return {
     ...baseStyle,
     width: '48%', // 并排展示，每个占48%，留2%间距
@@ -122,10 +122,15 @@ onUnmounted(() => {
 
 <style scoped>
 .comparison-container {
-  display: flex;
+  display: inline-flex; /* 改为inline-flex，确保可以被text-align: center居中 */
   align-items: center;
+  justify-content: center;
   gap: 4%;
-  width: 100%;
+  width: 100% !important; /* 强制设置宽度，防止被覆盖 */
+  min-height: 300px;
+  max-height: 500px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .image-section {
@@ -133,6 +138,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0; /* 确保flex子项可以收缩 */
+  max-width: 50%; /* 限制最大宽度，确保两个图片平分空间 */
 }
 
 .image-header {
@@ -152,6 +159,7 @@ onUnmounted(() => {
 .image-wrapper {
   position: relative;
   width: 100%;
+  height: 400px; /* 固定高度，确保两个图片高度一致 */
   border-radius: 12px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.1);
@@ -159,17 +167,34 @@ onUnmounted(() => {
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* van-image组件样式 */
 .comparison-image {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .comparison-image:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
+}
+
+/* 深度选择器确保样式应用到van-image内部 */
+.comparison-image :deep(.van-image) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.comparison-image :deep(.van-image__img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  object-position: center;
 }
 
 .divider {
@@ -194,6 +219,15 @@ onUnmounted(() => {
   .comparison-container {
     gap: 8px;
     padding: 12px 0;
+    width: 100% !important;
+  }
+
+  .image-wrapper {
+    height: 300px; /* 移动端固定较小高度 */
+  }
+
+  .image-section {
+    max-width: 48%; /* 移动端稍微减少最大宽度，留出更多间距 */
   }
 
   .image-title {

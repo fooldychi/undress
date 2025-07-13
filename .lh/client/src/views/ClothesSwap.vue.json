@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 58,
+            "activePatchIndex": 64,
             "patches": [
                 {
                     "date": 1752348776465,
@@ -240,6 +240,30 @@
                 {
                     "date": 1752394109780,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -162,17 +162,26 @@\n })\r\n </script>\r\n \r\n <style scoped>\r\n-/* 上传提示样式 */\r\n-.tip-item {\r\n-  display: flex;\r\n-  align-items: center;\r\n-  gap: 8px;\r\n-  font-size: 14px;\r\n-  color: var(--van-text-color-2, #646566);\r\n+/* 这里可以添加特定于一键褪衣功能的样式 */\r\n+/* 大部分样式已经在统一模板中处理 */\r\n+\r\n+/* 如果需要自定义样式，可以在这里添加 */\r\n+:deep(.unified-image-upload-panel) {\r\n+  /* 自定义上传面板样式 */\r\n }\r\n \r\n-.text-success {\r\n-  color: var(--van-success-color, #07c160);\r\n+:deep(.single-image-upload) {\r\n+  /* 自定义单图上传样式 */\r\n }\r\n+\r\n+/* 移动端优化 */\r\n+@media (max-width: 768px) {\r\n+  /* 移动端特定样式 */\r\n+}\r\n+\r\n+/* 深色主题适配 */\r\n+@media (prefers-color-scheme: dark) {\r\n+  /* 深色主题样式 */\r\n+}\r\n </style>\r\n"
+                },
+                {
+                    "date": 1752410734411,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -70,15 +70,9 @@\n     processingStatus.value = '正在上传图片...'\r\n     progressPercent.value = 30\r\n \r\n     // 调用褪衣处理服务\r\n-    const result = await processUndressImage({\r\n-      image: selectedImage.value,\r\n-      onProgress: (status, percent) => {\r\n-        processingStatus.value = status\r\n-        progressPercent.value = Math.max(progressPercent.value, percent)\r\n-      }\r\n-    })\r\n+    const result = await processUndressImage(selectedImage.value)\r\n \r\n     if (result.success && result.imageUrl) {\r\n       resultImage.value = result.imageUrl\r\n       // 保存原图用于对比\r\n"
+                },
+                {
+                    "date": 1752410774343,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -72,12 +72,12 @@\n \r\n     // 调用褪衣处理服务\r\n     const result = await processUndressImage(selectedImage.value)\r\n \r\n-    if (result.success && result.imageUrl) {\r\n-      resultImage.value = result.imageUrl\r\n+    if (result.success && result.resultImage) {\r\n+      resultImage.value = result.resultImage\r\n       // 保存原图用于对比\r\n-      originalImageForComparison.value = result.originalImageUrl || selectedImage.value\r\n+      originalImageForComparison.value = result.originalImage || selectedImage.value\r\n       promptId.value = result.promptId || ''\r\n \r\n       // 计算处理时间\r\n       const endTime = Date.now()\r\n"
+                },
+                {
+                    "date": 1752421368073,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,8 +13,9 @@\n     @logout=\"handleUserLogout\"\r\n     @process=\"processImage\"\r\n     @reset=\"resetProcess\"\r\n     @download=\"handleDownload\"\r\n+    @reprocess=\"handleReprocess\"\r\n     @upload-change=\"handleUploadChange\"\r\n     ref=\"templateRef\"\r\n   />\r\n </template>\r\n"
+                },
+                {
+                    "date": 1752421383504,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -136,8 +136,23 @@\n \r\n   Toast.success('图片下载已开始')\r\n }\r\n \r\n+// 重新处理\r\n+const handleReprocess = () => {\r\n+  if (!selectedImage.value) {\r\n+    Toast.fail('请先选择图片')\r\n+    return\r\n+  }\r\n+\r\n+  // 清除之前的结果\r\n+  resultImage.value = null\r\n+  originalImageForComparison.value = null\r\n+\r\n+  // 重新开始处理\r\n+  processImage()\r\n+}\r\n+\r\n // 用户登录成功回调\r\n const handleUserLogin = (data) => {\r\n   console.log('用户登录成功:', data)\r\n   // 可以在这里触发一些需要登录状态的操作\r\n"
+                },
+                {
+                    "date": 1752424389068,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -94,9 +94,20 @@\n     }\r\n \r\n   } catch (error) {\r\n     console.error('❌ 褪衣处理失败:', error)\r\n-    Toast.fail(`处理失败: ${error.message}`)\r\n+\r\n+    // 区分不同类型的错误\r\n+    let errorMessage = error.message\r\n+    if (errorMessage.includes('服务器返回非JSON响应')) {\r\n+      errorMessage = '后端服务连接异常，请检查服务器状态'\r\n+    } else if (errorMessage.includes('积分扣除失败')) {\r\n+      errorMessage = '图片处理成功，但积分扣除失败，请联系管理员'\r\n+    } else if (errorMessage.includes('网络连接异常')) {\r\n+      errorMessage = '网络连接异常，请检查网络后重试'\r\n+    }\r\n+\r\n+    Toast.fail(`处理失败: ${errorMessage}`)\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n"
+                },
+                {
+                    "date": 1752424930263,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -94,20 +94,9 @@\n     }\r\n \r\n   } catch (error) {\r\n     console.error('❌ 褪衣处理失败:', error)\r\n-\r\n-    // 区分不同类型的错误\r\n-    let errorMessage = error.message\r\n-    if (errorMessage.includes('服务器返回非JSON响应')) {\r\n-      errorMessage = '后端服务连接异常，请检查服务器状态'\r\n-    } else if (errorMessage.includes('积分扣除失败')) {\r\n-      errorMessage = '图片处理成功，但积分扣除失败，请联系管理员'\r\n-    } else if (errorMessage.includes('网络连接异常')) {\r\n-      errorMessage = '网络连接异常，请检查网络后重试'\r\n-    }\r\n-\r\n-    Toast.fail(`处理失败: ${errorMessage}`)\r\n+    Toast.fail(`处理失败: ${error.message}`)\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n"
                 }
             ],
             "date": 1752348776465,

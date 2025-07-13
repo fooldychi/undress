@@ -26,12 +26,12 @@
     </template>
 
     <!-- 主要内容 -->
-    <div v-if="!resultData" class="input-section">
-      <!-- 输入区域插槽 -->
+    <div class="input-section">
+      <!-- 输入区域插槽 - 始终显示，包含对比组件 -->
       <slot name="inputs" />
 
-      <!-- 处理按钮 -->
-      <div v-if="canProcess && !isProcessing" class="action-section">
+      <!-- 处理按钮 - 只在没有结果且可以处理时显示 -->
+      <div v-if="!resultData && canProcess && !isProcessing" class="action-section">
         <MobileActionButton
           @click="$emit('process')"
           type="primary"
@@ -50,8 +50,8 @@
         </MobileActionButton>
       </div>
 
-      <!-- 上传提示 -->
-      <div v-else-if="showUploadTips" class="upload-tips">
+      <!-- 上传提示 - 只在没有结果时显示 -->
+      <div v-else-if="!resultData && showUploadTips" class="upload-tips">
         <slot name="upload-tips" />
       </div>
     </div>
@@ -79,9 +79,32 @@
       </template>
     </MobileStatusCard>
 
-    <!-- 结果展示 -->
+    <!-- 结果展示 - 只显示额外的结果信息，操作按钮始终在底部 -->
     <div v-if="resultData" class="result-section">
+      <!-- 额外的结果信息插槽 -->
       <slot name="result" :result="resultData" />
+    </div>
+
+    <!-- 结果操作按钮 - 有结果时显示 -->
+    <div v-if="resultData" class="result-actions">
+      <van-button
+        type="primary"
+        size="large"
+        @click="$emit('download', resultData)"
+        :loading="downloadLoading"
+        class="result-action-btn"
+      >
+        下载图片
+      </van-button>
+
+      <van-button
+        type="default"
+        size="large"
+        @click="$emit('reprocess')"
+        class="result-action-btn"
+      >
+        重新处理
+      </van-button>
     </div>
   </MobilePageContainer>
 </template>
@@ -164,11 +187,17 @@ const props = defineProps({
   resultData: {
     type: [Object, String],
     default: null
+  },
+
+  // 下载状态
+  downloadLoading: {
+    type: Boolean,
+    default: false
   }
 })
 
 // Events
-defineEmits(['login', 'logout', 'process'])
+defineEmits(['login', 'logout', 'process', 'download', 'reprocess'])
 </script>
 
 <style scoped>
@@ -251,6 +280,23 @@ defineEmits(['login', 'logout', 'process'])
   margin-top: 24px;
 }
 
+/* 结果操作按钮样式 */
+.result-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 0 16px;
+}
+
+.result-action-btn {
+  flex: 1;
+  max-width: 150px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
 /* 移动端优化 */
 @media (max-width: 768px) {
   .ai-page-header {
@@ -274,6 +320,16 @@ defineEmits(['login', 'logout', 'process'])
   .upload-tips {
     padding: 16px;
     margin-top: 16px;
+  }
+
+  .result-actions {
+    gap: 8px;
+    margin-top: 16px;
+    padding: 0 12px;
+  }
+
+  .result-action-btn {
+    font-size: 13px;
   }
 }
 

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片居中修复测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* 模拟页面结构 */
+        .unified-image-upload-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 修复前：没有居中 */
+        .comparison-result-problem {
+            width: 100%;
+            margin: 0 auto;
+            /* 问题：没有text-align: center */
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        /* 修复后：正确居中 */
+        .comparison-result-fixed {
+            width: 100%;
+            margin: 0 auto;
+            text-align: center; /* 修复：添加居中对齐 */
+            background: rgba(81, 207, 102, 0.1);
+            border: 2px solid rgba(81, 207, 102, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        /* 拖拽对比组件样式 */
+        .drag-comparison-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            user-select: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            height: 400px;
+            margin: 0 auto;
+            display: inline-block; /* 确保可以被text-align: center居中 */
+        }
+
+        .drag-comparison-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: col-resize;
+            background: #000000;
+        }
+
+        .image-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .comparison-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+        }
+
+        .comparison-slider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: white;
+            cursor: col-resize;
+            z-index: 20;
+            transform: translateX(-2px);
+            left: 50%;
+        }
+
+        .slider-line {
+            width: 100%;
+            height: 100%;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: grab;
+        }
+
+        .slider-circle {
+            width: 8px;
+            height: 8px;
+            background: #1989fa;
+            border-radius: 50%;
+        }
+
+        /* 并排对比组件样式 */
+        .side-comparison-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4%;
+            width: 100%;
+            min-height: 300px;
+            max-height: 500px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            display: inline-flex; /* 确保可以被text-align: center居中 */
+        }
+
+        .image-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+            max-width: 50%;
+        }
+
+        .image-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .image-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            color: white;
+            font-weight: bold;
+        }
+
+        .explanation {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .explanation li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        /* 居中指示线 */
+        .center-guide {
+            position: relative;
+        }
+
+        .center-guide::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 255, 0, 0.5);
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .center-guide::after {
+            content: '中心线';
+            position: absolute;
+            left: 50%;
+            top: -25px;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 0, 0.8);
+            color: black;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="title">图片居中修复测试</h1>
+
+        <!-- 问题演示 -->
+        <div class="test-section">
+            <h2 class="section-title">❌ 修复前：对比组件不居中</h2>
+            
+            <div class="unified-image-upload-panel">
+                <div class="panel-header">
+                    <span>📷</span>
+                    <span>上传图片</span>
+                    <span style="font-size: 14px; color: rgba(255, 255, 255, 0.7);">(1张)</span>
+                </div>
+
+                <div class="comparison-result-problem center-guide">
+                    <!-- 拖拽对比组件 -->
+                    <div class="drag-comparison-container">
+                        <div class="drag-comparison-wrapper">
+                            <div class="image-layer">
+                                <img src="https://picsum.photos/600/400?random=1" 
+                                     alt="原图" 
+                                     class="comparison-image">
+                            </div>
+                            <div class="image-layer" style="clip-path: inset(0 50% 0 0);">
+                                <img src="https://picsum.photos/600/400?random=2" 
+                                     alt="处理结果" 
+                                     class="comparison-image">
+                            </div>
+                            <div class="comparison-slider" style="left: 50%;">
+                                <div class="slider-line"></div>
+                                <div class="slider-handle">
+                                    <span style="opacity: 0.7; font-size: 12px; color: #666;">◀</span>
+                                    <div class="slider-circle"></div>
+                                    <span style="opacity: 0.7; font-size: 12px; color: #666;">▶</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <strong>问题：</strong>
+                <ul>
+                    <li>🚫 对比组件没有居中对齐</li>
+                    <li>🚫 <span class="highlight">comparison-result</span> 缺少 <span class="highlight">text-align: center</span></li>
+                    <li>🚫 组件偏向左侧显示</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 修复后的效果 -->
+        <div class="test-section">
+            <h2 class="section-title">✅ 修复后：对比组件完美居中</h2>
+            
+            <div class="unified-image-upload-panel">
+                <div class="panel-header">
+                    <span>📷</span>
+                    <span>上传图片</span>
+                    <span style="font-size: 14px; color: rgba(255, 255, 255, 0.7);">(1张)</span>
+                </div>
+
+                <div class="comparison-result-fixed center-guide">
+                    <!-- 拖拽对比组件 -->
+                    <div class="drag-comparison-container">
+                        <div class="drag-comparison-wrapper">
+                            <div class="image-layer">
+                                <img src="https://picsum.photos/600/400?random=3" 
+                                     alt="原图" 
+                                     class="comparison-image">
+                            </div>
+                            <div class="image-layer" style="clip-path: inset(0 50% 0 0);">
+                                <img src="https://picsum.photos/600/400?random=4" 
+                                     alt="处理结果" 
+                                     class="comparison-image">
+                            </div>
+                            <div class="comparison-slider" style="left: 50%;">
+                                <div class="slider-line"></div>
+                                <div class="slider-handle">
+                                    <span style="opacity: 0.7; font-size: 12px; color: #666;">◀</span>
+                                    <div class="slider-circle"></div>
+                                    <span style="opacity: 0.7; font-size: 12px; color: #666;">▶</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <strong>修复要点：</strong>
+                <ul>
+                    <li>✅ 添加 <span class="highlight">text-align: center</span> 到 comparison-result</li>
+                    <li>✅ 对比组件完美居中对齐</li>
+                    <li>✅ 与页面中心线对齐</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 并排对比组件测试 -->
+        <div class="test-section">
+            <h2 class="section-title">✅ 并排对比组件居中测试</h2>
+            
+            <div class="unified-image-upload-panel">
+                <div class="panel-header">
+                    <span>📷</span>
+                    <span>上传图片</span>
+                    <span style="font-size: 14px; color: rgba(255, 255, 255, 0.7);">(1张)</span>
+                </div>
+
+                <div class="comparison-result-fixed center-guide">
+                    <!-- 并排对比组件 -->
+                    <div class="side-comparison-container">
+                        <div class="image-section">
+                            <div class="image-header">
+                                <span>📷</span>
+                                <span class="image-title">原图</span>
+                            </div>
+                            <div class="image-wrapper">
+                                <img src="https://picsum.photos/400/300?random=5" 
+                                     alt="原图" 
+                                     class="comparison-image">
+                            </div>
+                        </div>
+                        
+                        <div class="divider">VS</div>
+                        
+                        <div class="image-section">
+                            <div class="image-header">
+                                <span>✨</span>
+                                <span class="image-title">处理结果</span>
+                            </div>
+                            <div class="image-wrapper">
+                                <img src="https://picsum.photos/400/300?random=6" 
+                                     alt="处理结果" 
+                                     class="comparison-image">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <strong>并排对比组件：</strong>
+                <ul>
+                    <li>✅ 使用 <span class="highlight">display: inline-flex</span> 确保可以被居中</li>
+                    <li>✅ 内部使用 <span class="highlight">justify-content: center</span></li>
+                    <li>✅ 整体居中对齐</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 修复代码 -->
+        <div class="test-section">
+            <h2 class="section-title">🔧 修复代码</h2>
+            
+            <div class="code-block">
+/* UnifiedImageProcessingTemplate.vue */
+.comparison-result {
+  width: 100%;
+  margin: 0 auto;
+  text-align: center; /* 关键修复：居中对比组件 */
+}
+
+/* ImageComparison.vue */
+.comparison-container {
+  /* ... 其他样式 ... */
+  width: 100%;
+  margin: 0 auto;
+  display: inline-block; /* 确保可以被text-align: center居中 */
+}
+
+/* VantImageComparison.vue */
+.comparison-container {
+  /* ... 其他样式 ... */
+  display: inline-flex; /* 确保可以被text-align: center居中 */
+  justify-content: center; /* 内部内容居中 */
+}
+            </div>
+
+            <div class="explanation">
+                <strong>关键修复点：</strong>
+                <ul>
+                    <li>🔧 <span class="highlight">text-align: center</span> - 让父容器居中子元素</li>
+                    <li>🔧 <span class="highlight">display: inline-block/inline-flex</span> - 确保组件可以被居中</li>
+                    <li>🔧 <span class="highlight">margin: 0 auto</span> - 作为备用居中方案</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "test-db-connection.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752403368649,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752403368649,
+            "name": "Commit-0",
+            "content": "require('dotenv').config();\nconst mysql = require('mysql2/promise');\n\nasync function testDatabaseConnection() {\n  console.log('🔍 测试数据库连接...');\n  console.log('数据库配置:', {\n    host: process.env.DB_HOST,\n    port: process.env.DB_PORT,\n    user: process.env.DB_USER,\n    database: process.env.DB_NAME\n  });\n\n  let connection;\n  try {\n    // 尝试连接数据库\n    connection = await mysql.createConnection({\n      host: process.env.DB_HOST,\n      port: process.env.DB_PORT,\n      user: process.env.DB_USER,\n      password: process.env.DB_PASSWORD,\n      database: process.env.DB_NAME,\n      connectTimeout: 10000,\n      acquireTimeout: 10000,\n      timeout: 10000\n    });\n\n    console.log('✅ 数据库连接成功！');\n\n    // 测试查询\n    const [rows] = await connection.execute('SELECT 1 as test');\n    console.log('✅ 数据库查询测试成功:', rows);\n\n    // 检查表是否存在\n    const [tables] = await connection.execute('SHOW TABLES');\n    console.log('📊 数据库中的表:', tables.map(t => Object.values(t)[0]));\n\n    // 检查管理员表\n    const [adminTables] = await connection.execute('SHOW TABLES LIKE \"admins\"');\n    if (adminTables.length > 0) {\n      console.log('✅ admins表存在');\n      const [admins] = await connection.execute('SELECT id, username, role, status FROM admins');\n      console.log('👥 管理员账户:', admins);\n    } else {\n      console.log('❌ admins表不存在');\n    }\n\n    // 检查配置表\n    const [configTables] = await connection.execute('SHOW TABLES LIKE \"system_config\"');\n    if (configTables.length > 0) {\n      console.log('✅ system_config表存在');\n      const [configs] = await connection.execute('SELECT config_key, config_value, config_group FROM system_config WHERE config_group = \"comfyui\"');\n      console.log('⚙️ ComfyUI配置:', configs);\n    } else {\n      console.log('❌ system_config表不存在');\n    }\n\n    await connection.end();\n    console.log('🎉 数据库测试完成！');\n\n  } catch (error) {\n    console.error('❌ 数据库连接失败:', error.message);\n    console.error('错误代码:', error.code);\n    console.error('错误详情:', error);\n\n    if (connection) {\n      try {\n        await connection.end();\n      } catch (closeError) {\n        console.error('关闭连接时出错:', closeError.message);\n      }\n    }\n  }\n}\n\ntestDatabaseConnection();\n"
+        }
+    ]
+}

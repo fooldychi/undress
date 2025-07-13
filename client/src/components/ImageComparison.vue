@@ -156,15 +156,30 @@ onUnmounted(() => {
   user-select: none;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 300px;
+  max-height: 500px;
+  height: 400px;
+  /* 使用弹性布局确保居中，避免子元素宽度为0 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 限制最大宽度，确保图片不会过宽 */
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .comparison-wrapper {
   position: relative;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
   cursor: col-resize;
   background: #000000;
+  /* 使用弹性布局的子元素，确保有明确的尺寸 */
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  max-height: 500px;
+  /* 确保wrapper能够正确显示内容 */
+  flex-shrink: 0;
 }
 
 .image-layer {
@@ -198,6 +213,7 @@ onUnmounted(() => {
   cursor: col-resize;
   z-index: 20;
   transform: translateX(-2px);
+  left: 50%; /* 确保滑块初始位置在中间 */
 }
 
 .slider-line {
@@ -231,26 +247,28 @@ onUnmounted(() => {
 .slider-circle {
   width: 8px;
   height: 8px;
-  background: var(--primary-color);
+  background: #1989fa;
   border-radius: 50%;
 }
 
 .slider-arrow {
   opacity: 0.7;
+  font-size: 12px;
+  color: #666;
 }
 
 
 
 @media (max-width: 768px) {
   .comparison-container {
-    /* height: 60vh; */
-    min-height: 400px;
-    /* max-height: 600px; */
+    height: 300px; /* 移动端固定较小高度 */
+    min-height: 300px;
+    max-height: 400px;
   }
 
-  .result-actions {
-    flex-direction: column;
-    gap: 12px;
+  .comparison-wrapper {
+    min-height: 300px;
+    max-height: 400px;
   }
 
   .slider-handle {

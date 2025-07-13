@@ -18,6 +18,8 @@
     @login="$emit('login', $event)"
     @logout="$emit('logout', $event)"
     @process="$emit('process')"
+    @download="$emit('download', $event)"
+    @reprocess="$emit('reprocess')"
   >
     <!-- 输入区域 -->
     <template #inputs>
@@ -29,8 +31,41 @@
           v-model="uploadData[panel.id]"
           :config="panel"
           :disabled="isProcessing"
+          :should-hide-upload="configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'"
           @change="handleUploadChange(panel.id, $event)"
-        />
+        >
+          <!-- 对比组件插槽 - 在panel-header和status-section之间 -->
+          <template #comparison>
+            <!-- 调试信息 - 开发时可启用 -->
+            <!--
+            <div style="background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;">
+              <div>🔍 对比组件调试信息:</div>
+              <div>configLoaded: {{ configLoaded }}</div>
+              <div>resultData: {{ !!resultData }} ({{ typeof resultData }})</div>
+              <div>originalImageForComparison: {{ !!originalImageForComparison }} ({{ typeof originalImageForComparison }})</div>
+              <div>config.resultConfig?.showComparison: {{ config.resultConfig?.showComparison }}</div>
+              <div>config.resultConfig?.comparisonType: {{ config.resultConfig?.comparisonType }}</div>
+              <div>条件结果: {{ configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none' }}</div>
+            </div>
+            -->
+
+            <div v-if="configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'" class="comparison-result">
+              <!-- 拖拽分割线对比组件 -->
+              <ImageComparison
+                v-if="config.resultConfig.comparisonType === 'slider'"
+                :original-image="originalImageForComparison"
+                :result-image="resultData"
+              />
+
+              <!-- 并排展示对比组件 -->
+              <VantImageComparison
+                v-else-if="config.resultConfig.comparisonType === 'side-by-side'"
+                :original-image="originalImageForComparison"
+                :result-image="resultData"
+              />
+            </div>
+          </template>
+        </UnifiedImageUploadPanel>
       </template>
 
       <!-- 文本输入面板 -->
@@ -76,67 +111,9 @@
 
 
 
-    <!-- 结果展示 -->
+    <!-- 结果展示 - 对比组件现在在inputs插槽中，这里不需要显示任何内容 -->
     <template #result="{ result }">
-      <div v-if="config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'" class="comparison-result">
-        <!-- 拖拽分割线对比组件 -->
-        <ImageComparison
-          v-if="config.resultConfig.comparisonType === 'slider'"
-          :original-image="originalImageForComparison"
-          :result-image="result"
-        />
-
-        <!-- 并排展示对比组件 -->
-        <VantImageComparison
-          v-else-if="config.resultConfig.comparisonType === 'side-by-side'"
-          :original-image="originalImageForComparison"
-          :result-image="result"
-        />
-
-        <!-- 操作按钮 -->
-        <div class="result-actions">
-          <van-button
-            v-if="config.resultConfig?.downloadEnabled"
-            type="primary"
-            size="small"
-            @click="$emit('download', result)"
-          >
-            下载图片
-          </van-button>
-
-          <van-button
-            v-if="config.resultConfig?.resetEnabled"
-            size="small"
-            @click="$emit('reset')"
-          >
-            重新生成
-          </van-button>
-        </div>
-      </div>
-
-      <!-- 无对比的结果显示 -->
-      <div v-else class="simple-result">
-        <img :src="result" alt="处理结果" class="result-image" />
-
-        <div class="result-actions">
-          <van-button
-            v-if="config.resultConfig?.downloadEnabled"
-            type="primary"
-            size="small"
-            @click="$emit('download', result)"
-          >
-            下载图片
-          </van-button>
-
-          <van-button
-            v-if="config.resultConfig?.resetEnabled"
-            size="small"
-            @click="$emit('reset')"
-          >
-            重新生成
-          </van-button>
-        </div>
-      </div>
+      <!-- 不显示任何内容，因为对比组件已经在inputs插槽中显示 -->
     </template>
   </AIProcessingTemplate>
 
@@ -199,7 +176,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'upload-change', 'input-change'])
+const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'reprocess', 'upload-change', 'input-change'])
 
 // 响应式数据
 const config = ref({
@@ -214,6 +191,7 @@ const config = ref({
 })
 const uploadData = ref({})
 const inputData = ref({})
+const configLoaded = ref(false)
 
 // 计算属性
 const canProcess = computed(() => {
@@ -247,7 +225,9 @@ const loadConfig = async () => {
     const loadedConfig = await fetchImageProcessingConfigFromAPI(props.functionId)
     if (loadedConfig) {
       config.value = loadedConfig
+      configLoaded.value = true
       initializeData()
+      console.log('✅ 配置加载完成:', config.value)
     } else {
       Toast.fail('加载配置失败')
     }
@@ -345,10 +325,10 @@ defineExpose({
 
 
 .comparison-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
+  /* 确保对比组件居中显示 */
+  width: 100%;
+  margin: 0 auto;
+  text-align: center; /* 居中对比组件 */
 }
 
 .simple-result {

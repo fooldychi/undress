@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 20,
+            "activePatchIndex": 22,
             "patches": [
                 {
                     "date": 1752317973745,
@@ -88,6 +88,14 @@
                 {
                     "date": 1752378438738,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -179,9 +179,12 @@\n   const logEntry = `[${new Date().toISOString()}] UNCAUGHT EXCEPTION: ${error.message}\\n${error.stack}\\n\\n`;\n   fs.appendFileSync('logs/error.log', logEntry, { flag: 'a' });\n \n   // 优雅关闭服务器\n-  gracefulShutdown('uncaughtException');\n+  gracefulShutdown('uncaughtException').catch(error => {\n+    console.error('❌ 优雅关闭失败:', error);\n+    process.exit(1);\n+  });\n });\n \n process.on('unhandledRejection', (reason, promise) => {\n   console.error('❌ 未处理的Promise拒绝:', reason);\n"
+                },
+                {
+                    "date": 1752407517875,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n const adminAuthRoutes = require('./routes/adminAuth');\n const adminRoutes = require('./routes/admin');\n \n const app = express();\n-const PORT = process.env.PORT || 3001;\n+const PORT = process.env.PORT || 3007;\n \n // 中间件配置\n app.use(helmet()); // 安全头\n app.use(compression()); // 压缩响应\n"
+                },
+                {
+                    "date": 1752408332328,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,20 +30,22 @@\n \n // CORS配置 - 支持动态端口\n app.use(cors({\n   origin: function (origin, callback) {\n-    // 允许的域名列表\n+    // 从环境变量获取端口配置\n+    const CLIENT_PORT = process.env.CLIENT_PORT || 3001;\n+    const ADMIN_PORT = process.env.ADMIN_PORT || 3003;\n+\n+    // 允许的域名列表 - 使用环境变量配置端口\n     const allowedOrigins = [\n       'http://localhost:3000',\n-      'http://localhost:3001',\n-      'http://localhost:3002',  // 后台管理系统端口\n-      'http://localhost:3007',  // Vue 管理后台端口\n+      `http://localhost:${CLIENT_PORT}`,  // 客户端端口\n+      `http://localhost:${ADMIN_PORT}`,   // 后台管理系统端口\n       'http://localhost:5173',  // Vite 默认端口\n       'http://localhost:5174',  // Vite 备用端口\n       'http://127.0.0.1:3000',\n-      'http://127.0.0.1:3001',\n-      'http://127.0.0.1:3002',  // 后台管理系统端口\n-      'http://127.0.0.1:3007',  // Vue 管理后台端口\n+      `http://127.0.0.1:${CLIENT_PORT}`,  // 客户端端口\n+      `http://127.0.0.1:${ADMIN_PORT}`,   // 后台管理系统端口\n       'http://127.0.0.1:5173',\n       'http://127.0.0.1:5174'\n     ];\n \n"
                 }
             ],
             "date": 1752317973745,

@@ -5,51 +5,33 @@
 
 // 基准尺寸配置
 export const IMAGE_SIZE_CONFIG = {
-  // 基准比例 (宽:高)
-  ASPECT_RATIO: 3 / 4, // 0.75
-  
-  // 最大高度 (px)
-  MAX_HEIGHT: 300,
-  
-  // 计算得出的宽度 (px)
-  get MAX_WIDTH() {
-    return this.MAX_HEIGHT * this.ASPECT_RATIO // 225px
-  },
-  
-  // CSS aspect-ratio 值
-  get CSS_ASPECT_RATIO() {
-    return `${3} / ${4}`
-  },
-  
-  // 容器样式对象
-  get CONTAINER_STYLE() {
-    return {
-      aspectRatio: this.CSS_ASPECT_RATIO,
-      maxHeight: `${this.MAX_HEIGHT}px`,
-      maxWidth: `${this.MAX_WIDTH}px`
-    }
-  },
-  
+  // 响应式高度配置
+  MIN_HEIGHT: 300,
+  MAX_HEIGHT: 500,
+
   // 响应式断点
   BREAKPOINTS: {
     mobile: 768,
     tablet: 1024
   },
-  
-  // 移动端调整
+
+  // 移动端配置
   MOBILE: {
-    get MAX_HEIGHT() {
-      return IMAGE_SIZE_CONFIG.MAX_HEIGHT * 0.8 // 240px
-    },
-    get MAX_WIDTH() {
-      return this.MAX_HEIGHT * IMAGE_SIZE_CONFIG.ASPECT_RATIO // 180px
-    },
-    get CONTAINER_STYLE() {
+    MIN_HEIGHT: 300,
+    MAX_HEIGHT: 400,
+  },
+
+  // 获取响应式高度
+  getResponsiveHeight(isMobile = false) {
+    if (isMobile) {
       return {
-        aspectRatio: IMAGE_SIZE_CONFIG.CSS_ASPECT_RATIO,
-        maxHeight: `${this.MAX_HEIGHT}px`,
-        maxWidth: `${this.MAX_WIDTH}px`
+        minHeight: this.MOBILE.MIN_HEIGHT,
+        maxHeight: this.MOBILE.MAX_HEIGHT
       }
+    }
+    return {
+      minHeight: this.MIN_HEIGHT,
+      maxHeight: this.MAX_HEIGHT
     }
   }
 }
@@ -58,9 +40,16 @@ export const IMAGE_SIZE_CONFIG = {
 export const COMPONENT_CONFIGS = {
   // 上传组件配置
   UPLOAD: {
-    // 固定3:4比例，居中显示
-    containerStyle: IMAGE_SIZE_CONFIG.CONTAINER_STYLE,
-    
+    // 固定高度，等比例缩放
+    containerStyle: {
+      minHeight: `${IMAGE_SIZE_CONFIG.MIN_HEIGHT}px`,
+      maxHeight: `${IMAGE_SIZE_CONFIG.MAX_HEIGHT}px`,
+      width: 'auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+
     // 占位符样式
     placeholderStyle: {
       display: 'flex',
@@ -71,33 +60,34 @@ export const COMPONENT_CONFIGS = {
       padding: '16px'
     }
   },
-  
+
   // 上传后展示配置
   PREVIEW: {
-    // 同等高度，等比例展示，宽度不限制
+    // 响应式高度，等比例展示，宽度自适应
     containerStyle: {
+      minHeight: `${IMAGE_SIZE_CONFIG.MIN_HEIGHT}px`,
       maxHeight: `${IMAGE_SIZE_CONFIG.MAX_HEIGHT}px`,
       width: 'auto',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center'
     },
-    
+
     imageStyle: {
+      minHeight: `${IMAGE_SIZE_CONFIG.MIN_HEIGHT}px`,
       maxHeight: `${IMAGE_SIZE_CONFIG.MAX_HEIGHT}px`,
       width: 'auto',
       objectFit: 'contain'
     }
   },
-  
+
   // 对比组件配置
   COMPARISON: {
-    // 与上传展示相同大小
+    // 响应式高度，等比例展示
     containerStyle: {
+      minHeight: `${IMAGE_SIZE_CONFIG.MIN_HEIGHT}px`,
       maxHeight: `${IMAGE_SIZE_CONFIG.MAX_HEIGHT}px`,
-      aspectRatio: IMAGE_SIZE_CONFIG.CSS_ASPECT_RATIO,
       width: '100%',
-      maxWidth: `${IMAGE_SIZE_CONFIG.MAX_WIDTH}px`,
       margin: '0 auto'
     }
   }
@@ -117,22 +107,19 @@ export const ImageSizeUtils = {
       console.warn(`Unknown component type: ${type}`)
       return {}
     }
-    
+
     let style = { ...baseConfig.containerStyle }
-    
-    // 移动端调整
+
+    // 移动端调整高度
     if (isMobile) {
-      if (type === 'upload' || type === 'comparison') {
-        style.maxHeight = `${IMAGE_SIZE_CONFIG.MOBILE.MAX_HEIGHT}px`
-        style.maxWidth = `${IMAGE_SIZE_CONFIG.MOBILE.MAX_WIDTH}px`
-      } else if (type === 'preview') {
-        style.maxHeight = `${IMAGE_SIZE_CONFIG.MOBILE.MAX_HEIGHT}px`
-      }
+      const heights = IMAGE_SIZE_CONFIG.getResponsiveHeight(true)
+      style.minHeight = `${heights.minHeight}px`
+      style.maxHeight = `${heights.maxHeight}px`
     }
-    
+
     return style
   },
-  
+
   /**
    * 获取图片样式
    * @param {string} type - 组件类型
@@ -142,23 +129,27 @@ export const ImageSizeUtils = {
   getImageStyle(type, isMobile = false) {
     const baseConfig = COMPONENT_CONFIGS[type.toUpperCase()]
     if (!baseConfig?.imageStyle) {
+      const heights = isMobile ? IMAGE_SIZE_CONFIG.getResponsiveHeight(true) : IMAGE_SIZE_CONFIG.getResponsiveHeight(false)
       return {
-        width: '100%',
-        height: '100%',
-        objectFit: type === 'upload' ? 'cover' : 'contain'
+        minHeight: `${heights.minHeight}px`,
+        maxHeight: `${heights.maxHeight}px`,
+        width: 'auto',
+        objectFit: 'contain'
       }
     }
-    
+
     let style = { ...baseConfig.imageStyle }
-    
+
     // 移动端调整
-    if (isMobile && type === 'preview') {
-      style.maxHeight = `${IMAGE_SIZE_CONFIG.MOBILE.MAX_HEIGHT}px`
+    if (isMobile) {
+      const heights = IMAGE_SIZE_CONFIG.getResponsiveHeight(true)
+      style.minHeight = `${heights.minHeight}px`
+      style.maxHeight = `${heights.maxHeight}px`
     }
-    
+
     return style
   },
-  
+
   /**
    * 检测是否为移动端
    * @returns {boolean}
@@ -166,7 +157,7 @@ export const ImageSizeUtils = {
   isMobile() {
     return window.innerWidth <= IMAGE_SIZE_CONFIG.BREAKPOINTS.mobile
   },
-  
+
   /**
    * 计算图片在容器中的实际显示尺寸
    * @param {number} imageWidth - 图片原始宽度
@@ -175,12 +166,12 @@ export const ImageSizeUtils = {
    * @returns {object} { width, height }
    */
   calculateDisplaySize(imageWidth, imageHeight, type = 'preview') {
-    const maxHeight = this.isMobile() 
-      ? IMAGE_SIZE_CONFIG.MOBILE.MAX_HEIGHT 
+    const maxHeight = this.isMobile()
+      ? IMAGE_SIZE_CONFIG.MOBILE.MAX_HEIGHT
       : IMAGE_SIZE_CONFIG.MAX_HEIGHT
-    
+
     const aspectRatio = imageWidth / imageHeight
-    
+
     if (type === 'upload' || type === 'comparison') {
       // 固定3:4比例
       return {

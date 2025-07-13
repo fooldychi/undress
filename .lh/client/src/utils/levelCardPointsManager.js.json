@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 7,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752288021271,
@@ -36,6 +36,14 @@
                 {
                     "date": 1752376585399,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -68,8 +68,27 @@\n       return this.getDefaultStatus()\n     }\n   }\n \n+  // 带重试机制的积分获取\n+  async fetchPointsWithRetry(attempt = 0) {\n+    try {\n+      return await pointsApi.getUserPoints()\n+    } catch (error) {\n+      if (attempt < this.maxRetries &&\n+          (error.message.includes('网络') ||\n+           error.message.includes('超时') ||\n+           error.message.includes('认证验证失败'))) {\n+        // 指数退避重试\n+        const delay = this.retryDelay * Math.pow(2, attempt)\n+        console.log(`积分获取失败，${delay}ms后重试 (${attempt + 1}/${this.maxRetries})`)\n+        await new Promise(resolve => setTimeout(resolve, delay))\n+        return this.fetchPointsWithRetry(attempt + 1)\n+      }\n+      throw error\n+    }\n+  }\n+\n   // 格式化积分状态\n   formatPointsStatus(pointsInfo) {\n     const totalPoints = pointsInfo.total_points || 0\n     const generationCost = 20 // 每次生成消耗20积分\n"
+                },
+                {
+                    "date": 1752424440614,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -161,9 +161,22 @@\n         throw new Error(response.message || '积分不足')\n       }\n     } catch (error) {\n       console.error('消耗积分失败:', error)\n-      throw error\n+\n+      // 提供更详细的错误信息\n+      let errorMessage = error.message\n+      if (errorMessage.includes('服务器返回非JSON响应')) {\n+        errorMessage = '后端服务连接异常，积分扣除失败'\n+      } else if (errorMessage.includes('API接口不存在')) {\n+        errorMessage = '积分系统接口异常，请联系管理员'\n+      } else if (errorMessage.includes('网络连接异常')) {\n+        errorMessage = '网络连接异常，积分扣除失败'\n+      } else if (errorMessage.includes('登录已过期')) {\n+        errorMessage = '登录已过期，请重新登录后重试'\n+      }\n+\n+      throw new Error(errorMessage)\n     }\n   }\n \n   // 刷新积分信息\n"
+                },
+                {
+                    "date": 1752424930335,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -161,22 +161,9 @@\n         throw new Error(response.message || '积分不足')\n       }\n     } catch (error) {\n       console.error('消耗积分失败:', error)\n-\n-      // 提供更详细的错误信息\n-      let errorMessage = error.message\n-      if (errorMessage.includes('服务器返回非JSON响应')) {\n-        errorMessage = '后端服务连接异常，积分扣除失败'\n-      } else if (errorMessage.includes('API接口不存在')) {\n-        errorMessage = '积分系统接口异常，请联系管理员'\n-      } else if (errorMessage.includes('网络连接异常')) {\n-        errorMessage = '网络连接异常，积分扣除失败'\n-      } else if (errorMessage.includes('登录已过期')) {\n-        errorMessage = '登录已过期，请重新登录后重试'\n-      }\n-\n-      throw new Error(errorMessage)\n+      throw error\n     }\n   }\n \n   // 刷新积分信息\n"
                 }
             ],
             "date": 1752288021271,

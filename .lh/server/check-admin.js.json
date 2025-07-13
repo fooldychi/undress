@@ -1,0 +1,22 @@
+{
+    "sourceFile": "server/check-admin.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752401446118,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752401461553,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,9 +28,9 @@\n \n     if (admins.length > 0) {\n       console.log('📋 管理员账户列表:');\n       admins.forEach(admin => {\n-        console.log(`   ID: ${admin.id}, 用户名: ${admin.username}, 邮箱: ${admin.email}`);\n+        console.log(`   ID: ${admin.id}, 用户名: ${admin.username}, 邮箱: ${admin.email}, 角色: ${admin.role}, 状态: ${admin.status}`);\n       });\n     } else {\n       console.log('❌ 没有管理员账户');\n     }\n"
+                }
+            ],
+            "date": 1752401446118,
+            "name": "Commit-0",
+            "content": "require('dotenv').config();\nconst mysql = require('mysql2/promise');\n\nasync function checkAdminUsers() {\n  let connection;\n  try {\n    connection = await mysql.createConnection({\n      host: process.env.DB_HOST,\n      port: process.env.DB_PORT,\n      user: process.env.DB_USER,\n      password: process.env.DB_PASSWORD,\n      database: process.env.DB_NAME\n    });\n\n    console.log('🔍 检查管理员账户...');\n\n    // 检查admins表是否存在\n    const [tables] = await connection.execute('SHOW TABLES LIKE \"admins\"');\n    if (tables.length === 0) {\n      console.log('❌ admins表不存在');\n      await connection.end();\n      return;\n    }\n\n    // 查询管理员账户\n    const [admins] = await connection.execute('SELECT id, username, email, real_name, role, status, created_at FROM admins');\n    console.log(`📊 管理员账户数量: ${admins.length}`);\n\n    if (admins.length > 0) {\n      console.log('📋 管理员账户列表:');\n      admins.forEach(admin => {\n        console.log(`   ID: ${admin.id}, 用户名: ${admin.username}, 邮箱: ${admin.email}`);\n      });\n    } else {\n      console.log('❌ 没有管理员账户');\n    }\n\n    await connection.end();\n\n  } catch (error) {\n    console.error('❌ 检查失败:', error.message);\n    if (connection) {\n      await connection.end();\n    }\n  }\n}\n\ncheckAdminUsers();\n"
+        }
+    ]
+}

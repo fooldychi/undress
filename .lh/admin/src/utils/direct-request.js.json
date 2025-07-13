@@ -1,0 +1,18 @@
+{
+    "sourceFile": "admin/src/utils/direct-request.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752406459774,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752406459774,
+            "name": "Commit-0",
+            "content": "import axios from 'axios'\nimport { ElMessage } from 'element-plus'\nimport { getToken } from './auth'\n\n// 创建直接连接到后端的axios实例\nconst directService = axios.create({\n  baseURL: 'http://localhost:3009/api', // 直接连接到后端\n  timeout: 30000,\n  headers: {\n    'Content-Type': 'application/json'\n  }\n})\n\n// 请求拦截器\ndirectService.interceptors.request.use(\n  config => {\n    console.log('🚀 直接请求:', config.method?.toUpperCase(), config.url)\n\n    // 添加token到请求头\n    const token = getToken()\n    if (token) {\n      config.headers.Authorization = `Bearer ${token}`\n    }\n\n    return config\n  },\n  error => {\n    console.error('❌ 请求拦截器错误:', error)\n    return Promise.reject(error)\n  }\n)\n\n// 响应拦截器\ndirectService.interceptors.response.use(\n  response => {\n    console.log('✅ 直接响应:', response.status, response.config.url)\n    return response.data\n  },\n  error => {\n    console.error('❌ 直接响应错误:', error)\n\n    if (error.response) {\n      const { status, data } = error.response\n      console.error(`❌ HTTP ${status}:`, data)\n\n      if (status === 401) {\n        ElMessage.error('认证失败，请重新登录')\n      } else if (status === 403) {\n        ElMessage.error('权限不足')\n      } else if (status === 500) {\n        ElMessage.error('服务器内部错误')\n      } else {\n        ElMessage.error(data?.message || '请求失败')\n      }\n    } else if (error.request) {\n      console.error('❌ 网络错误:', error.request)\n      ElMessage.error('网络连接失败')\n    } else {\n      console.error('❌ 请求配置错误:', error.message)\n      ElMessage.error('请求配置错误')\n    }\n\n    return Promise.reject(error)\n  }\n)\n\nexport default directService\n"
+        }
+    ]
+}

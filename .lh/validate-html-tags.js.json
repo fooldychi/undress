@@ -1,0 +1,18 @@
+{
+    "sourceFile": "validate-html-tags.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752416358315,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752416358315,
+            "name": "Commit-0",
+            "content": "const fs = require('fs');\nconst path = require('path');\n\nfunction validateHTMLTags(filePath) {\n  console.log(`\\n🔍 验证文件: ${filePath}`);\n\n  const content = fs.readFileSync(filePath, 'utf8');\n  const lines = content.split('\\n');\n\n  // 提取template部分\n  const templateStart = lines.findIndex(line => line.trim().startsWith('<template'));\n  const templateEnd = lines.findIndex(line => line.trim() === '</template>');\n\n  if (templateStart === -1 || templateEnd === -1) {\n    console.log('❌ 未找到template标签');\n    return false;\n  }\n\n  console.log(`📍 Template范围: 第${templateStart + 1}行 到 第${templateEnd + 1}行`);\n\n  const templateLines = lines.slice(templateStart + 1, templateEnd);\n  const stack = [];\n  let isValid = true;\n\n  templateLines.forEach((line, index) => {\n    const lineNumber = templateStart + 2 + index;\n    const trimmedLine = line.trim();\n\n    // 跳过注释和空行\n    if (!trimmedLine || trimmedLine.startsWith('<!--')) return;\n\n    // 查找所有标签\n    const tagRegex = /<\\/?([a-zA-Z][a-zA-Z0-9-]*)[^>]*>/g;\n    let match;\n\n    while ((match = tagRegex.exec(line)) !== null) {\n      const fullTag = match[0];\n      const tagName = match[1];\n\n      // 跳过自闭合标签\n      if (fullTag.endsWith('/>') || ['img', 'input', 'br', 'hr', 'meta', 'link'].includes(tagName)) {\n        continue;\n      }\n\n      if (fullTag.startsWith('</')) {\n        // 结束标签\n        if (stack.length === 0) {\n          console.log(`❌ 第${lineNumber}行: 多余的结束标签 ${fullTag}`);\n          isValid = false;\n        } else {\n          const lastTag = stack.pop();\n          if (lastTag !== tagName) {\n            console.log(`❌ 第${lineNumber}行: 标签不匹配，期望 </${lastTag}>，实际 ${fullTag}`);\n            isValid = false;\n          } else {\n            console.log(`✅ 第${lineNumber}行: ${fullTag} 正确匹配`);\n          }\n        }\n      } else {\n        // 开始标签\n        stack.push(tagName);\n        console.log(`📝 第${lineNumber}行: 开始标签 ${fullTag}`);\n      }\n    }\n  });\n\n  // 检查是否有未闭合的标签\n  if (stack.length > 0) {\n    console.log(`❌ 未闭合的标签: ${stack.join(', ')}`);\n    isValid = false;\n  }\n\n  if (isValid) {\n    console.log('✅ HTML标签结构正确！');\n  } else {\n    console.log('❌ HTML标签结构有问题！');\n  }\n\n  return isValid;\n}\n\n// 验证两个组件文件\nconst files = [\n  'client/src/components/ImageComparison.vue',\n  'client/src/components/common/VantImageComparison.vue'\n];\n\nconsole.log('🚀 开始验证Vue组件的HTML标签结构...\\n');\n\nlet allValid = true;\nfiles.forEach(file => {\n  if (fs.existsSync(file)) {\n    const isValid = validateHTMLTags(file);\n    allValid = allValid && isValid;\n  } else {\n    console.log(`❌ 文件不存在: ${file}`);\n    allValid = false;\n  }\n});\n\nconsole.log('\\n' + '='.repeat(50));\nif (allValid) {\n  console.log('🎉 所有文件的HTML标签结构都正确！');\n} else {\n  console.log('💥 发现HTML标签结构问题，请检查上述错误！');\n}\n"
+        }
+    ]
+}

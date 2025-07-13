@@ -1,0 +1,54 @@
+{
+  "ports": {
+    "client": 3001,
+    "admin": 3003,
+    "server": 3007
+  },
+  "services": {
+    "client": {
+      "name": "客户端前端",
+      "port": 3001,
+      "description": "用户前端界面",
+      "url": "http://localhost:3001",
+      "directory": "client",
+      "startCommand": "npm run dev",
+      "configFiles": [
+        "client/vite.config.js"
+      ]
+    },
+    "admin": {
+      "name": "后台管理系统",
+      "port": 3003,
+      "description": "管理员界面",
+      "url": "http://localhost:3003",
+      "directory": "admin",
+      "startCommand": "npm run dev",
+      "configFiles": [
+        "admin/vite.config.js"
+      ]
+    },
+    "server": {
+      "name": "后端API服务",
+      "port": 3007,
+      "description": "服务器API",
+      "url": "http://localhost:3007",
+      "directory": "server",
+      "startCommand": "npm start",
+      "configFiles": [
+        "server/src/app.js",
+        "server/.env"
+      ]
+    }
+  },
+  "rules": {
+    "enforcePortAssignment": true,
+    "killConflictingProcesses": true,
+    "preventPortChange": true,
+    "showWarnings": true
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-13",
+    "description": "AIMagic项目统一端口配置"
+  }
+}

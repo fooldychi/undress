@@ -1,0 +1,26 @@
+{
+    "sourceFile": "server/test-config-save.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1752404983491,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752406679426,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,9 +5,9 @@\n \n   try {\n     // 1. 先登录获取token\n     console.log('🔐 登录获取token...');\n-    const loginResponse = await fetch('http://localhost:3007/api/admin-auth/login', {\n+    const loginResponse = await fetch('http://localhost:3009/api/admin-auth/login', {\n       method: 'POST',\n       headers: {\n         'Content-Type': 'application/json'\n       },\n"
+                },
+                {
+                    "date": 1752406694161,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -74,9 +74,9 @@\n     ];\n \n     console.log('📋 要保存的配置:', configs);\n \n-    const saveResponse = await fetch('http://localhost:3007/api/admin/config', {\n+    const saveResponse = await fetch('http://localhost:3009/api/admin/config', {\n       method: 'POST',\n       headers: {\n         'Content-Type': 'application/json',\n         'Authorization': `Bearer ${token}`\n"
+                }
+            ],
+            "date": 1752404983491,
+            "name": "Commit-0",
+            "content": "const fetch = require('node-fetch');\n\nasync function testConfigSave() {\n  console.log('🧪 测试配置保存API...');\n\n  try {\n    // 1. 先登录获取token\n    console.log('🔐 登录获取token...');\n    const loginResponse = await fetch('http://localhost:3007/api/admin-auth/login', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({\n        username: 'admin',\n        password: 'admin123456'\n      })\n    });\n\n    const loginData = await loginResponse.json();\n    if (!loginData.success) {\n      console.log('❌ 登录失败:', loginData.message);\n      return;\n    }\n\n    const token = loginData.data.token;\n    console.log('✅ 登录成功，获得token');\n\n    // 2. 测试配置保存\n    console.log('\\n💾 测试配置保存...');\n    const configs = [\n      {\n        config_key: 'comfyui.server_url',\n        config_value: 'https://l6ur4u3zbw-8188.cnb.run/',\n        config_type: 'string',\n        config_group: 'comfyui'\n      },\n      {\n        config_key: 'comfyui.backup_servers',\n        config_value: 'https://backup1.com\\nhttps://backup2.com',\n        config_type: 'string',\n        config_group: 'comfyui'\n      },\n      {\n        config_key: 'comfyui.request_timeout',\n        config_value: '30000',\n        config_type: 'number',\n        config_group: 'comfyui'\n      },\n      {\n        config_key: 'comfyui.health_check_timeout',\n        config_value: '10000',\n        config_type: 'number',\n        config_group: 'comfyui'\n      },\n      {\n        config_key: 'comfyui.auto_switch',\n        config_value: 'true',\n        config_type: 'boolean',\n        config_group: 'comfyui'\n      },\n      {\n        config_key: 'comfyui.client_id',\n        config_value: 'test-client-123',\n        config_type: 'string',\n        config_group: 'comfyui'\n      },\n      {\n        config_key: 'comfyui.max_retries',\n        config_value: '3',\n        config_type: 'number',\n        config_group: 'comfyui'\n      }\n    ];\n\n    console.log('📋 要保存的配置:', configs);\n\n    const saveResponse = await fetch('http://localhost:3007/api/admin/config', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${token}`\n      },\n      body: JSON.stringify({ configs })\n    });\n\n    console.log('📊 保存响应状态:', saveResponse.status);\n    console.log('📊 保存响应头:', Object.fromEntries(saveResponse.headers.entries()));\n\n    const saveData = await saveResponse.text();\n    console.log('📋 保存响应内容:', saveData);\n\n    if (saveResponse.ok) {\n      console.log('✅ 配置保存成功');\n      try {\n        const jsonData = JSON.parse(saveData);\n        console.log('📊 解析后的响应:', jsonData);\n      } catch (e) {\n        console.log('⚠️ 响应不是有效的JSON');\n      }\n    } else {\n      console.log('❌ 配置保存失败');\n    }\n\n  } catch (error) {\n    console.error('❌ 测试失败:', error.message);\n  }\n}\n\ntestConfigSave();\n"
+        }
+    ]
+}

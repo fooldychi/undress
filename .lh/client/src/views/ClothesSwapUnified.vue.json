@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1752395497153,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752410747391,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -42,9 +42,9 @@\n \n // 处理上传变化\n const handleUploadChange = (panelId, data) => {\n   console.log('上传变化:', panelId, data)\n-  \n+\n   if (panelId === 'main-image') {\n     selectedImage.value = data\n     resultImage.value = null // 清除之前的结果\n   }\n@@ -68,15 +68,9 @@\n     processingStatus.value = '正在上传图片...'\n     progressPercent.value = 30\n \n     // 调用褪衣处理服务\n-    const result = await processUndressImage({\n-      image: selectedImage.value,\n-      onProgress: (status, percent) => {\n-        processingStatus.value = status\n-        progressPercent.value = Math.max(progressPercent.value, percent)\n-      }\n-    })\n+    const result = await processUndressImage(selectedImage.value)\n \n     if (result.success && result.imageUrl) {\n       resultImage.value = result.imageUrl\n       // 保存原图用于对比\n@@ -112,17 +106,17 @@\n   resultImage.value = null\n   processingStatus.value = ''\n   promptId.value = ''\n   processingTime.value = ''\n-  \n+\n   // 重置模板内部状态\n   if (templateRef.value) {\n     const { uploadData } = templateRef.value\n     if (uploadData['main-image']) {\n       uploadData['main-image'] = null\n     }\n   }\n-  \n+\n   Toast.success('已重置，可以重新选择图片')\n }\n \n // 下载结果\n"
+                },
+                {
+                    "date": 1752410788844,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -70,12 +70,12 @@\n \n     // 调用褪衣处理服务\n     const result = await processUndressImage(selectedImage.value)\n \n-    if (result.success && result.imageUrl) {\n-      resultImage.value = result.imageUrl\n+    if (result.success && result.resultImage) {\n+      resultImage.value = result.resultImage\n       // 保存原图用于对比\n-      originalImageForComparison.value = result.originalImageUrl || selectedImage.value\n+      originalImageForComparison.value = result.originalImage || selectedImage.value\n       promptId.value = result.promptId || ''\n \n       // 计算处理时间\n       const endTime = Date.now()\n"
                 }
             ],
             "date": 1752395497153,

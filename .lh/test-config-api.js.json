@@ -1,0 +1,18 @@
+{
+    "sourceFile": "test-config-api.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752409268869,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752409268869,
+            "name": "Commit-0",
+            "content": "#!/usr/bin/env node\n\n/**\n * 测试配置API的脚本\n */\n\nconst http = require('http');\n\n// 测试配置API\nasync function testConfigAPI() {\n  console.log('🧪 测试配置API...');\n\n  // 测试公开配置API\n  console.log('\\n1. 测试公开配置API (/api/config)');\n  try {\n    const response = await makeRequest('/api/config');\n    console.log('✅ 公开配置API响应:', JSON.stringify(response, null, 2));\n  } catch (error) {\n    console.error('❌ 公开配置API失败:', error.message);\n  }\n\n  // 测试管理员配置API (需要认证，这里只测试是否能连接)\n  console.log('\\n2. 测试管理员配置API (/api/admin/config)');\n  try {\n    const response = await makeRequest('/api/admin/config');\n    console.log('✅ 管理员配置API响应:', JSON.stringify(response, null, 2));\n  } catch (error) {\n    console.error('❌ 管理员配置API失败:', error.message);\n  }\n}\n\n// 发送HTTP请求\nfunction makeRequest(path) {\n  return new Promise((resolve, reject) => {\n    const options = {\n      hostname: 'localhost',\n      port: 3008,\n      path: path,\n      method: 'GET',\n      headers: {\n        'Content-Type': 'application/json'\n      }\n    };\n\n    const req = http.request(options, (res) => {\n      let data = '';\n\n      res.on('data', (chunk) => {\n        data += chunk;\n      });\n\n      res.on('end', () => {\n        try {\n          const response = JSON.parse(data);\n          resolve(response);\n        } catch (error) {\n          reject(new Error(`解析响应失败: ${error.message}`));\n        }\n      });\n    });\n\n    req.on('error', (error) => {\n      reject(new Error(`请求失败: ${error.message}`));\n    });\n\n    req.setTimeout(5000, () => {\n      req.destroy();\n      reject(new Error('请求超时'));\n    });\n\n    req.end();\n  });\n}\n\n// 检查服务器是否运行\nasync function checkServer() {\n  console.log('🔍 检查服务器状态...');\n\n  try {\n    const response = await makeRequest('/');\n    console.log('✅ 服务器正在运行');\n    return true;\n  } catch (error) {\n    console.error('❌ 服务器未运行或无法连接:', error.message);\n    console.log('💡 请先启动服务器: node server/src/app.js');\n    return false;\n  }\n}\n\n// 主函数\nasync function main() {\n  console.log('🚀 配置API测试工具');\n  console.log('='.repeat(40));\n\n  const serverRunning = await checkServer();\n\n  if (serverRunning) {\n    await testConfigAPI();\n  }\n\n  console.log('\\n✅ 测试完成');\n}\n\n// 运行测试\nif (require.main === module) {\n  main().catch(console.error);\n}\n"
+        }
+    ]
+}

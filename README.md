@@ -82,19 +82,84 @@ cp server/.env.example server/.env
 
 ### 启动项目
 
+#### 🎯 推荐方式：使用端口管理工具 (新)
 ```bash
-# 启动后端服务 (端口: 3006)
+# Windows
+start-managed.bat
+
+# Linux/Mac
+./start-managed.sh
+
+# 或直接使用 Node.js
+node start-managed.js
+```
+
+#### 📋 传统方式：手动启动
+```bash
+# 启动后端服务 (端口: 3007)
 cd server
 npm start
 
 # 启动前端开发服务器 (端口: 3001)
 cd client
 npm run dev
+
+# 启动后台管理系统 (端口: 3003)
+cd admin
+npm run dev
 ```
 
+#### ⚡ 端口管理工具优势
+- ✅ 自动检测端口冲突并处理
+- ✅ 强制使用指定端口 (3001/3003/3007)
+- ✅ 统一启动管理，避免配置混乱
+- ✅ 自动终止冲突进程
+- ✅ 详细的启动日志和错误处理
+
 ### 访问应用
-- 前端应用: http://localhost:3001
-- 后端API: http://localhost:3006
+- 客户端前端: http://localhost:3001
+- 后台管理系统: http://localhost:3003
+- 后端API: http://localhost:3007
+
+## 🔧 端口管理工具
+
+项目包含统一的端口管理工具，确保端口配置正确，避免冲突：
+
+### 端口配置
+- **客户端前端**: 3001
+- **后台管理系统**: 3003
+- **后端API服务**: 3007
+
+### 端口管理命令
+```bash
+# 检查端口状态
+node scripts/port-manager.js status
+
+# 验证并处理端口冲突
+node scripts/port-manager.js validate
+
+# 启动单个服务
+node scripts/port-manager.js start server
+node scripts/port-manager.js start client
+node scripts/port-manager.js start admin
+```
+
+### 配置文件
+- `port-config.json` - 统一端口配置
+- `PORT_MANAGER_GUIDE.md` - 详细使用指南
+- `PORT_PROTECTION_GUIDE.md` - 端口配置保护指南
+
+### 🛡️ 配置保护机制
+```bash
+# 检查端口配置完整性和硬编码问题
+node scripts/protect-port-config.js check
+
+# 同步所有配置文件
+node scripts/sync-port-config.js sync
+
+# 安装Git钩子保护
+node scripts/install-git-hooks.js install
+```
 
 ## 📖 文档
 

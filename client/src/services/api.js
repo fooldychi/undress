@@ -253,6 +253,7 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
         try {
           data = JSON.parse(text)
         } catch (parseError) {
+          console.error('JSON解析失败:', parseError.message, '原始响应:', text)
           throw new Error(`JSON解析失败: ${parseError.message}`)
         }
       } else {
@@ -260,7 +261,22 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
       }
     } else {
       const text = await response.text()
-      throw new Error(`服务器返回非JSON响应: ${text}`)
+      console.error('服务器返回非JSON响应:', {
+        url,
+        status: response.status,
+        contentType,
+        responseText: text.substring(0, 500) // 只记录前500字符
+      })
+
+      // 如果是HTML错误页面或服务器错误，且可以重试，则重试
+      if ((text.includes('<html>') || text.includes('<!DOCTYPE') ||
+           response.status >= 500) && retryCount < 2) {
+        console.log(`服务器返回非JSON响应，正在重试... (${retryCount + 1}/3)`)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+        return makeBackendRequest(endpoint, options, retryCount + 1)
+      }
+
+      throw new Error(`服务器返回非JSON响应: ${text.substring(0, 200)}`)
     }
 
     if (!response.ok) {
@@ -289,13 +305,14 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
       throw new Error('请求超时，请稍后重试')
     }
 
-    // 处理网络连接错误 - 尝试重试
+    // 处理网络连接错误和服务器错误 - 尝试重试
     if ((error.message.includes('Failed to fetch') ||
          error.message.includes('NetworkError') ||
          error.message.includes('fetch') ||
-         error.message.includes('认证验证失败')) &&
+         error.message.includes('认证验证失败') ||
+         error.message.includes('服务器返回非JSON响应')) &&
          retryCount < 2) {
-      console.log(`网络请求失败，正在重试... (${retryCount + 1}/3)`)
+      console.log(`请求失败，正在重试... (${retryCount + 1}/3)`, error.message)
       await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // 递增延迟
       return makeBackendRequest(endpoint, options, retryCount + 1)
     }
@@ -304,6 +321,11 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
         error.message.includes('NetworkError') ||
         error.message.includes('fetch')) {
       throw new Error('网络连接异常，请检查网络或稍后重试')
+    }
+
+    // 处理服务器返回非JSON响应的错误
+    if (error.message.includes('服务器返回非JSON响应')) {
+      throw new Error('服务器暂时不可用，请稍后重试')
     }
 
     // 只有明确的认证错误才抛出登录过期

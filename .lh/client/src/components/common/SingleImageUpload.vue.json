@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1752393485845,
@@ -20,6 +20,54 @@
                 {
                     "date": 1752393699034,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -291,9 +291,8 @@\n   border-radius: 8px;\n   cursor: pointer;\n   transition: all 0.3s ease;\n   overflow: hidden;\n-  height: v-bind(containerHeightValue);\n }\n \n .upload-container:hover:not(.disabled) {\n   border-color: rgba(255, 255, 255, 0.4);\n"
+                },
+                {
+                    "date": 1752412219227,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -334,9 +334,10 @@\n \n .uploaded-image {\n   width: 100%;\n   height: 100%;\n-  object-fit: cover;\n+  object-fit: contain;\n+  background: rgba(0, 0, 0, 0.1);\n }\n \n .image-overlay {\n   position: absolute;\n"
+                },
+                {
+                    "date": 1752412246184,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -261,10 +261,21 @@\n     showPreview.value = true\n   }\n }\n \n-const onImageLoad = () => {\n+const onImageLoad = (event) => {\n   loading.value = false\n+\n+  // 计算图片比例并调整容器高度\n+  const img = event.target\n+  const aspectRatio = img.naturalWidth / img.naturalHeight\n+\n+  // 设置容器的最大高度，保持图片比例\n+  const container = img.closest('.upload-container')\n+  if (container && aspectRatio) {\n+    const maxHeight = Math.min(300, container.offsetWidth / aspectRatio)\n+    container.style.height = `${maxHeight}px`\n+  }\n }\n \n const onImageError = () => {\n   loading.value = false\n"
+                },
+                {
+                    "date": 1752412288528,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -302,8 +302,9 @@\n   border-radius: 8px;\n   cursor: pointer;\n   transition: all 0.3s ease;\n   overflow: hidden;\n+  min-height: 120px;\n }\n \n .upload-container:hover:not(.disabled) {\n   border-color: rgba(255, 255, 255, 0.4);\n"
+                },
+                {
+                    "date": 1752413939399,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -99,10 +99,11 @@\n   </div>\n </template>\n \n <script setup>\n-import { ref, computed, watch } from 'vue'\n+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'\n import { Toast } from 'vant'\n+import { ImageSizeUtils } from '../../config/imageSizeConfig.js'\n \n // Props\n const props = defineProps({\n   modelValue: {\n"
+                },
+                {
+                    "date": 1752413955303,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -156,16 +156,21 @@\n const loading = ref(false)\n const error = ref('')\n const fileInfo = ref(null)\n const showPreview = ref(false)\n+const isMobile = ref(false)\n \n // 计算属性\n-const containerHeightValue = computed(() => {\n-  return typeof props.containerHeight === 'number'\n-    ? `${props.containerHeight}px`\n-    : props.containerHeight\n+const containerStyle = computed(() => {\n+  // 使用统一的上传组件尺寸配置\n+  return ImageSizeUtils.getContainerStyle('upload', isMobile.value)\n })\n \n+const imageStyle = computed(() => {\n+  // 使用统一的图片样式配置\n+  return ImageSizeUtils.getImageStyle('upload', isMobile.value)\n+})\n+\n // 方法\n const triggerUpload = () => {\n   if (fileInput.value && !props.disabled) {\n     fileInput.value.click()\n"
+                },
+                {
+                    "date": 1752413969408,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   <div class=\"single-image-upload\">\n     <div\n       class=\"upload-container\"\n       :class=\"{ 'has-image': modelValue, 'disabled': disabled }\"\n-      :style=\"{ height: containerHeightValue }\"\n+      :style=\"containerStyle\"\n       @click=\"!disabled && triggerUpload()\"\n     >\n       <!-- 无图片状态 -->\n       <template v-if=\"!modelValue\">\n"
+                },
+                {
+                    "date": 1752413983962,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -25,8 +25,9 @@\n           <img\n             :src=\"modelValue\"\n             :alt=\"uploadText\"\n             class=\"uploaded-image\"\n+            :style=\"imageStyle\"\n             @load=\"onImageLoad\"\n             @error=\"onImageError\"\n           />\n \n"
+                },
+                {
+                    "date": 1752414001006,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -270,19 +270,9 @@\n }\n \n const onImageLoad = (event) => {\n   loading.value = false\n-\n-  // 计算图片比例并调整容器高度\n-  const img = event.target\n-  const aspectRatio = img.naturalWidth / img.naturalHeight\n-\n-  // 设置容器的最大高度，保持图片比例\n-  const container = img.closest('.upload-container')\n-  if (container && aspectRatio) {\n-    const maxHeight = Math.min(300, container.offsetWidth / aspectRatio)\n-    container.style.height = `${maxHeight}px`\n-  }\n+  // 不再需要动态调整容器高度，使用统一的固定尺寸\n }\n \n const onImageError = () => {\n   loading.value = false\n"
+                },
+                {
+                    "date": 1752414018016,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -278,15 +278,30 @@\n   loading.value = false\n   error.value = '图片加载失败'\n }\n \n+// 响应式检测\n+const updateMobileStatus = () => {\n+  isMobile.value = ImageSizeUtils.isMobile()\n+}\n+\n // 监听modelValue变化\n watch(() => props.modelValue, (newValue) => {\n   if (!newValue) {\n     fileInfo.value = null\n     error.value = ''\n   }\n })\n+\n+// 生命周期\n+onMounted(() => {\n+  updateMobileStatus()\n+  window.addEventListener('resize', updateMobileStatus)\n+})\n+\n+onUnmounted(() => {\n+  window.removeEventListener('resize', updateMobileStatus)\n+})\n </script>\n \n <style scoped>\n .single-image-upload {\n"
+                },
+                {
+                    "date": 1752414034334,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -310,13 +310,18 @@\n \n .upload-container {\n   position: relative;\n   border: 2px dashed rgba(255, 255, 255, 0.2);\n-  border-radius: 8px;\n+  border-radius: 12px;\n   cursor: pointer;\n   transition: all 0.3s ease;\n   overflow: hidden;\n-  min-height: 120px;\n+  background: rgba(255, 255, 255, 0.05);\n+  backdrop-filter: blur(10px);\n+  -webkit-backdrop-filter: blur(10px);\n+  border: 1px solid rgba(255, 255, 255, 0.2);\n+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);\n+  margin: 0 auto;\n }\n \n .upload-container:hover:not(.disabled) {\n   border-color: rgba(255, 255, 255, 0.4);\n"
+                },
+                {
+                    "date": 1752414048280,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -363,9 +363,9 @@\n \n .uploaded-image {\n   width: 100%;\n   height: 100%;\n-  object-fit: contain;\n+  object-fit: cover;\n   background: rgba(0, 0, 0, 0.1);\n }\n \n .image-overlay {\n"
+                },
+                {
+                    "date": 1752421857623,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -358,14 +358,19 @@\n .image-container {\n   position: relative;\n   width: 100%;\n   height: 100%;\n+  display: flex;\n+  align-items: center;\n+  justify-content: center;\n }\n \n .uploaded-image {\n-  width: 100%;\n-  height: 100%;\n-  object-fit: cover;\n+  max-width: 100%;\n+  max-height: 100%;\n+  width: auto;\n+  height: auto;\n+  object-fit: contain;\n   background: rgba(0, 0, 0, 0.1);\n }\n \n .image-overlay {\n"
                 }
             ],
             "date": 1752393485845,

@@ -1,0 +1,26 @@
+{
+  "port-config.json": {
+    "checksum": "9e397d2a7859a1ec35e36a4849d3833f",
+    "lastModified": "2025-07-13T11:52:14.977Z"
+  },
+  "scripts/port-manager.js": {
+    "checksum": "cd97b751ad45ce4614a3d206826a751f",
+    "lastModified": "2025-07-13T11:55:27.573Z"
+  },
+  "scripts/start-with-port-management.js": {
+    "checksum": "bed501c9b5c4f524b3c574ed41453c82",
+    "lastModified": "2025-07-13T11:56:04.326Z"
+  },
+  "start-managed.js": {
+    "checksum": "3bef524a43cc24cdda397964eac57d91",
+    "lastModified": "2025-07-13T11:53:45.871Z"
+  },
+  "start-managed.bat": {
+    "checksum": "fd7be2117ed4d017beccbc9e5e280402",
+    "lastModified": "2025-07-13T11:53:55.313Z"
+  },
+  "start-managed.sh": {
+    "checksum": "1ef2e56f06497f1a13945fee1251e3a4",
+    "lastModified": "2025-07-13T11:54:03.476Z"
+  }
+}

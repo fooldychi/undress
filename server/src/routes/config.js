@@ -53,9 +53,25 @@ router.get('/', adminAuth, async (req, res) => {
       groupedConfigs[config.config_group].push(config);
     });
 
+    // 同时提供扁平化的配置数据，方便前端使用
+    const flatConfigs = {};
+    processedConfigs.forEach(config => {
+      let value = config.config_value;
+
+      // 根据类型转换值
+      if (config.config_type === 'number') {
+        value = parseInt(value) || 0;
+      } else if (config.config_type === 'boolean') {
+        value = value === 'true' || value === '1' || value === true;
+      }
+
+      flatConfigs[config.config_key] = value;
+    });
+
     res.json({
       success: true,
-      data: groupedConfigs
+      data: flatConfigs,
+      grouped: groupedConfigs
     });
   } catch (error) {
     console.error('获取配置失败:', error);

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS最佳实践修复测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* 问题演示：错误的flex布局 */
+        .problem-demo {
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-result-problem {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            /* 问题：flex布局导致子元素宽度收缩 */
+        }
+
+        .comparison-container-problem {
+            display: flex;
+            align-items: center;
+            gap: 4%;
+            width: 100%;
+            min-height: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            /* 问题：子元素宽度为0 */
+        }
+
+        /* 修复后：遵循CSS最佳实践 */
+        .fixed-demo {
+            background: rgba(81, 207, 102, 0.1);
+            border: 2px solid rgba(81, 207, 102, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .comparison-result-fixed {
+            /* 修复：移除flex布局，使用块级布局 */
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .comparison-container-fixed {
+            /* 修复：使用CSS Grid布局，更适合并排对比 */
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 4%;
+            width: 100%;
+            min-height: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .image-section-fixed {
+            /* Grid子项，自动占用可用空间 */
+            display: block;
+            width: 100%;
+        }
+
+        .image-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .image-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .comparison-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            border-radius: 8px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            color: white;
+            font-weight: bold;
+        }
+
+        .placeholder-image {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .explanation {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .explanation li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .comparison-container-fixed {
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .image-wrapper {
+                height: 250px;
+            }
+
+            .image-title {
+                font-size: 13px;
+            }
+
+            .divider {
+                width: 36px;
+                height: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="title">CSS最佳实践修复测试</h1>
+
+        <!-- 问题演示 -->
+        <div class="test-section">
+            <h2 class="section-title">❌ 问题：错误的Flex布局</h2>
+            
+            <div class="problem-demo">
+                <div class="comparison-result-problem">
+                    <div class="comparison-container-problem">
+                        <div class="image-section-fixed">
+                            <div class="image-header">
+                                <span>📷</span>
+                                <span class="image-title">原图</span>
+                            </div>
+                            <div class="image-wrapper">
+                                <div class="placeholder-image">宽度为0，无法显示</div>
+                            </div>
+                        </div>
+                        
+                        <div class="divider">VS</div>
+                        
+                        <div class="image-section-fixed">
+                            <div class="image-header">
+                                <span>✨</span>
+                                <span class="image-title">处理结果</span>
+                            </div>
+                            <div class="image-wrapper">
+                                <div class="placeholder-image">宽度为0，无法显示</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <strong>问题分析：</strong>
+                <ul>
+                    <li>🚫 <span class="highlight">flex-direction: column</span> + <span class="highlight">align-items: center</span> 导致子元素宽度收缩</li>
+                    <li>🚫 过度使用 <span class="highlight">!important</span> 违反CSS最佳实践</li>
+                    <li>🚫 flex布局嵌套过深，导致尺寸计算问题</li>
+                    <li>🚫 子元素无法获得父容器的完整宽度</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 修复后的效果 -->
+        <div class="test-section">
+            <h2 class="section-title">✅ 修复：遵循CSS最佳实践</h2>
+            
+            <div class="fixed-demo">
+                <div class="comparison-result-fixed">
+                    <div class="comparison-container-fixed">
+                        <div class="image-section-fixed">
+                            <div class="image-header">
+                                <span>📷</span>
+                                <span class="image-title">原图</span>
+                            </div>
+                            <div class="image-wrapper">
+                                <img src="https://picsum.photos/400/300?random=1" 
+                                     alt="原图" 
+                                     class="comparison-image">
+                            </div>
+                        </div>
+                        
+                        <div class="divider">VS</div>
+                        
+                        <div class="image-section-fixed">
+                            <div class="image-header">
+                                <span>✨</span>
+                                <span class="image-title">处理结果</span>
+                            </div>
+                            <div class="image-wrapper">
+                                <img src="https://picsum.photos/400/300?random=2" 
+                                     alt="处理结果" 
+                                     class="comparison-image">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <strong>修复要点：</strong>
+                <ul>
+                    <li>✅ <span class="highlight">移除flex布局</span> - comparison-result使用块级布局</li>
+                    <li>✅ <span class="highlight">使用CSS Grid</span> - 更适合并排对比的布局</li>
+                    <li>✅ <span class="highlight">移除!important</span> - 使用特异性管理样式</li>
+                    <li>✅ <span class="highlight">语义化布局</span> - 每个组件职责明确</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- CSS最佳实践总结 -->
+        <div class="test-section">
+            <h2 class="section-title">📚 CSS最佳实践总结</h2>
+            
+            <div class="explanation">
+                <strong>遵循的最佳实践：</strong>
+            </div>
+
+            <div class="code-block">
+/* 1. 移除问题的flex布局 */
+.comparison-result {
+  /* 错误：display: flex; flex-direction: column; align-items: center; */
+  /* 正确：使用块级布局，确保子元素占满宽度 */
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* 2. 使用CSS Grid替代复杂的flex布局 */
+.comparison-container {
+  /* 错误：display: flex; 复杂的flex子项设置 */
+  /* 正确：使用Grid布局，更适合并排对比 */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 4%;
+  width: 100%;
+}
+
+/* 3. 移除!important，使用特异性 */
+.comparison-image {
+  /* 错误：width: 100% !important; */
+  /* 正确：使用正常的特异性 */
+  width: 100%;
+  height: 100%;
+}
+
+/* 4. 简化子项样式 */
+.image-section {
+  /* 错误：复杂的flex设置和min-width/max-width */
+  /* 正确：简单的块级元素 */
+  display: block;
+  width: 100%;
+}
+            </div>
+
+            <div class="explanation">
+                <strong>关键改进：</strong>
+                <ul>
+                    <li>🎯 <span class="highlight">避免!important</span> - 使用特异性来管理样式</li>
+                    <li>🎯 <span class="highlight">使用Grid布局</span> - 更适合二维布局的场景</li>
+                    <li>🎯 <span class="highlight">简化嵌套</span> - 减少不必要的flex容器</li>
+                    <li>🎯 <span class="highlight">语义化CSS</span> - 每个类名和布局都有明确目的</li>
+                    <li>🎯 <span class="highlight">响应式设计</span> - 使用媒体查询优化移动端</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 参考资源 -->
+        <div class="test-section">
+            <h2 class="section-title">📖 参考资源</h2>
+            
+            <div class="explanation">
+                <strong>CSS最佳实践参考：</strong>
+                <ul>
+                    <li>🔗 <a href="https://cursor.directory/html-and-css-best-practices" style="color: #51cf66;">HTML和CSS最佳实践</a></li>
+                    <li>📚 避免过度使用flex布局导致的尺寸问题</li>
+                    <li>📚 使用CSS Grid进行二维布局</li>
+                    <li>📚 避免!important，使用特异性管理样式</li>
+                    <li>📚 优先考虑语义化和可维护性</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

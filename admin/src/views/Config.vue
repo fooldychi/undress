@@ -38,9 +38,7 @@
                 v-model="config.serverUrl"
                 placeholder="https://your-comfyui-server.com"
                 clearable
-              >
-                <template #prepend>HTTPS://</template>
-              </el-input>
+              />
               <div class="form-tip">ComfyUI主服务器的完整地址</div>
             </el-form-item>
 
@@ -187,11 +185,11 @@ const loadConfig = async () => {
       // 映射配置数据到表单
       config.serverUrl = configData['comfyui.server_url'] || ''
       config.backupServers = configData['comfyui.backup_servers'] || ''
-      config.requestTimeout = parseInt(configData['comfyui.request_timeout']) || 30000
-      config.healthCheckTimeout = parseInt(configData['comfyui.health_check_timeout']) || 10000
-      config.autoSwitch = configData['comfyui.auto_switch'] === 'true' || configData['comfyui.auto_switch'] === true
+      config.requestTimeout = configData['comfyui.request_timeout'] || 30000
+      config.healthCheckTimeout = configData['comfyui.health_check_timeout'] || 10000
+      config.autoSwitch = Boolean(configData['comfyui.auto_switch'])
       config.clientId = configData['comfyui.client_id'] || ''
-      config.maxRetries = parseInt(configData['comfyui.max_retries']) || 3
+      config.maxRetries = configData['comfyui.max_retries'] || 3
 
       ElMessage.success('配置加载成功')
     }
@@ -372,3 +370,4 @@ onMounted(() => {
   border-radius: 8px;
 }
 </style>
+

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 10,
+            "activePatchIndex": 16,
             "patches": [
                 {
                     "date": 1752299827901,
@@ -48,6 +48,30 @@
                 {
                     "date": 1752341394385,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -41,9 +41,11 @@\n           }\n         }\n       }\n     },\n-  build: {\n-    outDir: 'dist',\n-    sourcemap: false\n-  }\n+    build: {\n+      outDir: 'dist',\n+      sourcemap: false\n+    }\n+  };\n })\n+\n"
+                },
+                {
+                    "date": 1752401178378,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,9 +8,9 @@\n   const env = loadEnv(mode, process.cwd(), '')\n \n   // 从环境变量获取端口，如果没有则使用默认值\n   const adminPort = parseInt(env.ADMIN_PORT) || 3003\n-  const serverPort = parseInt(env.SERVER_PORT) || 3007\n+  const serverPort = parseInt(env.SERVER_PORT) || 3009\n \n   return {\n     plugins: [\n       vue()\n"
+                },
+                {
+                    "date": 1752401739433,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,10 +8,12 @@\n   const env = loadEnv(mode, process.cwd(), '')\n \n   // 从环境变量获取端口，如果没有则使用默认值\n   const adminPort = parseInt(env.ADMIN_PORT) || 3003\n-  const serverPort = parseInt(env.SERVER_PORT) || 3009\n+  const serverPort = parseInt(env.SERVER_PORT) || 3007\n \n+  console.log(`🔧 Vite配置: 前端端口=${adminPort}, 后端端口=${serverPort}`)\n+\n   return {\n     plugins: [\n       vue()\n     ],\n"
+                },
+                {
+                    "date": 1752403740721,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,12 +8,10 @@\n   const env = loadEnv(mode, process.cwd(), '')\n \n   // 从环境变量获取端口，如果没有则使用默认值\n   const adminPort = parseInt(env.ADMIN_PORT) || 3003\n-  const serverPort = parseInt(env.SERVER_PORT) || 3007\n+  const serverPort = parseInt(env.SERVER_PORT) || 3009\n \n-  console.log(`🔧 Vite配置: 前端端口=${adminPort}, 后端端口=${serverPort}`)\n-\n   return {\n     plugins: [\n       vue()\n     ],\n"
+                },
+                {
+                    "date": 1752403755597,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,10 +8,12 @@\n   const env = loadEnv(mode, process.cwd(), '')\n \n   // 从环境变量获取端口，如果没有则使用默认值\n   const adminPort = parseInt(env.ADMIN_PORT) || 3003\n-  const serverPort = parseInt(env.SERVER_PORT) || 3009\n+  const serverPort = parseInt(env.SERVER_PORT) || 3007\n \n+  console.log(`🔧 Vite配置: 前端端口=${adminPort}, 后端端口=${serverPort}`)\n+\n   return {\n     plugins: [\n       vue()\n     ],\n"
+                },
+                {
+                    "date": 1752406427195,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,9 +8,9 @@\n   const env = loadEnv(mode, process.cwd(), '')\n \n   // 从环境变量获取端口，如果没有则使用默认值\n   const adminPort = parseInt(env.ADMIN_PORT) || 3003\n-  const serverPort = parseInt(env.SERVER_PORT) || 3007\n+  const serverPort = parseInt(env.SERVER_PORT) || 3009\n \n   console.log(`🔧 Vite配置: 前端端口=${adminPort}, 后端端口=${serverPort}`)\n \n   return {\n"
+                },
+                {
+                    "date": 1752406875977,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,12 +8,10 @@\n   const env = loadEnv(mode, process.cwd(), '')\n \n   // 从环境变量获取端口，如果没有则使用默认值\n   const adminPort = parseInt(env.ADMIN_PORT) || 3003\n-  const serverPort = parseInt(env.SERVER_PORT) || 3009\n+  const serverPort = parseInt(env.SERVER_PORT) || 3007\n \n-  console.log(`🔧 Vite配置: 前端端口=${adminPort}, 后端端口=${serverPort}`)\n-\n   return {\n     plugins: [\n       vue()\n     ],\n"
                 }
             ],
             "date": 1752299827901,
