@@ -7,17 +7,7 @@
 
     <div class="container">
       <header class="page-header">
-        <van-button
-          @click="$router.push('/')"
-          type="default"
-          size="small"
-          plain
-          round
-          icon="arrow-left"
-          class="back-btn"
-        >
-          返回首页
-        </van-button>
+        <BackToHomeButton class="back-btn" />
         <h1 class="page-title">
           <UndressWomanIcon :size="32" color="var(--primary-color)" class="page-icon" />
           一键褪衣
@@ -99,6 +89,7 @@ import ProcessingStatus from '../components/ProcessingStatus.vue'
 import ImageComparison from '../components/ImageComparison.vue'
 import PointsDisplay from '../components/PointsDisplay.vue'
 import UserInfo from '../components/UserInfo.vue'
+import BackToHomeButton from '../components/BackToHomeButton.vue'
 
 import { UndressWomanIcon } from '../components/icons'
 

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 12,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -32,6 +32,30 @@
                 {
                     "date": 1752334615729,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,8 +9,9 @@\n // 开发环境下引入配置测试工具和修复工具\r\n if (import.meta.env.DEV) {\r\n   import('./utils/testConfig.js')\r\n   import('./utils/fixLoadBalancer.js')\r\n+  import('./utils/testPointsConsumption.js')\r\n }\r\n \r\n // 引入Vant UI\r\n import Vant, { Toast } from 'vant'\r\n"
+                },
+                {
+                    "date": 1752349558209,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,8 +19,9 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n+import './styles/mobile-layout.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752352274669,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,11 +7,16 @@\n import loadBalancer from './services/loadBalancer.js'\r\n \r\n // 开发环境下引入配置测试工具和修复工具\r\n if (import.meta.env.DEV) {\r\n-  import('./utils/testConfig.js')\r\n-  import('./utils/fixLoadBalancer.js')\r\n-  import('./utils/testPointsConsumption.js')\r\n+  // 使用静态导入避免动态导入问题\r\n+  try {\r\n+    await import('./utils/testConfig.js')\r\n+    await import('./utils/fixLoadBalancer.js')\r\n+    await import('./utils/testPointsConsumption.js')\r\n+  } catch (error) {\r\n+    console.warn('开发工具加载失败:', error)\r\n+  }\r\n }\r\n \r\n // 引入Vant UI\r\n import Vant, { Toast } from 'vant'\r\n"
+                },
+                {
+                    "date": 1752352389534,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,18 +5,11 @@\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n \r\n-// 开发环境下引入配置测试工具和修复工具\r\n+// 开发环境下的调试信息\r\n if (import.meta.env.DEV) {\r\n-  // 使用静态导入避免动态导入问题\r\n-  try {\r\n-    await import('./utils/testConfig.js')\r\n-    await import('./utils/fixLoadBalancer.js')\r\n-    await import('./utils/testPointsConsumption.js')\r\n-  } catch (error) {\r\n-    console.warn('开发工具加载失败:', error)\r\n-  }\r\n+  console.log('🔧 开发模式已启用')\r\n }\r\n \r\n // 引入Vant UI\r\n import Vant, { Toast } from 'vant'\r\n"
+                },
+                {
+                    "date": 1752354037800,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,11 +5,13 @@\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n \r\n-// 开发环境下的调试信息\r\n+// 开发环境下引入配置测试工具和修复工具\r\n if (import.meta.env.DEV) {\r\n-  console.log('🔧 开发模式已启用')\r\n+  import('./utils/testConfig.js')\r\n+  import('./utils/fixLoadBalancer.js')\r\n+  import('./utils/testPointsConsumption.js')\r\n }\r\n \r\n // 引入Vant UI\r\n import Vant, { Toast } from 'vant'\r\n@@ -17,9 +19,8 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n-import './styles/mobile-layout.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752354348141,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,8 +19,9 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n+import './styles/mobile-template.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752368903166,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,9 +19,8 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n-import './styles/mobile-template.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
                 }
             ],
             "date": 1752330016769,

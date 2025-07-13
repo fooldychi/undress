@@ -7,17 +7,7 @@
 
     <div class="container">
       <header class="page-header">
-        <van-button
-          @click="$router.push('/')"
-          type="default"
-          size="small"
-          plain
-          round
-          icon="arrow-left"
-          class="back-btn"
-        >
-          返回首页
-        </van-button>
+        <BackToHomeButton class="back-btn" />
         <h1 class="page-title">
           <FaceSwapIcon :size="32" color="var(--warning-color)" class="page-icon" />
           极速换脸
@@ -126,6 +116,7 @@ import ProcessingStatus from '../components/ProcessingStatus.vue'
 import ImageComparison from '../components/ImageComparison.vue'
 import PointsDisplay from '../components/PointsDisplay.vue'
 import UserInfo from '../components/UserInfo.vue'
+import BackToHomeButton from '../components/BackToHomeButton.vue'
 import { FaceSwapIcon } from '../components/icons'
 
 // 静态导入ComfyUI服务

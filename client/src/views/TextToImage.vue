@@ -7,17 +7,7 @@
 
     <div class="container">
       <header class="page-header">
-        <van-button
-          @click="$router.push('/')"
-          type="default"
-          size="small"
-          plain
-          round
-          icon="arrow-left"
-          class="back-btn"
-        >
-          返回首页
-        </van-button>
+        <BackToHomeButton class="back-btn" />
         <h1 class="page-title">
           <van-icon name="photo-o" size="32" color="#07c160" class="page-icon" />
           文生图
@@ -122,6 +112,7 @@
 <script setup>
 import { ref } from 'vue'
 import UserInfo from '../components/UserInfo.vue'
+import BackToHomeButton from '../components/BackToHomeButton.vue'
 // import { comfyApi } from '../services/api.js'
 
 const prompt = ref('')

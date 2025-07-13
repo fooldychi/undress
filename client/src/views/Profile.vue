@@ -10,17 +10,7 @@
     <div class="container">
       <!-- 页面头部 -->
       <header class="header">
-        <van-button
-          @click="$router.push('/')"
-          type="default"
-          size="small"
-          plain
-          round
-          icon="arrow-left"
-          class="back-btn"
-        >
-          返回首页
-        </van-button>
+        <BackToHomeButton class="back-btn" />
         <h1 class="title">
           <van-icon name="user-o" size="32" color="var(--primary-color)" />
           个人中心
@@ -46,37 +36,26 @@
 
       <!-- 已登录状态 -->
       <div v-else class="profile-content">
-        <!-- 用户信息卡片 -->
-        <div class="feature-card user-card">
+        <!-- 用户信息和积分卡片 - 合并为一个紧凑的卡片 -->
+        <div class="feature-card user-points-card">
           <div class="feature-content">
-            <div class="feature-icon user-avatar">
-              <van-icon name="user-o" size="48" color="var(--primary-color)" />
-            </div>
-            <div class="user-info">
-              <h2 class="feature-title username">{{ userInfo?.username }}</h2>
-              <p class="feature-description user-id">ID: {{ userInfo?.id }}</p>
-              <div class="user-details">
-                <p class="join-date">
-                  注册时间: {{ formatDate(userInfo?.created_at) }}
-                </p>
-                <p v-if="userInfo?.last_login" class="last-login">
-                  最后登录: {{ formatDate(userInfo?.last_login) }}
-                </p>
+            <!-- 用户基本信息 -->
+            <div class="user-section">
+              <div class="user-avatar">
+                <van-icon name="user-o" size="36" color="var(--primary-color)" />
+              </div>
+              <div class="user-info">
+                <h2 class="username">{{ userInfo?.username }}</h2>
+                <p class="user-id">ID: {{ userInfo?.id }}</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- 积分信息卡片 -->
-        <div class="feature-card points-card">
-          <div class="feature-content points-content">
-            <div class="points-header">
-              <div class="feature-icon">
-                <van-icon name="diamond-o" size="48" color="var(--primary-color)" />
+            <!-- 积分信息 -->
+            <div class="points-section">
+              <div class="points-header">
+                <van-icon name="diamond-o" size="24" color="var(--primary-color)" />
+                <span class="points-title">我的积分</span>
               </div>
-              <h2 class="feature-title">我的积分</h2>
-            </div>
-            <div class="points-summary">
               <div class="points-grid">
                 <div class="points-item">
                   <div class="points-value">{{ pointsInfo?.total_points || 0 }}</div>
@@ -85,8 +64,20 @@
                 <div class="points-divider"></div>
                 <div class="points-item">
                   <div class="points-value">{{ pointsInfo?.cards_count || 0 }}</div>
-                  <div class="points-label">等级卡数量</div>
+                  <div class="points-label">等级卡</div>
                 </div>
+              </div>
+            </div>
+
+            <!-- 用户详细信息 -->
+            <div class="user-details">
+              <div class="detail-item">
+                <span class="detail-label">注册时间:</span>
+                <span class="detail-value">{{ formatDate(userInfo?.created_at) }}</span>
+              </div>
+              <div v-if="userInfo?.last_login" class="detail-item">
+                <span class="detail-label">最后登录:</span>
+                <span class="detail-value">{{ formatDate(userInfo?.last_login) }}</span>
               </div>
             </div>
           </div>
@@ -95,27 +86,25 @@
         <!-- 我的等级卡 -->
         <div v-if="levelCards.length > 0" class="feature-card level-cards-section">
           <div class="feature-content level-cards-content">
-            <div class="level-cards-header">
-              <div class="feature-icon">
-                <van-icon name="credit-pay" size="48" color="var(--primary-color)" />
-              </div>
-              <h2 class="feature-title">我的等级卡</h2>
+            <div class="section-header">
+              <van-icon name="diamond-o" size="24" color="var(--primary-color)" />
+              <h2 class="section-title">我的等级卡</h2>
             </div>
 
             <div class="level-cards-list">
               <div
                 v-for="card in levelCards"
                 :key="card.id"
-                class="level-card-item-unified"
+                class="level-card-item"
               >
-                <div class="level-card-icon">
-                  <van-icon name="credit-pay" size="24" color="var(--primary-color)" />
+                <div class="card-icon">
+                  <span class="card-type-icon">{{ card.icon || '💎' }}</span>
                 </div>
-                <div class="level-card-info">
-                  <div class="level-card-type">{{ card.type_name }}</div>
-                  <div class="level-card-date">{{ formatDate(card.bound_at) }}</div>
+                <div class="card-info">
+                  <div class="card-type">{{ card.type_name }}</div>
+                  <div class="card-date">{{ formatDate(card.bound_at) }}</div>
                 </div>
-                <div class="level-card-points">
+                <div class="card-points">
                   <span class="points-current">{{ card.remaining_points }}</span>
                   <span class="points-separator">/</span>
                   <span class="points-total">{{ card.total_points }}</span>
@@ -128,11 +117,9 @@
         <!-- 最近积分记录 -->
         <div class="feature-card recent-records">
           <div class="feature-content records-content">
-            <div class="records-header">
-              <div class="feature-icon">
-                <van-icon name="records" size="48" color="var(--primary-color)" />
-              </div>
-              <h2 class="feature-title">最近记录</h2>
+            <div class="section-header">
+              <van-icon name="diamond-o" size="24" color="var(--primary-color)" />
+              <h2 class="section-title">最近记录</h2>
             </div>
 
             <div v-if="recentRecords.length === 0" class="no-records">
@@ -143,8 +130,11 @@
               <div
                 v-for="record in recentRecords.slice(0, 3)"
                 :key="record.id"
-                class="record-item-unified"
+                class="record-item"
               >
+                <div class="record-icon">
+                  <van-icon name="diamond-o" size="16" :color="record.action_type === 'consume' ? '#ff4444' : '#07c160'" />
+                </div>
                 <div class="record-info">
                   <div class="record-desc">{{ record.description }}</div>
                   <div class="record-time">{{ formatDate(record.created_at) }}</div>
@@ -225,13 +215,15 @@ import { authApi, pointsApi, userApi, levelCardApi } from '../services/api.js'
 import TopNavigation from '../components/TopNavigation.vue'
 import ResultModal from '../components/ResultModal.vue'
 import AuthModal from '../components/AuthModal.vue'
+import BackToHomeButton from '../components/BackToHomeButton.vue'
 
 export default {
   name: 'Profile',
   components: {
     TopNavigation,
     ResultModal,
-    AuthModal
+    AuthModal,
+    BackToHomeButton
   },
   setup() {
     const router = useRouter()
@@ -534,12 +526,12 @@ export default {
   box-shadow: var(--shadow-lg);
 }
 
-/* 主要内容区域 */
+/* 主要内容区域 - 更紧凑的间距 */
 .profile-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  margin-bottom: 60px;
+  gap: 20px;
+  margin-bottom: 40px;
 }
 
 /* 统一的卡片样式 - 与首页保持一致 */
@@ -555,12 +547,122 @@ export default {
 }
 
 .feature-content {
-  padding: 32px;
-  text-align: center;
+  padding: 24px;
+  text-align: left;
   height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+/* 用户积分卡片样式 */
+.user-points-card .feature-content {
+  gap: 20px;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(25, 137, 250, 0.1);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.username {
+  color: var(--text-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.user-id {
+  color: var(--text-light);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.points-section {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.points-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.points-title {
+  color: var(--text-color);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.points-grid {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.points-item {
+  text-align: center;
+}
+
+.points-value {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.points-label {
+  color: var(--text-light);
+  font-size: 0.75rem;
+  margin-top: 4px;
+}
+
+.points-divider {
+  width: 1px;
+  height: 30px;
+  background: var(--border-color);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item {
+  display: flex;
   justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.detail-label {
+  color: var(--text-light);
+}
+
+.detail-value {
+  color: var(--text-color);
+  font-weight: 500;
 }
 
 .feature-icon {
@@ -1017,7 +1119,195 @@ export default {
   }
 }
 
+/* 统一的section header样式 */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
 
+.section-title {
+  color: var(--text-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
 
+/* 等级卡列表样式 */
+.level-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.level-card-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.level-card-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary-color);
+}
+
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.card-type-icon {
+  font-size: 18px;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-type {
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.card-date {
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+
+.card-points {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.points-current {
+  color: var(--primary-color);
+}
+
+.points-separator {
+  color: var(--text-light);
+}
+
+.points-total {
+  color: var(--text-light);
+}
+
+/* 记录列表样式 */
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.record-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.record-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary-color);
+}
+
+.record-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.record-info {
+  flex: 1;
+}
+
+.record-desc {
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.record-time {
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+
+.record-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.record-amount.consume {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.record-amount.recharge {
+  color: #07c160;
+  background: rgba(7, 193, 96, 0.1);
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .user-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .user-avatar {
+    align-self: center;
+  }
+
+  .points-grid {
+    justify-content: center;
+  }
+
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .level-card-item,
+  .record-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-points,
+  .record-amount {
+    align-self: flex-end;
+  }
+}
 </style>

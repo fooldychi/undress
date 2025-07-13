@@ -1,0 +1,42 @@
+{
+    "sourceFile": "client/src/stores/auth.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 6,
+            "patches": [
+                {
+                    "date": 1752353069626,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752353084423,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,17 +7,12 @@\n   isLoading: false\n })\n \n export const useAuthStore = () => {\n-  // 状态\n-  const user = ref(null)\n-  const token = ref(localStorage.getItem('token') || null)\n-  const isLoading = ref(false)\n-\n   // 计算属性\n-  const isLoggedIn = computed(() => !!token.value && !!user.value)\n-  const userName = computed(() => user.value?.name || user.value?.username || '用户')\n-  const userAvatar = computed(() => user.value?.avatar || null)\n+  const isLoggedIn = computed(() => !!authState.token && !!authState.user)\n+  const userName = computed(() => authState.user?.name || authState.user?.username || '用户')\n+  const userAvatar = computed(() => authState.user?.avatar || null)\n \n   // 方法\n   const setUser = (userData) => {\n     user.value = userData\n"
+                },
+                {
+                    "date": 1752353098718,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,13 +14,13 @@\n   const userAvatar = computed(() => authState.user?.avatar || null)\n \n   // 方法\n   const setUser = (userData) => {\n-    user.value = userData\n+    authState.user = userData\n   }\n \n   const setToken = (tokenValue) => {\n-    token.value = tokenValue\n+    authState.token = tokenValue\n     if (tokenValue) {\n       localStorage.setItem('token', tokenValue)\n     } else {\n       localStorage.removeItem('token')\n"
+                },
+                {
+                    "date": 1752353110543,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,9 +28,9 @@\n   }\n \n   const login = async (credentials) => {\n     try {\n-      isLoading.value = true\n+      authState.isLoading = true\n       // 这里应该调用实际的登录API\n       // const response = await authApi.login(credentials)\n \n       // 模拟登录成功\n"
+                },
+                {
+                    "date": 1752353125072,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -51,22 +51,22 @@\n     } catch (error) {\n       console.error('登录失败:', error)\n       return { success: false, error: error.message }\n     } finally {\n-      isLoading.value = false\n+      authState.isLoading = false\n     }\n   }\n \n   const logout = () => {\n-    user.value = null\n+    authState.user = null\n     setToken(null)\n   }\n \n   const refreshUser = async () => {\n-    if (!token.value) return false\n+    if (!authState.token) return false\n \n     try {\n-      isLoading.value = true\n+      authState.isLoading = true\n       // 这里应该调用实际的用户信息API\n       // const response = await authApi.getUserInfo()\n \n       // 模拟获取用户信息\n"
+                },
+                {
+                    "date": 1752353141198,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -69,9 +69,9 @@\n       // 这里应该调用实际的用户信息API\n       // const response = await authApi.getUserInfo()\n \n       // 模拟获取用户信息\n-      if (user.value) {\n+      if (authState.user) {\n         return true\n       }\n \n       return false\n@@ -79,24 +79,24 @@\n       console.error('刷新用户信息失败:', error)\n       logout()\n       return false\n     } finally {\n-      isLoading.value = false\n+      authState.isLoading = false\n     }\n   }\n \n   // 初始化时检查token\n   const initialize = async () => {\n-    if (token.value) {\n+    if (authState.token) {\n       await refreshUser()\n     }\n   }\n \n   return {\n     // 状态\n-    user,\n-    token,\n-    isLoading,\n+    user: computed(() => authState.user),\n+    token: computed(() => authState.token),\n+    isLoading: computed(() => authState.isLoading),\n \n     // 计算属性\n     isLoggedIn,\n     userName,\n"
+                },
+                {
+                    "date": 1752353672302,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -109,5 +109,5 @@\n     logout,\n     refreshUser,\n     initialize\n   }\n-})\n+}\n"
+                }
+            ],
+            "date": 1752353069626,
+            "name": "Commit-0",
+            "content": "import { ref, computed, reactive } from 'vue'\n\n// 简化的auth store，不依赖Pinia\nconst authState = reactive({\n  user: null,\n  token: localStorage.getItem('token') || null,\n  isLoading: false\n})\n\nexport const useAuthStore = () => {\n  // 状态\n  const user = ref(null)\n  const token = ref(localStorage.getItem('token') || null)\n  const isLoading = ref(false)\n\n  // 计算属性\n  const isLoggedIn = computed(() => !!token.value && !!user.value)\n  const userName = computed(() => user.value?.name || user.value?.username || '用户')\n  const userAvatar = computed(() => user.value?.avatar || null)\n\n  // 方法\n  const setUser = (userData) => {\n    user.value = userData\n  }\n\n  const setToken = (tokenValue) => {\n    token.value = tokenValue\n    if (tokenValue) {\n      localStorage.setItem('token', tokenValue)\n    } else {\n      localStorage.removeItem('token')\n    }\n  }\n\n  const login = async (credentials) => {\n    try {\n      isLoading.value = true\n      // 这里应该调用实际的登录API\n      // const response = await authApi.login(credentials)\n\n      // 模拟登录成功\n      const mockUser = {\n        id: 1,\n        name: credentials.username || '测试用户',\n        username: credentials.username || 'testuser',\n        email: credentials.email || 'test@example.com',\n        avatar: null\n      }\n\n      const mockToken = 'mock-jwt-token-' + Date.now()\n\n      setUser(mockUser)\n      setToken(mockToken)\n\n      return { success: true, user: mockUser, token: mockToken }\n    } catch (error) {\n      console.error('登录失败:', error)\n      return { success: false, error: error.message }\n    } finally {\n      isLoading.value = false\n    }\n  }\n\n  const logout = () => {\n    user.value = null\n    setToken(null)\n  }\n\n  const refreshUser = async () => {\n    if (!token.value) return false\n\n    try {\n      isLoading.value = true\n      // 这里应该调用实际的用户信息API\n      // const response = await authApi.getUserInfo()\n\n      // 模拟获取用户信息\n      if (user.value) {\n        return true\n      }\n\n      return false\n    } catch (error) {\n      console.error('刷新用户信息失败:', error)\n      logout()\n      return false\n    } finally {\n      isLoading.value = false\n    }\n  }\n\n  // 初始化时检查token\n  const initialize = async () => {\n    if (token.value) {\n      await refreshUser()\n    }\n  }\n\n  return {\n    // 状态\n    user,\n    token,\n    isLoading,\n\n    // 计算属性\n    isLoggedIn,\n    userName,\n    userAvatar,\n\n    // 方法\n    setUser,\n    setToken,\n    login,\n    logout,\n    refreshUser,\n    initialize\n  }\n})\n"
+        }
+    ]
+}

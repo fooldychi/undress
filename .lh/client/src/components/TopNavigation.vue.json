@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 9,
+            "activePatchIndex": 11,
             "patches": [
                 {
                     "date": 1752290874113,
@@ -44,6 +44,14 @@
                 {
                     "date": 1752342628711,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -173,10 +173,9 @@\n // 处理积分更新\n const handlePointsUpdated = async () => {\n   console.log('🔄 收到积分更新事件，强制刷新积分状态')\n   // 清除levelCardPointsManager的缓存，确保获取最新数据\n-  levelCardPointsManager.pointsInfo = null\n-  levelCardPointsManager.lastUpdateTime = 0\n+  levelCardPointsManager.clearCache()\n \n   // 更新积分状态\n   await updatePointsStatus()\n }\n"
+                },
+                {
+                    "date": 1752348718404,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -17,17 +17,17 @@\n     <!-- 用户信息（右边） -->\n     <div class=\"nav-item nav-user\">\n       <!-- 未登录状态 -->\n       <div v-if=\"!isLoggedIn\" class=\"nav-login\" @click=\"showLoginModal\" title=\"点击登录\">\n-        <div class=\"nav-icon\">\n+        <div class=\"nav-icon nav-icon-user\">\n           <van-icon name=\"user-o\" size=\"18\" />\n         </div>\n         <span class=\"nav-text\">登录</span>\n       </div>\n \n       <!-- 已登录状态 -->\n       <div v-else class=\"nav-avatar\" @click=\"goToProfile\" title=\"点击进入个人中心\">\n-        <div class=\"nav-icon\">\n+        <div class=\"nav-icon nav-icon-user\">\n           <van-icon name=\"user-o\" size=\"18\" />\n         </div>\n       </div>\n     </div>\n"
+                },
+                {
+                    "date": 1752348742257,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -283,8 +283,15 @@\n   height: 24px;\n   color: #1989fa;\n }\n \n+/* 用户图标样式 - 与积分图标保持一致 */\n+.nav-icon-user {\n+  color: #1989fa !important;\n+  background: none !important;\n+  border: none !important;\n+}\n+\n .nav-text {\n   font-size: 14px;\n   font-weight: 500;\n   color: #323233;\n"
                 }
             ],
             "date": 1752290874113,

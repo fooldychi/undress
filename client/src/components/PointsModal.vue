@@ -9,7 +9,7 @@
       <!-- 头部 -->
       <div class="modal-header">
         <h2 class="modal-title">
-          <van-icon name="gold-coin-o" size="24" />
+          <van-icon name="diamond-o" size="24" />
           我的积分
         </h2>
         <van-icon

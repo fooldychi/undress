@@ -18,7 +18,7 @@
     <div class="nav-item nav-user">
       <!-- 未登录状态 -->
       <div v-if="!isLoggedIn" class="nav-login" @click="showLoginModal" title="点击登录">
-        <div class="nav-icon">
+        <div class="nav-icon nav-icon-user">
           <van-icon name="user-o" size="18" />
         </div>
         <span class="nav-text">登录</span>
@@ -26,7 +26,7 @@
 
       <!-- 已登录状态 -->
       <div v-else class="nav-avatar" @click="goToProfile" title="点击进入个人中心">
-        <div class="nav-icon">
+        <div class="nav-icon nav-icon-user">
           <van-icon name="user-o" size="18" />
         </div>
       </div>
@@ -282,6 +282,13 @@ defineExpose({
   width: 24px;
   height: 24px;
   color: #1989fa;
+}
+
+/* 用户图标样式 - 与积分图标保持一致 */
+.nav-icon-user {
+  color: #1989fa !important;
+  background: none !important;
+  border: none !important;
 }
 
 .nav-text {

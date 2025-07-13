@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 56,
+            "activePatchIndex": 57,
             "patches": [
                 {
                     "date": 1752287463851,
@@ -232,6 +232,10 @@
                 {
                     "date": 1752346465795,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -459,9 +459,14 @@\n             Toast.fail(response.message || '绑定失败')\n           }\n         }\n       } catch (error) {\n-        console.error('绑定等级卡失败:', error)\n+        console.error('🎫 绑定等级卡失败:', error)\n+        console.error('🎫 错误详情:', {\n+          message: error.message,\n+          hasUnusedExperienceCard: hasUnusedExperienceCard.value,\n+          userCards: userCards.value\n+        })\n         // 如果是认证错误，显示登录提示\n         if (error.message && (error.message.includes('令牌') || error.message.includes('401') || error.message.includes('登录已过期'))) {\n           Toast.fail('登录已过期，请重新登录')\n         } else if (error.message && error.message.includes('体验卡')) {\n"
+                },
+                {
+                    "date": 1752349179490,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,9 +8,9 @@\n     <div class=\"points-modal\">\n       <!-- 头部 -->\n       <div class=\"modal-header\">\n         <h2 class=\"modal-title\">\n-          <van-icon name=\"gold-coin-o\" size=\"24\" />\n+          <van-icon name=\"diamond-o\" size=\"24\" />\n           我的积分\n         </h2>\n         <van-icon\n           name=\"cross\"\n"
                 }
             ],
             "date": 1752287463851,

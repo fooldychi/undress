@@ -274,14 +274,14 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
     }
 
     // 处理网络连接错误 - 尝试重试
-    if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) && retryCount < 2) {
+    if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) && retryCount < 2) {
       console.log(`网络请求失败，正在重试... (${retryCount + 1}/3)`)
       await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // 递增延迟
       return makeBackendRequest(endpoint, options, retryCount + 1)
     }
 
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      throw new Error('网络连接失败，请检查服务器状态')
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) {
+      throw new Error('网络连接异常，请检查网络或稍后重试')
     }
 
     // 处理认证错误

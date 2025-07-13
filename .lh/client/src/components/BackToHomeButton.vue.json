@@ -1,0 +1,22 @@
+{
+    "sourceFile": "client/src/components/BackToHomeButton.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752350823246,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752354037654,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -25,19 +25,24 @@\n <style scoped>\n .back-to-home-btn {\n   background: rgba(255, 255, 255, 0.1);\n   border: 1px solid rgba(255, 255, 255, 0.2);\n-  color: var(--van-text-color);\n+  color: var(--text-color);\n   backdrop-filter: blur(10px);\n-  transition: var(--mobile-transition-fast);\n+  transition: all 0.3s ease;\n }\n \n-.back-to-home-btn:active {\n+.back-to-home-btn:hover {\n   background: rgba(255, 255, 255, 0.2);\n-  border-color: var(--van-primary-color);\n-  transform: scale(0.98);\n+  border-color: var(--primary-color);\n+  transform: translateY(-1px);\n+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n }\n \n+.back-to-home-btn:active {\n+  transform: translateY(0);\n+}\n+\n /* 响应式设计 */\n @media (max-width: 768px) {\n   .back-to-home-btn {\n     font-size: 12px;\n"
+                }
+            ],
+            "date": 1752350823246,
+            "name": "Commit-0",
+            "content": "<template>\n  <van-button\n    @click=\"goHome\"\n    type=\"default\"\n    size=\"small\"\n    plain\n    round\n    icon=\"arrow-left\"\n    class=\"back-to-home-btn\"\n  >\n    返回首页\n  </van-button>\n</template>\n\n<script setup>\nimport { useRouter } from 'vue-router'\n\nconst router = useRouter()\n\nconst goHome = () => {\n  router.push('/')\n}\n</script>\n\n<style scoped>\n.back-to-home-btn {\n  background: rgba(255, 255, 255, 0.1);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  color: var(--van-text-color);\n  backdrop-filter: blur(10px);\n  transition: var(--mobile-transition-fast);\n}\n\n.back-to-home-btn:active {\n  background: rgba(255, 255, 255, 0.2);\n  border-color: var(--van-primary-color);\n  transform: scale(0.98);\n}\n\n/* 响应式设计 */\n@media (max-width: 768px) {\n  .back-to-home-btn {\n    font-size: 12px;\n    padding: 6px 12px;\n  }\n}\n</style>\n"
+        }
+    ]
+}
