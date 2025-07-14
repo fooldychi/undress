@@ -2,14 +2,14 @@
   <van-popup
     v-model:show="visible"
     position="center"
-    :style="{ width: '90%', maxWidth: '400px' }"
+    :style="{ width: '95%', maxWidth: '500px' }"
     round
     closeable
     close-icon-position="top-right"
   >
     <div class="result-modal">
       <div class="modal-header">
-        <h3>生成结果</h3>
+        <h3>图片预览</h3>
         <div class="result-info">
           <div class="result-desc">{{ resultData?.description }}</div>
           <div class="result-time">{{ formatDate(resultData?.createdAt) }}</div>
@@ -32,83 +32,93 @@
           </van-empty>
         </div>
 
-        <div v-else-if="resultData?.mediaUrl" class="result-content">
-          <!-- 图片结果 -->
-          <div v-if="isImage" class="image-result">
-            <van-image
-              :src="resultData.mediaUrl"
-              fit="contain"
-              :show-loading="true"
-              :show-error="true"
-              @click="previewImage"
-            >
-              <template #loading>
-                <van-loading type="spinner" size="20" />
-              </template>
-              <template #error>
-                <div class="image-error">
-                  <van-icon name="photo-fail" size="32" />
-                  <div>图片加载失败</div>
-                </div>
-              </template>
-            </van-image>
-          </div>
+        <div v-else class="result-content">
+          <!-- 有媒体URL时显示内容 -->
+          <div v-if="resultData?.mediaUrl" class="media-container">
+            <!-- 图片结果 -->
+            <div v-if="isImage" class="image-result">
+              <!-- 调试信息 -->
+              <div v-if="false" style="background: #f0f0f0; padding: 8px; margin-bottom: 8px; font-size: 12px;">
+                <div>URL: {{ resultData.mediaUrl }}</div>
+                <div>isImage: {{ isImage }}</div>
+                <div>isVideo: {{ isVideo }}</div>
+              </div>
 
-          <!-- 视频结果 -->
-          <div v-else-if="isVideo" class="video-result">
-            <video
-              :src="resultData.mediaUrl"
-              controls
-              preload="metadata"
-              @error="handleMediaError"
-            >
-              您的浏览器不支持视频播放
-            </video>
-          </div>
+              <!-- 直接使用img标签测试 -->
+              <img
+                v-if="resultData.mediaUrl"
+                :src="resultData.mediaUrl"
+                :alt="resultData.description || '生成结果'"
+                class="result-image-direct"
+                @click="previewImage"
+                @load="handleImageLoad"
+                @error="handleImageError"
+              />
 
-          <!-- 其他文件类型 -->
-          <div v-else class="file-result">
-            <div class="file-info">
-              <van-icon name="description" size="48" />
-              <div class="file-name">生成结果文件</div>
-              <van-button type="primary" size="small" @click="downloadFile">
-                下载文件
-              </van-button>
+              <!-- 备用：van-image组件 -->
+              <van-image
+                v-else
+                :src="resultData.mediaUrl"
+                fit="contain"
+                :show-loading="true"
+                :show-error="true"
+                @click="previewImage"
+                class="result-image"
+                @load="handleImageLoad"
+                @error="handleImageError"
+              >
+                <template #loading>
+                  <van-loading type="spinner" size="20" />
+                </template>
+                <template #error>
+                  <div class="image-error">
+                    <van-icon name="photo-fail" size="32" />
+                    <div>图片加载失败</div>
+                    <div style="font-size: 10px; margin-top: 4px;">{{ resultData.mediaUrl }}</div>
+                  </div>
+                </template>
+              </van-image>
+            </div>
+
+            <!-- 视频结果 -->
+            <div v-else-if="isVideo" class="video-result">
+              <video
+                :src="resultData.mediaUrl"
+                controls
+                preload="metadata"
+                @error="handleMediaError"
+                class="result-video"
+              >
+                您的浏览器不支持视频播放
+              </video>
+            </div>
+
+            <!-- 其他文件类型 -->
+            <div v-else class="file-result">
+              <div class="file-info">
+                <van-icon name="description" size="48" />
+                <div class="file-name">生成结果文件</div>
+              </div>
             </div>
           </div>
 
-          <!-- 操作按钮 -->
-          <div class="result-actions">
-            <van-button
-              v-if="isImage"
-              type="primary"
-              size="small"
-              @click="previewImage"
-              icon="eye-o"
-            >
-              预览
-            </van-button>
-            <van-button
-              type="default"
-              size="small"
-              @click="downloadFile"
-              icon="down"
-            >
-              下载
-            </van-button>
-            <van-button
-              type="default"
-              size="small"
-              @click="shareResult"
-              icon="share-o"
-            >
-              分享
-            </van-button>
+          <!-- 无媒体URL时显示提示 -->
+          <div v-else class="no-result">
+            <van-empty description="暂无结果数据" />
           </div>
         </div>
 
-        <div v-else class="no-result">
-          <van-empty description="暂无结果数据" />
+        <!-- 固定在底部的操作按钮 -->
+        <div v-if="resultData?.mediaUrl" class="modal-footer">
+          <van-button
+            type="primary"
+            size="small"
+            @click="downloadFile"
+            icon="down"
+            block
+          >
+            下载
+          </van-button>
         </div>
       </div>
     </div>
@@ -147,7 +157,9 @@ const error = ref(false)
 const isImage = computed(() => {
   if (!props.resultData?.mediaUrl) return false
   const url = props.resultData.mediaUrl.toLowerCase()
-  return /\.(jpg|jpeg|png|gif|webp|bmp)(\?.*)?$/i.test(url)
+  // 如果是视频格式则返回false，否则默认当作图片处理
+  const isVideoFormat = /\.(mp4|webm|ogg|avi|mov)(\?.*)?$/i.test(url)
+  return !isVideoFormat
 })
 
 const isVideo = computed(() => {
@@ -234,6 +246,17 @@ const handleMediaError = () => {
   Toast.fail('媒体文件加载失败')
 }
 
+// 处理图片加载成功
+const handleImageLoad = () => {
+  console.log('图片加载成功:', props.resultData?.mediaUrl)
+}
+
+// 处理图片加载失败
+const handleImageError = () => {
+  console.error('图片加载失败:', props.resultData?.mediaUrl)
+  Toast.fail('图片加载失败')
+}
+
 // 重试加载
 const retryLoad = () => {
   error.value = false
@@ -249,14 +272,20 @@ watch(() => props.show, (newVal) => {
   if (newVal) {
     error.value = false
     loading.value = false
+    console.log('ResultModal 打开，数据:', props.resultData)
   }
 })
+
+// 监听resultData变化
+watch(() => props.resultData, (newVal) => {
+  console.log('ResultModal resultData 变化:', newVal)
+}, { deep: true })
 </script>
 
 <style scoped>
 .result-modal {
   padding: 0;
-  max-height: 70vh;
+  max-height: 80vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -300,7 +329,20 @@ watch(() => props.show, (newVal) => {
 .modal-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 16px 16px;
+  padding: 12px 16px 0;
+  min-height: 0;
+}
+
+.media-container {
+  padding-bottom: 16px;
+}
+
+.modal-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(30, 30, 60, 0.5);
+  background: rgba(15, 15, 30, 0.8);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .loading-state,
@@ -320,11 +362,29 @@ watch(() => props.show, (newVal) => {
 
 .image-result {
   text-align: center;
+  width: 100%;
+}
+
+.result-image {
+  width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.result-image-direct {
+  width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  cursor: pointer;
+  object-fit: contain;
+  display: block;
 }
 
 .image-result .van-image {
-  max-width: 100%;
-  max-height: 300px;
+  width: 100%;
+  max-height: 400px;
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
@@ -339,9 +399,19 @@ watch(() => props.show, (newVal) => {
   padding: 40px 20px;
 }
 
+.video-result {
+  width: 100%;
+}
+
+.result-video {
+  width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+}
+
 .video-result video {
   width: 100%;
-  max-height: 300px;
+  max-height: 400px;
   border-radius: 8px;
 }
 
@@ -362,12 +432,7 @@ watch(() => props.show, (newVal) => {
   color: #646566;
 }
 
-.result-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
+
 
 /* 深色主题适配 */
 @media (prefers-color-scheme: dark) {

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 31,
+            "activePatchIndex": 43,
             "patches": [
                 {
                     "date": 1752333548051,
@@ -132,6 +132,54 @@
                 {
                     "date": 1752469945266,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -317,9 +317,18 @@\n   async selectServerByMinQueue() {\n     try {\n       console.log('🎯 开始选择最优服务器...')\n \n-      // 检查是否有锁定的服务器\n+      // 优先检查WebSocket锁定的服务器\n+      if (this.isWebSocketServerLocked()) {\n+        const webSocketServer = this.getWebSocketLockedServer()\n+        if (webSocketServer) {\n+          console.log(`🔒🌐 使用WebSocket锁定的服务器: ${webSocketServer}`)\n+          return webSocketServer\n+        }\n+      }\n+\n+      // 检查是否有普通锁定的服务器\n       if (this.isServerLocked()) {\n         const lockedServer = this.getLockedServer()\n         if (lockedServer) {\n           console.log(`🔒 使用锁定的服务器: ${lockedServer}`)\n"
+                },
+                {
+                    "date": 1752508063038,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -32,10 +32,8 @@\n    * 初始化负载均衡器\n    */\n   async initialize() {\n     try {\n-      console.log('🚀 初始化 ComfyUI 负载均衡器...')\n-\n       // 获取服务器配置\n       const config = await configService.getConfig()\n \n       // 构建服务器列表\n@@ -67,9 +65,8 @@\n       }\n \n       // 如果没有配置服务器，使用默认配置\n       if (this.servers.length === 0) {\n-        console.warn('⚠️ 未找到配置的服务器，使用默认配置')\n         // 从本地配置获取默认服务器\n         const localConfig = JSON.parse(localStorage.getItem('comfyui_config') || '{}')\n         const defaultUrl = localConfig.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com'\n \n@@ -79,25 +76,17 @@\n           priority: 1\n         })\n       }\n \n-      console.log(`✅ 发现 ${this.servers.length} 个 ComfyUI 服务器:`)\n-      this.servers.forEach((server, index) => {\n-        console.log(`   ${index + 1}. ${server.url} (${server.type})`)\n-      })\n-\n       // 初始化服务器负载信息\n       await this.updateServerLoads()\n \n       // 启动健康监控\n       this.startHealthMonitoring()\n \n-      console.log('✅ ComfyUI 负载均衡器初始化完成')\n-\n     } catch (error) {\n-      console.error('❌ 负载均衡器初始化失败:', error)\n+      console.error('负载均衡器初始化失败:', error)\n       // 不抛出错误，允许应用继续运行\n-      console.log('🔄 使用降级模式，将使用单服务器配置')\n     }\n   }\n \n   /**\n"
+                },
+                {
+                    "date": 1752508506549,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -96,20 +96,16 @@\n     const now = Date.now()\n \n     // 如果距离上次更新时间不足间隔，跳过更新（除非强制更新或超过强制更新阈值）\n     if (!forceUpdate && now - this.lastUpdateTime < this.updateInterval && now - this.lastUpdateTime < this.forceUpdateThreshold) {\n-      console.log('⏭️ 跳过负载更新，距离上次更新时间不足')\n       return\n     }\n \n     // 如果超过强制更新阈值，强制更新\n     if (now - this.lastUpdateTime > this.forceUpdateThreshold) {\n-      console.log('🔄 强制更新服务器负载信息（超过强制更新阈值）')\n       forceUpdate = true\n     }\n \n-    console.log('🔄 更新服务器负载信息...')\n-\n     const updatePromises = this.servers.map(async (server) => {\n       try {\n         // 并行检查健康状态和队列信息\n         const [healthResult, queueResult] = await Promise.allSettled([\n"
+                },
+                {
+                    "date": 1752508528269,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -120,9 +120,8 @@\n         const isHealthy = this.determineServerHealth(health, queue, server)\n \n         // 如果服务器恢复健康，重置失败计数\n         if (isHealthy && this.serverFailures.has(server.url)) {\n-          console.log(`✅ 服务器 ${server.url} 已恢复健康，重置失败计数`)\n           this.resetFailureCount(server.url)\n         }\n \n         this.serverLoads.set(server.url, {\n@@ -134,11 +133,8 @@\n           healthDetails: { health, queue },\n           failureCount: this.serverFailures.get(server.url) || 0\n         })\n \n-        const queueInfo = queue.healthy ? `队列=${queue.total || 0}(运行:${queue.running || 0},等待:${queue.pending || 0})` : `队列检查失败`\n-        console.log(`📊 ${server.url}: 健康=${health.healthy}, ${queueInfo}, 响应时间=${health.responseTime || 0}ms`)\n-\n       } catch (error) {\n         console.error(`❌ 更新服务器负载失败 ${server.url}:`, error)\n         this.serverLoads.set(server.url, {\n           ...server,\n"
+                },
+                {
+                    "date": 1752510457366,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,9 +134,8 @@\n           failureCount: this.serverFailures.get(server.url) || 0\n         })\n \n       } catch (error) {\n-        console.error(`❌ 更新服务器负载失败 ${server.url}:`, error)\n         this.serverLoads.set(server.url, {\n           ...server,\n           healthy: false,\n           queue: { total: 999, healthy: false },\n"
+                },
+                {
+                    "date": 1752510740858,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -203,9 +203,8 @@\n         return { healthy: false, responseTime, status: response.status }\n       }\n \n     } catch (error) {\n-      console.warn(`⚠️ 健康检查失败 ${serverUrl}:`, error.message)\n       return { healthy: false, error: error.message }\n     }\n   }\n \n"
+                },
+                {
+                    "date": 1752510756620,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -246,9 +246,8 @@\n         return await this.getServerQueueInfoFallback(serverUrl)\n       }\n \n     } catch (error) {\n-      console.warn(`⚠️ 队列信息获取失败 ${serverUrl}:`, error.message)\n       return await this.getServerQueueInfoFallback(serverUrl)\n     }\n   }\n \n"
+                },
+                {
+                    "date": 1752510769668,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -325,9 +325,8 @@\n \n           // 过滤掉失败次数过多的服务器\n           const failures = this.serverFailures.get(server.url) || 0\n           if (failures >= this.failureThreshold) {\n-            console.log(`⚠️ 跳过失败次数过多的服务器: ${server.url} (${failures}次)`)\n             return false\n           }\n \n           return true\n"
+                },
+                {
+                    "date": 1752510840077,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -410,29 +410,26 @@\n       const config = await configService.getConfig()\n       const defaultServer = config['comfyui.server_url']\n \n       if (defaultServer && defaultServer !== 'https://your-comfyui-server.com') {\n-        console.log(`🆘 配置服务默认服务器: ${defaultServer}`)\n         return defaultServer\n       }\n     } catch (error) {\n-      console.warn('⚠️ 无法从配置服务获取默认服务器:', error)\n+      // 忽略配置服务错误\n     }\n \n     // 从本地存储获取\n     try {\n       const localConfig = JSON.parse(localStorage.getItem('comfyui_config') || '{}')\n       if (localConfig.COMFYUI_SERVER_URL) {\n-        console.log(`🆘 本地配置服务器: ${localConfig.COMFYUI_SERVER_URL}`)\n         return localConfig.COMFYUI_SERVER_URL\n       }\n     } catch (error) {\n-      console.warn('⚠️ 无法从本地存储获取服务器配置:', error)\n+      // 忽略本地存储错误\n     }\n \n     // 最后的备用方案\n     const fallbackUrl = 'https://your-comfyui-server.com'\n-    console.log(`🆘 使用最后备用服务器: ${fallbackUrl}`)\n     return fallbackUrl\n   }\n \n   /**\n"
+                },
+                {
+                    "date": 1752511013565,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -437,12 +437,8 @@\n    */\n   lockServer(serverUrl) {\n     this.lockedServer = serverUrl\n     this.lastLockTime = Date.now()\n-    console.log(`🔒 锁定服务器: ${serverUrl}, 持续 ${this.lockDuration / 1000} 秒`)\n-\n-    // 显示当前所有服务器状态\n-    this.logServerStatus()\n   }\n \n   /**\n    * 锁定服务器用于WebSocket连接\n"
+                },
+                {
+                    "date": 1752511030024,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -522,20 +522,15 @@\n   /**\n    * 记录服务器失败\n    */\n   async recordFailure(serverUrl, errorType = 'unknown') {\n-    console.log(`📝 记录服务器失败: ${serverUrl}, 错误类型: ${errorType}`)\n-\n     // 增加失败计数\n     const currentFailures = this.serverFailures.get(serverUrl) || 0\n     const newFailures = currentFailures + 1\n     this.serverFailures.set(serverUrl, newFailures)\n \n-    console.log(`⚠️ 服务器 ${serverUrl} 失败次数: ${newFailures}/${this.failureThreshold}`)\n-\n     // 如果失败的是当前锁定的服务器，立即解除锁定\n     if (this.lockedServer === serverUrl) {\n-      console.log('🔓 立即解除失败服务器的锁定')\n       this.lockedServer = null\n       this.lastLockTime = 0\n     }\n \n"
+                },
+                {
+                    "date": 1752511051247,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -729,18 +729,15 @@\n   /**\n    * 执行健康监控\n    */\n   async performHealthMonitoring() {\n-    console.log('🏥 执行定期健康检查...')\n-\n     // 更新服务器负载信息\n     await this.updateServerLoads()\n \n     // 检查当前锁定的服务器是否仍然健康\n     if (this.lockedServer) {\n       const lockedServerInfo = this.serverLoads.get(this.lockedServer)\n       if (lockedServerInfo && !lockedServerInfo.healthy) {\n-        console.warn(`⚠️ 锁定的服务器 ${this.lockedServer} 不健康，解除锁定`)\n         this.lockedServer = null\n         this.lastLockTime = 0\n       }\n     }\n@@ -748,12 +745,11 @@\n     // 检查是否有服务器从故障中恢复\n     const healthyServers = Array.from(this.serverLoads.values())\n       .filter(server => server.healthy)\n \n-    if (healthyServers.length > 0) {\n-      console.log(`✅ 健康监控完成，发现 ${healthyServers.length} 个健康服务器`)\n-    } else {\n-      console.warn('⚠️ 健康监控警告：没有发现健康的服务器')\n+    // 只在没有健康服务器时输出警告\n+    if (healthyServers.length === 0) {\n+      console.warn('警告：没有发现健康的ComfyUI服务器')\n     }\n   }\n \n   /**\n"
+                },
+                {
+                    "date": 1752511069436,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -760,9 +760,8 @@\n     this.servers = []\n     this.serverLoads.clear()\n     this.serverFailures.clear()\n     this.lockedServer = null\n-    console.log('🗑️ 负载均衡器已销毁')\n   }\n }\n \n // 创建单例实例\n"
                 }
             ],
             "date": 1752333548051,

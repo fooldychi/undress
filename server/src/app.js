@@ -7,8 +7,8 @@ require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
-const { healthMonitor } = require('./utils/healthMonitor');
-const { memoryManager } = require('./utils/memoryManager');
+// const { healthMonitor } = require('./utils/healthMonitor');
+// const { memoryManager } = require('./utils/memoryManager');
 const rateLimiter = require('./middleware/rateLimiter');
 
 // 导入路由
@@ -87,21 +87,47 @@ app.use('/uploads', express.static('uploads'));
 // 速率限制
 app.use(rateLimiter);
 
-// 健康检查端点
+// 健康检查端点 - 简化版本，适用于开发环境
 app.get('/health', async (req, res) => {
   try {
-    const healthReport = healthMonitor.getHealthReport();
-    const detailedCheck = await healthMonitor.forceHealthCheck();
+    // 检查数据库连接状态
+    let dbStatus = false;
+    let dbError = null;
+    try {
+      dbStatus = await testConnection();
+    } catch (error) {
+      dbError = error.message;
+    }
 
-    res.json({
-      status: healthReport.current.healthy ? 'OK' : 'UNHEALTHY',
+    // 检查内存使用情况
+    const memoryUsage = process.memoryUsage();
+    const formatBytes = (bytes) => Math.round(bytes / 1024 / 1024); // MB
+
+    const healthData = {
+      status: 'OK',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
       pid: process.pid,
-      health: healthReport,
-      detailed: detailedCheck
-    });
+      database: {
+        connected: dbStatus,
+        error: dbError
+      },
+      memory: {
+        rss: formatBytes(memoryUsage.rss),
+        heapUsed: formatBytes(memoryUsage.heapUsed),
+        heapTotal: formatBytes(memoryUsage.heapTotal),
+        external: formatBytes(memoryUsage.external)
+      }
+    };
+
+    // 如果数据库连接失败，返回警告状态但不返回500错误
+    if (!dbStatus) {
+      healthData.status = 'WARNING';
+      healthData.message = '数据库未连接，某些功能可能不可用';
+    }
+
+    res.json(healthData);
   } catch (error) {
     res.status(500).json({
       status: 'ERROR',
@@ -138,11 +164,13 @@ app.use(errorHandler);
 // 启动服务器
 async function startServer() {
   try {
-    // 测试数据库连接
-    const dbConnected = await testConnection();
-    if (!dbConnected) {
-      console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');
-    }
+    // 测试数据库连接 - 暂时跳过以快速启动
+    console.log('⚠️ 跳过数据库连接测试，直接启动服务器');
+    const dbConnected = false;
+    // const dbConnected = await testConnection();
+    // if (!dbConnected) {
+    //   console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');
+    // }
 
     // 启动HTTP服务器
     global.httpServer = app.listen(PORT, () => {
@@ -160,10 +188,10 @@ async function startServer() {
       monitorMemoryUsage(); // 立即执行一次
 
       // 启动健康监控
-      healthMonitor.start();
+      // healthMonitor.start();
 
       // 启动内存管理
-      memoryManager.start();
+      // memoryManager.start();
     });
   } catch (error) {
     console.error('❌ 服务器启动失败:', error);

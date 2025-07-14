@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 163,
+            "activePatchIndex": 190,
             "patches": [
                 {
                     "date": 1752283749891,
@@ -660,6 +660,114 @@
                 {
                     "date": 1752388725884,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -648,8 +648,17 @@\n .record-item {\n   background: transparent !important;\n }\n \n+/* 确保所有相关的 Vant 组件背景透明 */\n+.profile-content .van-cell-group {\n+  background: transparent !important;\n+}\n+\n+.profile-content .van-cell {\n+  background: transparent !important;\n+}\n+\n /* 等级卡样式 */\n .card-icon {\n   display: flex;\n   align-items: center;\n"
+                },
+                {
+                    "date": 1752501746176,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -77,8 +77,24 @@\n               <div class=\"points-value\">{{ pointsInfo?.total_points || 0 }}</div>\n               <div class=\"points-label\">总积分</div>\n             </div>\n           </div>\n+\n+          <!-- 我的记录按钮 -->\n+          <template #footer>\n+            <div class=\"points-actions\">\n+              <MobileActionButton\n+                type=\"primary\"\n+                size=\"small\"\n+                variant=\"ghost\"\n+                @click=\"showMyRecordsModal\"\n+                icon=\"orders-o\"\n+                block\n+              >\n+                我的记录\n+              </MobileActionButton>\n+            </div>\n+          </template>\n         </MobileCard>\n \n         <!-- 我的等级卡 -->\n         <MobileCard\n"
+                },
+                {
+                    "date": 1752501790923,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -229,8 +229,14 @@\n     <ResultModal\n       v-model:show=\"showResultModal\"\n       :result-data=\"currentResult\"\n     />\n+\n+    <!-- 我的记录弹窗 -->\n+    <MyRecordsModal\n+      v-model:show=\"showMyRecordsModal\"\n+      @view-result=\"handleViewResult\"\n+    />\n   </MobilePageContainer>\n </template>\n \n <script>\n"
+                },
+                {
+                    "date": 1752501807028,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -245,8 +245,9 @@\n import { Toast } from 'vant'\n import { authApi, pointsApi, userApi, levelCardApi } from '../services/api.js'\n import { MobilePageContainer, MobileCard, MobileActionButton } from '../components/mobile'\n import ResultModal from '../components/ResultModal.vue'\n+import MyRecordsModal from '../components/MyRecordsModal.vue'\n import AuthModal from '../components/AuthModal.vue'\n \n export default {\n   name: 'Profile',\n"
+                },
+                {
+                    "date": 1752501822806,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -255,8 +255,9 @@\n     MobilePageContainer,\n     MobileCard,\n     MobileActionButton,\n     ResultModal,\n+    MyRecordsModal,\n     AuthModal\n   },\n   setup() {\n     const router = useRouter()\n"
+                },
+                {
+                    "date": 1752501837430,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -271,8 +271,9 @@\n     const resultLoading = ref(null)\n     const showAuthModal = ref(false)\n \n     const showResultModal = ref(false)\n+    const showMyRecordsModal = ref(false)\n     const authMode = ref('login')\n \n     const userInfo = ref(null)\n     const pointsInfo = ref(null)\n"
+                },
+                {
+                    "date": 1752501870072,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -455,8 +455,13 @@\n       currentResult.value = resultData\n       showResultModal.value = true\n     }\n \n+    // 显示我的记录弹窗\n+    const showMyRecordsModal = () => {\n+      showMyRecordsModal.value = true\n+    }\n+\n     // 查看全部记录\n     const viewAllRecords = () => {\n       Toast.fail('功能未开通，敬请期待')\n     }\n"
+                },
+                {
+                    "date": 1752501889968,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -456,9 +456,9 @@\n       showResultModal.value = true\n     }\n \n     // 显示我的记录弹窗\n-    const showMyRecordsModal = () => {\n+    const openMyRecordsModal = () => {\n       showMyRecordsModal.value = true\n     }\n \n     // 查看全部记录\n"
+                },
+                {
+                    "date": 1752501944433,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -85,9 +85,9 @@\n               <MobileActionButton\n                 type=\"primary\"\n                 size=\"small\"\n                 variant=\"ghost\"\n-                @click=\"showMyRecordsModal\"\n+                @click=\"openMyRecordsModal\"\n                 icon=\"orders-o\"\n                 block\n               >\n                 我的记录\n"
+                },
+                {
+                    "date": 1752502067202,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -564,8 +564,9 @@\n       refreshPoints,\n \n       loadRecentRecords,\n       handleViewResult,\n+      openMyRecordsModal,\n       viewAllRecords,\n \n       initializeData\n     }\n"
+                },
+                {
+                    "date": 1752502211074,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -658,8 +658,15 @@\n   color: var(--van-text-color-2, #646566);\n   font-weight: 500;\n }\n \n+/* 积分操作按钮样式 */\n+.points-actions {\n+  padding: 16px 0 0 0;\n+  border-top: 1px solid rgba(30, 30, 60, 0.2);\n+  margin-top: 16px;\n+}\n+\n /* 透明单元格组样式 */\n .transparent-cell-group {\n   background: transparent !important;\n }\n"
+                },
+                {
+                    "date": 1752502355529,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -555,8 +555,9 @@\n       currentResult,\n       isLoggedIn,\n       formatDate,\n       showLoginModal,\n+      showMyRecordsModal,\n       handleAuthSuccess,\n       handleUserLogin,\n       handleUserLogout,\n       handleLogout,\n"
+                },
+                {
+                    "date": 1752502716246,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -77,24 +77,8 @@\n               <div class=\"points-value\">{{ pointsInfo?.total_points || 0 }}</div>\n               <div class=\"points-label\">总积分</div>\n             </div>\n           </div>\n-\n-          <!-- 我的记录按钮 -->\n-          <template #footer>\n-            <div class=\"points-actions\">\n-              <MobileActionButton\n-                type=\"primary\"\n-                size=\"small\"\n-                variant=\"ghost\"\n-                @click=\"openMyRecordsModal\"\n-                icon=\"orders-o\"\n-                block\n-              >\n-                我的记录\n-              </MobileActionButton>\n-            </div>\n-          </template>\n         </MobileCard>\n \n         <!-- 我的等级卡 -->\n         <MobileCard\n@@ -229,14 +213,8 @@\n     <ResultModal\n       v-model:show=\"showResultModal\"\n       :result-data=\"currentResult\"\n     />\n-\n-    <!-- 我的记录弹窗 -->\n-    <MyRecordsModal\n-      v-model:show=\"showMyRecordsModal\"\n-      @view-result=\"handleViewResult\"\n-    />\n   </MobilePageContainer>\n </template>\n \n <script>\n@@ -245,9 +223,8 @@\n import { Toast } from 'vant'\n import { authApi, pointsApi, userApi, levelCardApi } from '../services/api.js'\n import { MobilePageContainer, MobileCard, MobileActionButton } from '../components/mobile'\n import ResultModal from '../components/ResultModal.vue'\n-import MyRecordsModal from '../components/MyRecordsModal.vue'\n import AuthModal from '../components/AuthModal.vue'\n \n export default {\n   name: 'Profile',\n@@ -255,9 +232,8 @@\n     MobilePageContainer,\n     MobileCard,\n     MobileActionButton,\n     ResultModal,\n-    MyRecordsModal,\n     AuthModal\n   },\n   setup() {\n     const router = useRouter()\n@@ -271,9 +247,8 @@\n     const resultLoading = ref(null)\n     const showAuthModal = ref(false)\n \n     const showResultModal = ref(false)\n-    const showMyRecordsModal = ref(false)\n     const authMode = ref('login')\n \n     const userInfo = ref(null)\n     const pointsInfo = ref(null)\n@@ -455,13 +430,8 @@\n       currentResult.value = resultData\n       showResultModal.value = true\n     }\n \n-    // 显示我的记录弹窗\n-    const openMyRecordsModal = () => {\n-      showMyRecordsModal.value = true\n-    }\n-\n     // 查看全部记录\n     const viewAllRecords = () => {\n       Toast.fail('功能未开通，敬请期待')\n     }\n@@ -555,9 +525,8 @@\n       currentResult,\n       isLoggedIn,\n       formatDate,\n       showLoginModal,\n-      showMyRecordsModal,\n       handleAuthSuccess,\n       handleUserLogin,\n       handleUserLogout,\n       handleLogout,\n@@ -565,9 +534,8 @@\n       refreshPoints,\n \n       loadRecentRecords,\n       handleViewResult,\n-      openMyRecordsModal,\n       viewAllRecords,\n \n       initializeData\n     }\n@@ -659,15 +627,8 @@\n   color: var(--van-text-color-2, #646566);\n   font-weight: 500;\n }\n \n-/* 积分操作按钮样式 */\n-.points-actions {\n-  padding: 16px 0 0 0;\n-  border-top: 1px solid rgba(30, 30, 60, 0.2);\n-  margin-top: 16px;\n-}\n-\n /* 透明单元格组样式 */\n .transparent-cell-group {\n   background: transparent !important;\n }\n"
+                },
+                {
+                    "date": 1752503183753,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -153,17 +153,17 @@\n                   <div class=\"record-amount\" :class=\"record.action_type\">\n                     {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}\n                   </div>\n                 </template>\n-                <template #right-icon v-if=\"record.action_type === 'consume' && record.media_url\">\n+                <template #right-icon v-if=\"record.action_type === 'consume' && record.url\">\n                   <van-button\n                     type=\"primary\"\n                     size=\"mini\"\n                     plain\n                     @click=\"handleViewResult({\n                       id: record.id,\n                       description: record.description,\n-                      mediaUrl: record.media_url,\n+                      mediaUrl: record.url,\n                       createdAt: record.created_at\n                     })\"\n                     :loading=\"resultLoading === record.id\"\n                   >\n"
+                },
+                {
+                    "date": 1752503865965,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -166,9 +166,9 @@\n                       createdAt: record.created_at\n                     })\"\n                     :loading=\"resultLoading === record.id\"\n                   >\n-                    查看结果\n+                    图片预览\n                   </van-button>\n                 </template>\n               </van-cell>\n             </van-cell-group>\n"
+                },
+                {
+                    "date": 1752504159047,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -149,28 +149,30 @@\n                 <template #label>\n                   <div class=\"record-time\">{{ formatDate(record.created_at) }}</div>\n                 </template>\n                 <template #value>\n-                  <div class=\"record-amount\" :class=\"record.action_type\">\n-                    {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}\n+                  <div class=\"record-value-container\">\n+                    <div class=\"record-amount\" :class=\"record.action_type\">\n+                      {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}\n+                    </div>\n+                    <van-button\n+                      v-if=\"record.action_type === 'consume' && record.url\"\n+                      type=\"default\"\n+                      size=\"mini\"\n+                      plain\n+                      class=\"view-button\"\n+                      @click=\"handleViewResult({\n+                        id: record.id,\n+                        description: record.description,\n+                        mediaUrl: record.url,\n+                        createdAt: record.created_at\n+                      })\"\n+                      :loading=\"resultLoading === record.id\"\n+                    >\n+                      查看\n+                    </van-button>\n                   </div>\n                 </template>\n-                <template #right-icon v-if=\"record.action_type === 'consume' && record.url\">\n-                  <van-button\n-                    type=\"primary\"\n-                    size=\"mini\"\n-                    plain\n-                    @click=\"handleViewResult({\n-                      id: record.id,\n-                      description: record.description,\n-                      mediaUrl: record.url,\n-                      createdAt: record.created_at\n-                    })\"\n-                    :loading=\"resultLoading === record.id\"\n-                  >\n-                    图片预览\n-                  </van-button>\n-                </template>\n               </van-cell>\n             </van-cell-group>\n           </div>\n \n"
+                },
+                {
+                    "date": 1752504254160,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -814,5 +814,62 @@\n \n \n \n \n+/* 记录项样式 */\n+.record-icon {\n+  display: flex;\n+  align-items: center;\n+  justify-content: center;\n+  width: 24px;\n+  height: 24px;\n+  margin-right: 8px;\n+}\n+\n+.record-desc {\n+  font-size: 14px;\n+  color: var(--van-text-color);\n+  font-weight: 500;\n+}\n+\n+.record-time {\n+  font-size: 12px;\n+  color: var(--van-text-color-3);\n+  margin-top: 2px;\n+}\n+\n+.record-value-container {\n+  display: flex;\n+  flex-direction: column;\n+  align-items: flex-end;\n+  gap: 6px;\n+}\n+\n+.record-amount {\n+  font-size: 14px;\n+  font-weight: 600;\n+  text-align: right;\n+}\n+\n+.record-amount.consume {\n+  color: var(--van-danger-color);\n+}\n+\n+.record-amount.earn {\n+  color: var(--van-success-color);\n+}\n+\n+.view-button {\n+  font-size: 11px;\n+  padding: 2px 8px;\n+  height: 20px;\n+  line-height: 16px;\n+  border-color: var(--van-border-color);\n+  color: var(--van-text-color-2);\n+  background: transparent;\n+}\n+\n+.view-button:hover {\n+  border-color: var(--van-primary-color);\n+  color: var(--van-primary-color);\n+}\n </style>\n"
+                },
+                {
+                    "date": 1752504543975,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -839,9 +839,9 @@\n \n .record-value-container {\n   display: flex;\n   flex-direction: column;\n-  align-items: flex-end;\n+  align-items: center;\n   gap: 6px;\n }\n \n .record-amount {\n"
+                },
+                {
+                    "date": 1752504571014,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -846,9 +846,9 @@\n \n .record-amount {\n   font-size: 14px;\n   font-weight: 600;\n-  text-align: right;\n+  text-align: center;\n }\n \n .record-amount.consume {\n   color: var(--van-danger-color);\n"
+                },
+                {
+                    "date": 1752505188529,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -190,8 +190,25 @@\n             </div>\n           </template>\n         </MobileCard>\n \n+        <!-- 测试按钮 -->\n+        <MobileCard\n+          title=\"测试功能\"\n+          icon=\"setting-o\"\n+          :inset=\"true\"\n+        >\n+          <MobileActionButton\n+            type=\"primary\"\n+            size=\"small\"\n+            variant=\"ghost\"\n+            @click=\"testResultModal\"\n+            block\n+          >\n+            测试图片预览\n+          </MobileActionButton>\n+        </MobileCard>\n+\n         <!-- 操作按钮 -->\n         <div class=\"action-buttons\">\n           <MobileActionButton\n             type=\"danger\"\n"
+                },
+                {
+                    "date": 1752505210785,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -445,12 +445,25 @@\n     }\n \n     // 查看生成结果\n     const handleViewResult = (resultData) => {\n+      console.log('handleViewResult 被调用，数据:', resultData)\n       currentResult.value = resultData\n       showResultModal.value = true\n     }\n \n+    // 测试结果弹窗\n+    const testResultModal = () => {\n+      const testData = {\n+        id: 'test-1',\n+        description: '测试图片预览',\n+        mediaUrl: 'https://picsum.photos/400/300?random=1',\n+        createdAt: new Date().toISOString()\n+      }\n+      console.log('测试数据:', testData)\n+      handleViewResult(testData)\n+    }\n+\n     // 查看全部记录\n     const viewAllRecords = () => {\n       Toast.fail('功能未开通，敬请期待')\n     }\n"
+                },
+                {
+                    "date": 1752505261521,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -567,8 +567,9 @@\n \n       loadRecentRecords,\n       handleViewResult,\n       viewAllRecords,\n+      testResultModal,\n \n       initializeData\n     }\n   }\n"
+                },
+                {
+                    "date": 1752505299757,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -870,9 +870,9 @@\n \n .record-value-container {\n   display: flex;\n   flex-direction: column;\n-  align-items: center;\n+  align-items: flex-end;\n   gap: 6px;\n }\n \n .record-amount {\n"
+                },
+                {
+                    "date": 1752505315195,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -877,9 +877,9 @@\n \n .record-amount {\n   font-size: 14px;\n   font-weight: 600;\n-  text-align: center;\n+  text-align: right;\n }\n \n .record-amount.consume {\n   color: var(--van-danger-color);\n"
+                },
+                {
+                    "date": 1752505436936,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -870,10 +870,11 @@\n \n .record-value-container {\n   display: flex;\n   flex-direction: column;\n-  align-items: flex-end;\n+  align-items: center;\n   gap: 6px;\n+  min-width: 60px;\n }\n \n .record-amount {\n   font-size: 14px;\n"
+                },
+                {
+                    "date": 1752505454034,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -878,9 +878,9 @@\n \n .record-amount {\n   font-size: 14px;\n   font-weight: 600;\n-  text-align: right;\n+  text-align: center;\n }\n \n .record-amount.consume {\n   color: var(--van-danger-color);\n"
+                },
+                {
+                    "date": 1752505611299,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -870,9 +870,9 @@\n \n .record-value-container {\n   display: flex;\n   flex-direction: column;\n-  align-items: center;\n+  align-items: flex-end;\n   gap: 6px;\n   min-width: 60px;\n }\n \n"
+                },
+                {
+                    "date": 1752505643364,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -878,9 +878,9 @@\n \n .record-amount {\n   font-size: 14px;\n   font-weight: 600;\n-  text-align: center;\n+  text-align: right;\n }\n \n .record-amount.consume {\n   color: var(--van-danger-color);\n"
                 }
             ],
             "date": 1752283749891,

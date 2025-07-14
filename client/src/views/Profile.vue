@@ -150,25 +150,27 @@
                   <div class="record-time">{{ formatDate(record.created_at) }}</div>
                 </template>
                 <template #value>
-                  <div class="record-amount" :class="record.action_type">
-                    {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}
+                  <div class="record-value-container">
+                    <div class="record-amount" :class="record.action_type">
+                      {{ record.action_type === 'consume' ? '-' : '+' }}{{ record.points_amount }}
+                    </div>
+                    <van-button
+                      v-if="record.action_type === 'consume' && record.url"
+                      type="default"
+                      size="mini"
+                      plain
+                      class="view-button"
+                      @click="handleViewResult({
+                        id: record.id,
+                        description: record.description,
+                        mediaUrl: record.url,
+                        createdAt: record.created_at
+                      })"
+                      :loading="resultLoading === record.id"
+                    >
+                      查看
+                    </van-button>
                   </div>
-                </template>
-                <template #right-icon v-if="record.action_type === 'consume' && record.media_url">
-                  <van-button
-                    type="primary"
-                    size="mini"
-                    plain
-                    @click="handleViewResult({
-                      id: record.id,
-                      description: record.description,
-                      mediaUrl: record.media_url,
-                      createdAt: record.created_at
-                    })"
-                    :loading="resultLoading === record.id"
-                  >
-                    查看结果
-                  </van-button>
                 </template>
               </van-cell>
             </van-cell-group>
@@ -187,6 +189,23 @@
               </MobileActionButton>
             </div>
           </template>
+        </MobileCard>
+
+        <!-- 测试按钮 -->
+        <MobileCard
+          title="测试功能"
+          icon="setting-o"
+          :inset="true"
+        >
+          <MobileActionButton
+            type="primary"
+            size="small"
+            variant="ghost"
+            @click="testResultModal"
+            block
+          >
+            测试图片预览
+          </MobileActionButton>
         </MobileCard>
 
         <!-- 操作按钮 -->
@@ -427,8 +446,21 @@ export default {
 
     // 查看生成结果
     const handleViewResult = (resultData) => {
+      console.log('handleViewResult 被调用，数据:', resultData)
       currentResult.value = resultData
       showResultModal.value = true
+    }
+
+    // 测试结果弹窗
+    const testResultModal = () => {
+      const testData = {
+        id: 'test-1',
+        description: '测试图片预览',
+        mediaUrl: 'https://picsum.photos/400/300?random=1',
+        createdAt: new Date().toISOString()
+      }
+      console.log('测试数据:', testData)
+      handleViewResult(testData)
     }
 
     // 查看全部记录
@@ -536,6 +568,7 @@ export default {
       loadRecentRecords,
       handleViewResult,
       viewAllRecords,
+      testResultModal,
 
       initializeData
     }
@@ -813,4 +846,62 @@ export default {
 
 
 
+/* 记录项样式 */
+.record-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.record-desc {
+  font-size: 14px;
+  color: var(--van-text-color);
+  font-weight: 500;
+}
+
+.record-time {
+  font-size: 12px;
+  color: var(--van-text-color-3);
+  margin-top: 2px;
+}
+
+.record-value-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 60px;
+}
+
+.record-amount {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.record-amount.consume {
+  color: var(--van-danger-color);
+}
+
+.record-amount.earn {
+  color: var(--van-success-color);
+}
+
+.view-button {
+  font-size: 11px;
+  padding: 2px 8px;
+  height: 20px;
+  line-height: 16px;
+  border-color: var(--van-border-color);
+  color: var(--van-text-color-2);
+  background: transparent;
+}
+
+.view-button:hover {
+  border-color: var(--van-primary-color);
+  color: var(--van-primary-color);
+}
 </style>

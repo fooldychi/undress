@@ -36,9 +36,9 @@
         >
           <!-- 对比组件插槽 - 在panel-header和status-section之间 -->
           <template #comparison>
-            <!-- 调试信息 - 开发时可启用 -->
+            <!-- 调试信息 - 暂时禁用 -->
             <!--
-            <div style="background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;">
+            <div v-if="isDevelopment" style="background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;">
               <div>🔍 对比组件调试信息:</div>
               <div>configLoaded: {{ configLoaded }}</div>
               <div>resultData: {{ !!resultData }} ({{ typeof resultData }})</div>
@@ -194,6 +194,10 @@ const inputData = ref({})
 const configLoaded = ref(false)
 
 // 计算属性
+const isDevelopment = computed(() => {
+  return import.meta.env.DEV
+})
+
 const canProcess = computed(() => {
   // 检查上传面板
   if (config.value.uploadPanels) {

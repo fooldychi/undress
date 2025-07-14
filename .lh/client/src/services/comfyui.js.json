@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 142,
+            "activePatchIndex": 160,
             "patches": [
                 {
                     "date": 1752326450066,
@@ -576,6 +576,78 @@
                 {
                     "date": 1752470737651,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1128,19 +1128,10 @@\n   // 队列状态消息，通常用于监控队列状态\r\n   // 这里可以根据需要添加队列状态处理逻辑\r\n }\r\n \r\n-// 处理执行开始消息\r\n-function handleExecutionStartMessage(data) {\r\n-  if (data && data.prompt_id) {\r\n-    const promptId = data.prompt_id\r\n-    const task = pendingTasks.get(promptId)\r\n-    if (task && task.onProgress) {\r\n-      task.onProgress('开始执行', 5)\r\n-    }\r\n-  }\r\n-}\r\n \r\n+\r\n // 处理执行成功消息 - 这是关键的完成消息！\r\n function handleExecutionSuccessMessage(data) {\r\n   console.log('🎉 ComfyUI 执行成功! 所有节点已完成!')\r\n \r\n"
+                },
+                {
+                    "date": 1752511085238,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -76,16 +76,13 @@\n     })\r\n \r\n     if (response.ok) {\r\n       const result = await response.json()\r\n-      console.log('✅ 代理服务器配置更新成功:', result)\r\n       return { success: true, message: '代理服务器配置更新成功' }\r\n     } else {\r\n-      console.warn('⚠️ 代理服务器配置更新失败:', response.status)\r\n       return { success: false, message: `代理服务器响应错误: ${response.status}` }\r\n     }\r\n   } catch (error) {\r\n-    console.warn('⚠️ 无法连接到代理服务器，可能代理服务器未启动:', error.message)\r\n     return { success: false, message: '无法连接到代理服务器' }\r\n   }\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1752511104239,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -163,10 +163,8 @@\n async function updateComfyUIConfig(newConfig) {\r\n   const currentConfig = getComfyUIConfig(true) // 强制刷新当前配置\r\n   const updatedConfig = { ...currentConfig, ...newConfig }\r\n \r\n-  console.log('🔄 更新配置:', updatedConfig)\r\n-\r\n   // 保存到localStorage（这会清除缓存）\r\n   saveComfyUIConfig(updatedConfig)\r\n \r\n   // 强制刷新配置缓存\r\n@@ -177,10 +175,8 @@\n \r\n   // 同时更新代理服务器配置\r\n   const proxyUpdateResult = await updateProxyServerConfig(updatedConfig)\r\n \r\n-  console.log('✅ 配置更新完成，新配置已生效')\r\n-\r\n   return {\r\n     config: updatedConfig,\r\n     proxyUpdate: proxyUpdateResult\r\n   }\r\n"
+                },
+                {
+                    "date": 1752511118743,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -231,10 +231,8 @@\n     }\r\n \r\n     return baseUrl\r\n   } catch (error) {\r\n-    console.warn('⚠️ 负载均衡器失败，使用配置的服务器:', error)\r\n-\r\n     // 降级到配置的服务器\r\n     const config = getComfyUIConfig(true)\r\n     let baseUrl = config.COMFYUI_SERVER_URL\r\n \r\n"
+                },
+                {
+                    "date": 1752511143034,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -253,9 +253,8 @@\n       const result = await apiCall()\r\n       return result\r\n     } catch (error) {\r\n       lastError = error\r\n-      console.warn(`⚠️ API调用失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error.message)\r\n \r\n       // 如果不是最后一次尝试，且是网络相关错误，尝试下一个服务器\r\n       if (attempt < maxRetries &&\r\n           (error.message.includes('fetch') ||\r\n"
+                },
+                {
+                    "date": 1752511157452,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -267,9 +267,8 @@\n         // 获取当前失败的服务器URL\r\n         const currentServer = await getApiBaseUrl()\r\n         if (currentServer) {\r\n           excludeUrls.push(currentServer)\r\n-          console.log(`🔄 添加失败服务器到排除列表: ${currentServer}`)\r\n \r\n           // 记录失败\r\n           let errorType = 'api_error'\r\n           if (error.message.includes('timeout')) errorType = 'timeout'\r\n"
+                },
+                {
+                    "date": 1752511183414,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -371,9 +371,8 @@\n \r\n     // 如果是网络错误或服务器错误，记录失败并可能触发重新评估\r\n     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {\r\n       const currentServer = await getApiBaseUrl()\r\n-      console.log('📝 记录服务器上传失败:', currentServer)\r\n \r\n       // 确定错误类型\r\n       let errorType = 'upload_error'\r\n       if (error.message.includes('timeout')) errorType = 'timeout'\r\n"
+                },
+                {
+                    "date": 1752511198103,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -425,12 +425,8 @@\n \r\n     const config = getComfyUIConfig()\r\n     const apiBaseUrl = await getApiBaseUrl() // 现在是异步的\r\n     selectedServer = apiBaseUrl // 记录选择的服务器\r\n-    console.log('🔄 第二步：提交工作流到ComfyUI')\r\n-    console.log('📡 API地址:', `${apiBaseUrl}/prompt`)\r\n-    console.log('🔧 使用负载均衡:', '是')\r\n-    console.log('🔌 WebSocket状态:', isWsConnected ? '已连接' : '未连接')\r\n \r\n     // 构建请求体，按照ComfyUI API文档格式\r\n     const requestBody = {\r\n       client_id: config.CLIENT_ID,\r\n"
+                },
+                {
+                    "date": 1752511212365,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -432,18 +432,10 @@\n       client_id: config.CLIENT_ID,\r\n       prompt: workflowPrompt\r\n     }\r\n \r\n-    console.log('📋 请求体结构:', {\r\n-      client_id: requestBody.client_id,\r\n-      prompt_keys: Object.keys(requestBody.prompt),\r\n-      node_49_exists: !!requestBody.prompt['49'],\r\n-      node_49_image: requestBody.prompt['49']?.inputs?.image\r\n-    })\r\n-\r\n     // 第二步API调用：提交工作流到ComfyUI\r\n     const promptUrl = `${apiBaseUrl}/prompt`\r\n-    console.log('🌐 调用工作流API:', promptUrl)\r\n \r\n     const response = await fetch(promptUrl, {\r\n       method: 'POST',\r\n       headers: {\r\n"
+                },
+                {
+                    "date": 1752511238647,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -445,18 +445,14 @@\n       mode: 'cors',\r\n       credentials: 'omit'\r\n     })\r\n \r\n-    console.log('📥 工作流响应状态:', response.status, response.statusText)\r\n-\r\n     if (!response.ok) {\r\n       const errorText = await response.text()\r\n-      console.error('❌ 工作流提交失败响应:', errorText)\r\n       throw new Error(`工作流提交失败: ${response.status} ${response.statusText} - ${errorText}`)\r\n     }\r\n \r\n     const result = await response.json()\r\n-    console.log('✅ 工作流提交成功:', result)\r\n \r\n     // 验证返回结果\r\n     if (!result.prompt_id) {\r\n       throw new Error('工作流响应中缺少prompt_id')\r\n"
+                },
+                {
+                    "date": 1752511254874,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -464,10 +464,8 @@\n     console.error('❌ 工作流提交失败:', error)\r\n \r\n     // 记录服务器失败\r\n     if (selectedServer) {\r\n-      console.log('📝 记录服务器失败:', selectedServer)\r\n-\r\n       // 确定错误类型\r\n       let errorType = 'workflow_error'\r\n       if (error.message.includes('timeout')) errorType = 'timeout'\r\n       else if (error.message.includes('network')) errorType = 'network'\r\n"
+                },
+                {
+                    "date": 1752511270939,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -499,9 +499,8 @@\n \r\n     // 如果是网络错误或服务器错误，记录失败\r\n     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {\r\n       const currentServer = await getApiBaseUrl()\r\n-      console.log('📝 记录服务器状态查询失败:', currentServer)\r\n \r\n       // 确定错误类型\r\n       let errorType = 'status_check_error'\r\n       if (error.message.includes('timeout')) errorType = 'timeout'\r\n"
+                },
+                {
+                    "date": 1752511287625,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -686,21 +686,18 @@\n     } else {\r\n       wsUrl = baseUrl.replace('http://', 'ws://') + '/ws?clientId=' + config.CLIENT_ID\r\n     }\r\n \r\n-    console.log('🔌 正在连接 ComfyUI WebSocket...')\r\n-\r\n     // 先测试HTTP连接是否正常\r\n     try {\r\n       const testResponse = await fetch(`${baseUrl}/system_stats`, {\r\n         method: 'GET',\r\n         signal: AbortSignal.timeout(5000)\r\n       })\r\n       if (!testResponse.ok) {\r\n-        console.warn('⚠️ ComfyUI HTTP连接异常:', testResponse.status)\r\n+        throw new Error(`HTTP连接异常: ${testResponse.status}`)\r\n       }\r\n     } catch (httpError) {\r\n-      console.error('❌ ComfyUI HTTP连接失败:', httpError)\r\n       throw new Error(`ComfyUI服务器不可达: ${httpError.message}`)\r\n     }\r\n \r\n     wsConnection = new WebSocket(wsUrl)\r\n"
+                },
+                {
+                    "date": 1752511303763,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -703,14 +703,12 @@\n     wsConnection = new WebSocket(wsUrl)\r\n \r\n     return new Promise((resolve, reject) => {\r\n       const timeout = setTimeout(() => {\r\n-        console.error('❌ WebSocket 连接超时')\r\n         reject(new Error('WebSocket 连接超时'))\r\n       }, 10000)\r\n \r\n       wsConnection.onopen = () => {\r\n-        console.log('✅ ComfyUI WebSocket 连接成功')\r\n         isWsConnected = true\r\n         connectionAttempts = 0 // 重置连接尝试次数\r\n         lastMessageTime = Date.now() // 重置最后消息时间\r\n         clearTimeout(timeout)\r\n"
+                },
+                {
+                    "date": 1752511325472,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -810,20 +810,17 @@\n               }\r\n               return\r\n             }\r\n \r\n-            console.log(`🔄 尝试重新连接 ComfyUI WebSocket (${connectionAttempts}/${maxConnectionAttempts})...`)\r\n-\r\n             try {\r\n               await initializeWebSocket()\r\n \r\n               // 重连成功后，检查待处理任务的状态\r\n               if (hasPendingTasks) {\r\n-                console.log('🔍 重连成功，检查待处理任务状态...')\r\n                 await checkPendingTasksStatus()\r\n               }\r\n             } catch (error) {\r\n-              console.error(`❌ WebSocket 重连失败 (${connectionAttempts}/${maxConnectionAttempts}):`, error)\r\n+              // 重连失败，继续等待下次重试\r\n             }\r\n           }, exponentialDelay)\r\n         }\r\n       }\r\n"
+                },
+                {
+                    "date": 1752511341754,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -825,9 +825,8 @@\n         }\r\n       }\r\n \r\n       wsConnection.onerror = (error) => {\r\n-        console.error('❌ ComfyUI WebSocket 连接错误:', error)\r\n         clearTimeout(timeout)\r\n \r\n         // 显示前端通知\r\n         showWebSocketStatusNotification('WebSocket连接错误', 'error')\r\n"
+                },
+                {
+                    "date": 1752511364787,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -969,9 +969,8 @@\n     }\r\n \r\n     // 如果超过120秒没有收到消息且有待处理任务，标记任务失败\r\n     if (timeSinceLastMessage > 120000 && pendingTasks.size > 0) {\r\n-      console.error('❌ WebSocket长时间无响应，标记待处理任务为失败')\r\n       const taskIds = Array.from(pendingTasks.keys())\r\n       for (const promptId of taskIds) {\r\n         const task = pendingTasks.get(promptId)\r\n         if (task && task.onError) {\r\n"
+                },
+                {
+                    "date": 1752511383444,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -992,9 +992,8 @@\n \r\n // 检查待处理任务状态\r\n async function checkPendingTasksStatus() {\r\n   const taskIds = Array.from(pendingTasks.keys())\r\n-  console.log(`🔍 检查 ${taskIds.length} 个待处理任务的状态...`)\r\n \r\n   for (const promptId of taskIds) {\r\n     try {\r\n       const result = await checkTaskStatus(promptId)\r\n"
+                },
+                {
+                    "date": 1752511400167,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1453,25 +1453,21 @@\n // 检查ComfyUI服务器状态\r\n async function checkComfyUIServerStatus() {\r\n   try {\r\n     const apiBaseUrl = await getApiBaseUrl() // 现在是异步的\r\n-    console.log('🔍 检查ComfyUI服务器状态:', apiBaseUrl)\r\n \r\n     const response = await fetch(`${apiBaseUrl}/system_stats`, {\r\n       method: 'GET',\r\n       signal: AbortSignal.timeout(10000) // 10秒超时\r\n     })\r\n \r\n     if (response.ok) {\r\n       const stats = await response.json()\r\n-      console.log('✅ ComfyUI服务器状态正常:', stats)\r\n       return { status: 'ok', stats }\r\n     } else {\r\n-      console.warn('⚠️ ComfyUI服务器响应异常:', response.status)\r\n       return { status: 'error', code: response.status }\r\n     }\r\n   } catch (error) {\r\n-    console.error('❌ ComfyUI服务器连接失败:', error)\r\n     return { status: 'error', error: error.message }\r\n   }\r\n }\r\n \r\n"
                 }
             ],
             "date": 1752326450066,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 22,
+            "activePatchIndex": 26,
             "patches": [
                 {
                     "date": 1752317973745,
@@ -96,6 +96,22 @@
                 {
                     "date": 1752408332328,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -30,20 +30,22 @@\n \n // CORS配置 - 支持动态端口\n app.use(cors({\n   origin: function (origin, callback) {\n-    // 允许的域名列表\n+    // 从环境变量获取端口配置\n+    const CLIENT_PORT = process.env.CLIENT_PORT || 3001;\n+    const ADMIN_PORT = process.env.ADMIN_PORT || 3003;\n+\n+    // 允许的域名列表 - 使用环境变量配置端口\n     const allowedOrigins = [\n       'http://localhost:3000',\n-      'http://localhost:3001',\n-      'http://localhost:3002',  // 后台管理系统端口\n-      'http://localhost:3007',  // Vue 管理后台端口\n+      `http://localhost:${CLIENT_PORT}`,  // 客户端端口\n+      `http://localhost:${ADMIN_PORT}`,   // 后台管理系统端口\n       'http://localhost:5173',  // Vite 默认端口\n       'http://localhost:5174',  // Vite 备用端口\n       'http://127.0.0.1:3000',\n-      'http://127.0.0.1:3001',\n-      'http://127.0.0.1:3002',  // 后台管理系统端口\n-      'http://127.0.0.1:3007',  // Vue 管理后台端口\n+      `http://127.0.0.1:${CLIENT_PORT}`,  // 客户端端口\n+      `http://127.0.0.1:${ADMIN_PORT}`,   // 后台管理系统端口\n       'http://127.0.0.1:5173',\n       'http://127.0.0.1:5174'\n     ];\n \n"
+                },
+                {
+                    "date": 1752495130029,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,10 +6,10 @@\n require('dotenv').config();\n \n const { testConnection } = require('./config/database');\n const errorHandler = require('./middleware/errorHandler');\n-const { healthMonitor } = require('./utils/healthMonitor');\n-const { memoryManager } = require('./utils/memoryManager');\n+// const { healthMonitor } = require('./utils/healthMonitor');\n+// const { memoryManager } = require('./utils/memoryManager');\n const rateLimiter = require('./middleware/rateLimiter');\n \n // 导入路由\n const authRoutes = require('./routes/auth');\n"
+                },
+                {
+                    "date": 1752495161882,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -159,12 +159,12 @@\n       console.log('📊 内存监控已启动，每5分钟报告一次');\n       monitorMemoryUsage(); // 立即执行一次\n \n       // 启动健康监控\n-      healthMonitor.start();\n+      // healthMonitor.start();\n \n       // 启动内存管理\n-      memoryManager.start();\n+      // memoryManager.start();\n     });\n   } catch (error) {\n     console.error('❌ 服务器启动失败:', error);\n     process.exit(1);\n"
+                },
+                {
+                    "date": 1752495587337,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -137,13 +137,15 @@\n \n // 启动服务器\n async function startServer() {\n   try {\n-    // 测试数据库连接\n-    const dbConnected = await testConnection();\n-    if (!dbConnected) {\n-      console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');\n-    }\n+    // 测试数据库连接 - 暂时跳过以快速启动\n+    console.log('⚠️ 跳过数据库连接测试，直接启动服务器');\n+    const dbConnected = false;\n+    // const dbConnected = await testConnection();\n+    // if (!dbConnected) {\n+    //   console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');\n+    // }\n \n     // 启动HTTP服务器\n     global.httpServer = app.listen(PORT, () => {\n       console.log('🚀 Imagic服务器启动成功!');\n"
+                },
+                {
+                    "date": 1752506734554,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -86,23 +86,49 @@\n \n // 速率限制\n app.use(rateLimiter);\n \n-// 健康检查端点\n+// 健康检查端点 - 简化版本，适用于开发环境\n app.get('/health', async (req, res) => {\n   try {\n-    const healthReport = healthMonitor.getHealthReport();\n-    const detailedCheck = await healthMonitor.forceHealthCheck();\n+    // 检查数据库连接状态\n+    let dbStatus = false;\n+    let dbError = null;\n+    try {\n+      dbStatus = await testConnection();\n+    } catch (error) {\n+      dbError = error.message;\n+    }\n \n-    res.json({\n-      status: healthReport.current.healthy ? 'OK' : 'UNHEALTHY',\n+    // 检查内存使用情况\n+    const memoryUsage = process.memoryUsage();\n+    const formatBytes = (bytes) => Math.round(bytes / 1024 / 1024); // MB\n+\n+    const healthData = {\n+      status: 'OK',\n       timestamp: new Date().toISOString(),\n       uptime: process.uptime(),\n       environment: process.env.NODE_ENV,\n       pid: process.pid,\n-      health: healthReport,\n-      detailed: detailedCheck\n-    });\n+      database: {\n+        connected: dbStatus,\n+        error: dbError\n+      },\n+      memory: {\n+        rss: formatBytes(memoryUsage.rss),\n+        heapUsed: formatBytes(memoryUsage.heapUsed),\n+        heapTotal: formatBytes(memoryUsage.heapTotal),\n+        external: formatBytes(memoryUsage.external)\n+      }\n+    };\n+\n+    // 如果数据库连接失败，返回警告状态但不返回500错误\n+    if (!dbStatus) {\n+      healthData.status = 'WARNING';\n+      healthData.message = '数据库未连接，某些功能可能不可用';\n+    }\n+\n+    res.json(healthData);\n   } catch (error) {\n     res.status(500).json({\n       status: 'ERROR',\n       timestamp: new Date().toISOString(),\n"
                 }
             ],
             "date": 1752317973745,

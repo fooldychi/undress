@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 23,
+            "activePatchIndex": 24,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -100,6 +100,10 @@
                 {
                     "date": 1752467991541,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -113,11 +113,9 @@\n         }\r\n       }, 5000)\r\n     }\r\n \r\n-    console.log('🔧 挂载应用到#app...')\r\n     app.mount('#app')\r\n-\r\n     console.log('✅ Vue应用启动成功!')\r\n \r\n     // 在开发环境中暴露测试函数\r\n     if (import.meta.env.DEV) {\r\n"
+                },
+                {
+                    "date": 1752511416943,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -47,24 +47,23 @@\n     // 初始化配置服务\r\n     try {\r\n       await configService.initialize()\r\n     } catch (error) {\r\n-      console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)\r\n+      // 使用默认配置\r\n     }\r\n \r\n     // 初始化负载均衡器\r\n     try {\r\n       await loadBalancer.initialize()\r\n     } catch (error) {\r\n-      console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)\r\n+      // 使用单服务器模式\r\n     }\r\n \r\n     // 初始化 ComfyUI WebSocket 连接\r\n     try {\r\n       await initializeWebSocket()\r\n-      console.log('✅ ComfyUI WebSocket 初始化完成')\r\n     } catch (error) {\r\n-      console.warn('⚠️ ComfyUI WebSocket 初始化失败，将在需要时重试:', error.message)\r\n+      // 将在需要时重试\r\n     }\r\n \r\n     const app = createApp(App)\r\n     app.use(router)\r\n"
                 }
             ],
             "date": 1752330016769,

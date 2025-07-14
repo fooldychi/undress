@@ -15,9 +15,9 @@
 
     <!-- 对比组件插槽 - 在panel-header和status-section之间 -->
     <div v-if="$slots.comparison" class="comparison-slot">
-      <!-- 调试信息 - 开发时可启用 -->
+      <!-- 调试信息 - 暂时禁用 -->
       <!--
-      <div style="background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;">
+      <div v-if="isDevelopment" style="background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;">
         📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}
       </div>
       -->
@@ -137,6 +137,10 @@ const singleImage = ref(null)
 const multiImages = ref([])
 
 // 计算属性
+const isDevelopment = computed(() => {
+  return import.meta.env.DEV
+})
+
 const uploadedCount = computed(() => {
   return props.config.uploadType === 'single'
     ? (singleImage.value ? 1 : 0)

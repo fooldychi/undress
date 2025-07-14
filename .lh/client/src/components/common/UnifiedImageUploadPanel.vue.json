@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 10,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1752393164890,
@@ -48,6 +48,22 @@
                 {
                     "date": 1752431367874,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -205,8 +205,14 @@\n \n /* 对比组件插槽样式 */\n .comparison-slot {\n   margin-bottom: 16px;\n+  /* 确保插槽内容能正确显示 */\n+  display: flex;\n+  justify-content: center;\n+  align-items: center;\n+  /* 避免弹性布局导致的宽度问题 */\n+  width: 100%;\n }\n \n .upload-area {\n   margin-bottom: 16px;\n"
+                },
+                {
+                    "date": 1752499101014,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -15,13 +15,11 @@\n \n     <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\n     <div v-if=\"$slots.comparison\" class=\"comparison-slot\">\n       <!-- 调试信息 - 开发时可启用 -->\n-      <!--\n-      <div style=\"background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;\">\n+      <div v-if=\"import.meta.env.DEV\" style=\"background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;\">\n         📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}\n       </div>\n-      -->\n       <slot name=\"comparison\" />\n     </div>\n \n     <!-- 上传区域 - 始终显示，除非有对比组件且明确隐藏 -->\n"
+                },
+                {
+                    "date": 1752500341814,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -15,9 +15,9 @@\n \n     <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\n     <div v-if=\"$slots.comparison\" class=\"comparison-slot\">\n       <!-- 调试信息 - 开发时可启用 -->\n-      <div v-if=\"import.meta.env.DEV\" style=\"background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;\">\n+      <div v-if=\"isDevelopment\" style=\"background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;\">\n         📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}\n       </div>\n       <slot name=\"comparison\" />\n     </div>\n"
+                },
+                {
+                    "date": 1752500430058,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -134,8 +134,12 @@\n const singleImage = ref(null)\n const multiImages = ref([])\n \n // 计算属性\n+const isDevelopment = computed(() => {\n+  return import.meta.env.DEV\n+})\n+\n const uploadedCount = computed(() => {\n   return props.config.uploadType === 'single'\n     ? (singleImage.value ? 1 : 0)\n     : multiImages.value.length\n"
+                },
+                {
+                    "date": 1752500740551,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,12 +14,14 @@\n     </div>\n \n     <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\n     <div v-if=\"$slots.comparison\" class=\"comparison-slot\">\n-      <!-- 调试信息 - 开发时可启用 -->\n+      <!-- 调试信息 - 暂时禁用 -->\n+      <!--\n       <div v-if=\"isDevelopment\" style=\"background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;\">\n         📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}\n       </div>\n+      -->\n       <slot name=\"comparison\" />\n     </div>\n \n     <!-- 上传区域 - 始终显示，除非有对比组件且明确隐藏 -->\n"
                 }
             ],
             "date": 1752393164890,

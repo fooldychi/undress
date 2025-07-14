@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 10,
+            "activePatchIndex": 11,
             "patches": [
                 {
                     "date": 1752322119517,
@@ -48,6 +48,10 @@
                 {
                     "date": 1752346834555,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -167,9 +167,9 @@\n       SELECT lct.id, lct.type, lct.points_amount, lct.remaining_points, lct.description, lct.created_at,\n              lc.card_number, lctype.name as card_type_name, lctype.icon\n       FROM level_card_transactions lct\n       JOIN level_cards lc ON lct.card_id = lc.id\n-      JOIN level_card_types lctype ON lc.type_id = lctype.id\n+      JOIN card_types lctype ON lc.type_id = lctype.id\n       WHERE lct.user_id = ?\n       ORDER BY lct.created_at DESC\n       LIMIT ? OFFSET ?\n     `, [userId, parseInt(limit), parseInt(offset)]);\n"
+                },
+                {
+                    "date": 1752503215453,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -294,8 +294,9 @@\n \n     // 获取积分记录（包含媒体文件URL）\n     const logs = await query(`\n       SELECT\n+        id,\n         action_type,\n         points_amount,\n         description,\n         url,\n"
                 }
             ],
             "date": 1752322119517,

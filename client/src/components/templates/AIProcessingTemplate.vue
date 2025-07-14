@@ -56,17 +56,16 @@
       </div>
     </div>
 
-    <!-- 处理状态 -->
-    <MobileStatusCard
+    <!-- 固定顶部处理状态 -->
+    <MobileFixedStatusBar
       v-if="isProcessing"
+      :visible="isProcessing"
       status="loading"
       :title="processingTitle"
-      :description="processingDescription"
+      :description="processingStatusDescription"
       :progress="progress"
       :show-progress="showProgress"
-    >
-
-    </MobileStatusCard>
+    />
 
     <!-- 结果展示 - 只显示额外的结果信息，操作按钮始终在底部 -->
     <div v-if="resultData" class="result-section">
@@ -99,8 +98,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { MobilePageContainer, MobileActionButton, MobileStatusCard } from '../mobile'
+import { computed, watch, onMounted, onUnmounted } from 'vue'
+import { MobilePageContainer, MobileActionButton, MobileStatusCard, MobileFixedStatusBar } from '../mobile'
 
 // Props
 const props = defineProps({
@@ -187,6 +186,54 @@ const props = defineProps({
 
 // Events
 defineEmits(['login', 'logout', 'process', 'download', 'reprocess'])
+
+// Computed
+const processingStatusDescription = computed(() => {
+  if (!props.isProcessing) return ''
+
+  const baseDescription = props.processingDescription || '请耐心等待，处理时间可能需要几分钟'
+  const warningText = '⚠️请不要离开当前页面，等待处理完成后可自行下载'
+
+  return `${baseDescription} ${warningText}`
+})
+
+// 页面离开警告
+const handleBeforeUnload = (event) => {
+  if (props.isProcessing) {
+    event.preventDefault()
+    event.returnValue = '正在处理中，确定要离开页面吗？处理进度将会丢失。'
+    return '正在处理中，确定要离开页面吗？处理进度将会丢失。'
+  }
+}
+
+// 监听处理状态变化，添加/移除页面离开警告
+watch(() => props.isProcessing, (isProcessing) => {
+  if (isProcessing) {
+    // 添加页面顶部间距
+    document.body.classList.add('has-fixed-status-bar')
+    // 添加页面离开警告
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  } else {
+    // 移除页面顶部间距
+    document.body.classList.remove('has-fixed-status-bar')
+    // 移除页面离开警告
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+  }
+})
+
+// 组件挂载时检查处理状态
+onMounted(() => {
+  if (props.isProcessing) {
+    document.body.classList.add('has-fixed-status-bar')
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
+})
+
+// 组件卸载时清理
+onUnmounted(() => {
+  document.body.classList.remove('has-fixed-status-bar')
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
 </script>
 
 <style scoped>

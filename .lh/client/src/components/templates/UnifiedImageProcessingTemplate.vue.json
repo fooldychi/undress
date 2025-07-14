@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 54,
+            "activePatchIndex": 58,
             "patches": [
                 {
                     "date": 1752395027594,
@@ -224,6 +224,22 @@
                 {
                     "date": 1752435773106,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -175,9 +175,9 @@\n   }\n })\n \n // Emits\n-const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'reprocess', 'upload-change', 'input-change'])\n+const emit = defineEmits(['login', 'logout', 'process', 'reset', 'download', 'upload-change', 'input-change'])\n \n // 响应式数据\n const config = ref({\n   title: '',\n"
+                },
+                {
+                    "date": 1752499176165,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -36,19 +36,17 @@\n         >\n           <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\n           <template #comparison>\n             <!-- 调试信息 - 开发时可启用 -->\n-            <!--\n-            <div style=\"background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;\">\n+            <div v-if=\"import.meta.env.DEV\" style=\"background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;\">\n               <div>🔍 对比组件调试信息:</div>\n               <div>configLoaded: {{ configLoaded }}</div>\n               <div>resultData: {{ !!resultData }} ({{ typeof resultData }})</div>\n               <div>originalImageForComparison: {{ !!originalImageForComparison }} ({{ typeof originalImageForComparison }})</div>\n               <div>config.resultConfig?.showComparison: {{ config.resultConfig?.showComparison }}</div>\n               <div>config.resultConfig?.comparisonType: {{ config.resultConfig?.comparisonType }}</div>\n               <div>条件结果: {{ configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none' }}</div>\n             </div>\n-            -->\n \n             <div v-if=\"configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'\" class=\"comparison-result\">\n               <!-- 拖拽分割线对比组件 -->\n               <ImageComparison\n"
+                },
+                {
+                    "date": 1752500253046,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -36,9 +36,9 @@\n         >\n           <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\n           <template #comparison>\n             <!-- 调试信息 - 开发时可启用 -->\n-            <div v-if=\"import.meta.env.DEV\" style=\"background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;\">\n+            <div v-if=\"isDevelopment\" style=\"background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;\">\n               <div>🔍 对比组件调试信息:</div>\n               <div>configLoaded: {{ configLoaded }}</div>\n               <div>resultData: {{ !!resultData }} ({{ typeof resultData }})</div>\n               <div>originalImageForComparison: {{ !!originalImageForComparison }} ({{ typeof originalImageForComparison }})</div>\n"
+                },
+                {
+                    "date": 1752500315885,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -191,8 +191,12 @@\n const inputData = ref({})\n const configLoaded = ref(false)\n \n // 计算属性\n+const isDevelopment = computed(() => {\n+  return import.meta.env.DEV\n+})\n+\n const canProcess = computed(() => {\n   // 检查上传面板\n   if (config.value.uploadPanels) {\n     for (const panel of config.value.uploadPanels) {\n"
+                },
+                {
+                    "date": 1752500713355,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -35,9 +35,10 @@\n           @change=\"handleUploadChange(panel.id, $event)\"\n         >\n           <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\n           <template #comparison>\n-            <!-- 调试信息 - 开发时可启用 -->\n+            <!-- 调试信息 - 暂时禁用 -->\n+            <!--\n             <div v-if=\"isDevelopment\" style=\"background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;\">\n               <div>🔍 对比组件调试信息:</div>\n               <div>configLoaded: {{ configLoaded }}</div>\n               <div>resultData: {{ !!resultData }} ({{ typeof resultData }})</div>\n@@ -45,8 +46,9 @@\n               <div>config.resultConfig?.showComparison: {{ config.resultConfig?.showComparison }}</div>\n               <div>config.resultConfig?.comparisonType: {{ config.resultConfig?.comparisonType }}</div>\n               <div>条件结果: {{ configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none' }}</div>\n             </div>\n+            -->\n \n             <div v-if=\"configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'\" class=\"comparison-result\">\n               <!-- 拖拽分割线对比组件 -->\n               <ImageComparison\n"
                 }
             ],
             "date": 1752395027594,

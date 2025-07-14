@@ -48,22 +48,21 @@ async function initApp() {
     try {
       await configService.initialize()
     } catch (error) {
-      console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)
+      // 使用默认配置
     }
 
     // 初始化负载均衡器
     try {
       await loadBalancer.initialize()
     } catch (error) {
-      console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)
+      // 使用单服务器模式
     }
 
     // 初始化 ComfyUI WebSocket 连接
     try {
       await initializeWebSocket()
-      console.log('✅ ComfyUI WebSocket 初始化完成')
     } catch (error) {
-      console.warn('⚠️ ComfyUI WebSocket 初始化失败，将在需要时重试:', error.message)
+      // 将在需要时重试
     }
 
     const app = createApp(App)

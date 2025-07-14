@@ -1,0 +1,18 @@
+{
+    "sourceFile": "server/diagnose.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752493531414,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752493531414,
+            "name": "Commit-0",
+            "content": "// 诊断脚本\nconsole.log('🔍 开始诊断...');\n\n// 1. 检查环境变量\nrequire('dotenv').config();\nconsole.log('📋 环境变量检查:');\nconsole.log('  PORT:', process.env.PORT);\nconsole.log('  NODE_ENV:', process.env.NODE_ENV);\nconsole.log('  JWT_SECRET:', process.env.JWT_SECRET ? '已设置' : '未设置');\nconsole.log('  DB_HOST:', process.env.DB_HOST);\n\n// 2. 检查依赖\nconsole.log('\\n📦 依赖检查:');\ntry {\n  const express = require('express');\n  console.log('  ✅ express 可用');\n} catch (error) {\n  console.log('  ❌ express 不可用:', error.message);\n}\n\ntry {\n  const cors = require('cors');\n  console.log('  ✅ cors 可用');\n} catch (error) {\n  console.log('  ❌ cors 不可用:', error.message);\n}\n\ntry {\n  const jwt = require('jsonwebtoken');\n  console.log('  ✅ jsonwebtoken 可用');\n} catch (error) {\n  console.log('  ❌ jsonwebtoken 不可用:', error.message);\n}\n\n// 3. 测试端口\nconsole.log('\\n🔌 端口检查:');\nconst net = require('net');\nconst PORT = 3008; // 使用不同的端口\n\nconst server = net.createServer();\nserver.listen(PORT, () => {\n  console.log(`  ✅ 端口 ${PORT} 可用`);\n  server.close();\n\n  // 4. 启动最小服务器\n  console.log('\\n🚀 启动最小服务器...');\n  startMinimalServer();\n});\n\nserver.on('error', (err) => {\n  if (err.code === 'EADDRINUSE') {\n    console.log(`  ❌ 端口 ${PORT} 已被占用`);\n  } else {\n    console.log(`  ❌ 端口检查失败:`, err.message);\n  }\n});\n\nfunction startMinimalServer() {\n  const express = require('express');\n  const app = express();\n\n  app.use(express.json());\n\n  app.get('/health', (req, res) => {\n    console.log('📊 收到健康检查请求');\n    res.json({ status: 'OK', timestamp: new Date().toISOString() });\n  });\n\n  app.get('/api/auth/me', (req, res) => {\n    console.log('👤 收到用户信息请求');\n    res.status(500).json({\n      success: false,\n      message: '测试500错误'\n    });\n  });\n\n  const server = app.listen(PORT, () => {\n    console.log(`✅ 最小服务器启动成功: http://localhost:${PORT}`);\n    console.log('🔗 测试链接:');\n    console.log(`   http://localhost:${PORT}/health`);\n    console.log(`   http://localhost:${PORT}/api/auth/me`);\n  });\n\n  server.on('error', (err) => {\n    console.error('❌ 服务器启动失败:', err.message);\n  });\n}\n"
+        }
+    ]
+}

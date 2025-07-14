@@ -77,14 +77,11 @@ async function updateProxyServerConfig(config) {
 
     if (response.ok) {
       const result = await response.json()
-      console.log('✅ 代理服务器配置更新成功:', result)
       return { success: true, message: '代理服务器配置更新成功' }
     } else {
-      console.warn('⚠️ 代理服务器配置更新失败:', response.status)
       return { success: false, message: `代理服务器响应错误: ${response.status}` }
     }
   } catch (error) {
-    console.warn('⚠️ 无法连接到代理服务器，可能代理服务器未启动:', error.message)
     return { success: false, message: '无法连接到代理服务器' }
   }
 }
@@ -167,8 +164,6 @@ async function updateComfyUIConfig(newConfig) {
   const currentConfig = getComfyUIConfig(true) // 强制刷新当前配置
   const updatedConfig = { ...currentConfig, ...newConfig }
 
-  console.log('🔄 更新配置:', updatedConfig)
-
   // 保存到localStorage（这会清除缓存）
   saveComfyUIConfig(updatedConfig)
 
@@ -180,8 +175,6 @@ async function updateComfyUIConfig(newConfig) {
 
   // 同时更新代理服务器配置
   const proxyUpdateResult = await updateProxyServerConfig(updatedConfig)
-
-  console.log('✅ 配置更新完成，新配置已生效')
 
   return {
     config: updatedConfig,
@@ -239,8 +232,6 @@ async function getApiBaseUrl(forceReassessment = false, excludeUrls = []) {
 
     return baseUrl
   } catch (error) {
-    console.warn('⚠️ 负载均衡器失败，使用配置的服务器:', error)
-
     // 降级到配置的服务器
     const config = getComfyUIConfig(true)
     let baseUrl = config.COMFYUI_SERVER_URL
@@ -263,7 +254,6 @@ async function callWithRetry(apiCall, maxRetries = 2, excludeUrls = []) {
       return result
     } catch (error) {
       lastError = error
-      console.warn(`⚠️ API调用失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error.message)
 
       // 如果不是最后一次尝试，且是网络相关错误，尝试下一个服务器
       if (attempt < maxRetries &&
@@ -278,7 +268,6 @@ async function callWithRetry(apiCall, maxRetries = 2, excludeUrls = []) {
         const currentServer = await getApiBaseUrl()
         if (currentServer) {
           excludeUrls.push(currentServer)
-          console.log(`🔄 添加失败服务器到排除列表: ${currentServer}`)
 
           // 记录失败
           let errorType = 'api_error'
@@ -383,7 +372,6 @@ async function uploadImageToComfyUI(base64Image) {
     // 如果是网络错误或服务器错误，记录失败并可能触发重新评估
     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
       const currentServer = await getApiBaseUrl()
-      console.log('📝 记录服务器上传失败:', currentServer)
 
       // 确定错误类型
       let errorType = 'upload_error'
@@ -438,10 +426,6 @@ async function submitWorkflow(workflowPrompt) {
     const config = getComfyUIConfig()
     const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
     selectedServer = apiBaseUrl // 记录选择的服务器
-    console.log('🔄 第二步：提交工作流到ComfyUI')
-    console.log('📡 API地址:', `${apiBaseUrl}/prompt`)
-    console.log('🔧 使用负载均衡:', '是')
-    console.log('🔌 WebSocket状态:', isWsConnected ? '已连接' : '未连接')
 
     // 构建请求体，按照ComfyUI API文档格式
     const requestBody = {
@@ -449,16 +433,8 @@ async function submitWorkflow(workflowPrompt) {
       prompt: workflowPrompt
     }
 
-    console.log('📋 请求体结构:', {
-      client_id: requestBody.client_id,
-      prompt_keys: Object.keys(requestBody.prompt),
-      node_49_exists: !!requestBody.prompt['49'],
-      node_49_image: requestBody.prompt['49']?.inputs?.image
-    })
-
     // 第二步API调用：提交工作流到ComfyUI
     const promptUrl = `${apiBaseUrl}/prompt`
-    console.log('🌐 调用工作流API:', promptUrl)
 
     const response = await fetch(promptUrl, {
       method: 'POST',
@@ -470,16 +446,12 @@ async function submitWorkflow(workflowPrompt) {
       credentials: 'omit'
     })
 
-    console.log('📥 工作流响应状态:', response.status, response.statusText)
-
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ 工作流提交失败响应:', errorText)
       throw new Error(`工作流提交失败: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
     const result = await response.json()
-    console.log('✅ 工作流提交成功:', result)
 
     // 验证返回结果
     if (!result.prompt_id) {
@@ -493,8 +465,6 @@ async function submitWorkflow(workflowPrompt) {
 
     // 记录服务器失败
     if (selectedServer) {
-      console.log('📝 记录服务器失败:', selectedServer)
-
       // 确定错误类型
       let errorType = 'workflow_error'
       if (error.message.includes('timeout')) errorType = 'timeout'
@@ -530,7 +500,6 @@ async function checkTaskStatus(promptId) {
     // 如果是网络错误或服务器错误，记录失败
     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
       const currentServer = await getApiBaseUrl()
-      console.log('📝 记录服务器状态查询失败:', currentServer)
 
       // 确定错误类型
       let errorType = 'status_check_error'
@@ -718,8 +687,6 @@ async function initializeWebSocket(forceNewConnection = false) {
       wsUrl = baseUrl.replace('http://', 'ws://') + '/ws?clientId=' + config.CLIENT_ID
     }
 
-    console.log('🔌 正在连接 ComfyUI WebSocket...')
-
     // 先测试HTTP连接是否正常
     try {
       const testResponse = await fetch(`${baseUrl}/system_stats`, {
@@ -727,10 +694,9 @@ async function initializeWebSocket(forceNewConnection = false) {
         signal: AbortSignal.timeout(5000)
       })
       if (!testResponse.ok) {
-        console.warn('⚠️ ComfyUI HTTP连接异常:', testResponse.status)
+        throw new Error(`HTTP连接异常: ${testResponse.status}`)
       }
     } catch (httpError) {
-      console.error('❌ ComfyUI HTTP连接失败:', httpError)
       throw new Error(`ComfyUI服务器不可达: ${httpError.message}`)
     }
 
@@ -738,12 +704,10 @@ async function initializeWebSocket(forceNewConnection = false) {
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        console.error('❌ WebSocket 连接超时')
         reject(new Error('WebSocket 连接超时'))
       }, 10000)
 
       wsConnection.onopen = () => {
-        console.log('✅ ComfyUI WebSocket 连接成功')
         isWsConnected = true
         connectionAttempts = 0 // 重置连接尝试次数
         lastMessageTime = Date.now() // 重置最后消息时间
@@ -847,25 +811,21 @@ async function initializeWebSocket(forceNewConnection = false) {
               return
             }
 
-            console.log(`🔄 尝试重新连接 ComfyUI WebSocket (${connectionAttempts}/${maxConnectionAttempts})...`)
-
             try {
               await initializeWebSocket()
 
               // 重连成功后，检查待处理任务的状态
               if (hasPendingTasks) {
-                console.log('🔍 重连成功，检查待处理任务状态...')
                 await checkPendingTasksStatus()
               }
             } catch (error) {
-              console.error(`❌ WebSocket 重连失败 (${connectionAttempts}/${maxConnectionAttempts}):`, error)
+              // 重连失败，继续等待下次重试
             }
           }, exponentialDelay)
         }
       }
 
       wsConnection.onerror = (error) => {
-        console.error('❌ ComfyUI WebSocket 连接错误:', error)
         clearTimeout(timeout)
 
         // 显示前端通知
@@ -1010,7 +970,6 @@ function startWebSocketHealthCheck() {
 
     // 如果超过120秒没有收到消息且有待处理任务，标记任务失败
     if (timeSinceLastMessage > 120000 && pendingTasks.size > 0) {
-      console.error('❌ WebSocket长时间无响应，标记待处理任务为失败')
       const taskIds = Array.from(pendingTasks.keys())
       for (const promptId of taskIds) {
         const task = pendingTasks.get(promptId)
@@ -1034,7 +993,6 @@ function stopWebSocketHealthCheck() {
 // 检查待处理任务状态
 async function checkPendingTasksStatus() {
   const taskIds = Array.from(pendingTasks.keys())
-  console.log(`🔍 检查 ${taskIds.length} 个待处理任务的状态...`)
 
   for (const promptId of taskIds) {
     try {
@@ -1496,7 +1454,6 @@ async function processUndressImage(base64Image, onProgress = null) {
 async function checkComfyUIServerStatus() {
   try {
     const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
-    console.log('🔍 检查ComfyUI服务器状态:', apiBaseUrl)
 
     const response = await fetch(`${apiBaseUrl}/system_stats`, {
       method: 'GET',
@@ -1505,14 +1462,11 @@ async function checkComfyUIServerStatus() {
 
     if (response.ok) {
       const stats = await response.json()
-      console.log('✅ ComfyUI服务器状态正常:', stats)
       return { status: 'ok', stats }
     } else {
-      console.warn('⚠️ ComfyUI服务器响应异常:', response.status)
       return { status: 'error', code: response.status }
     }
   } catch (error) {
-    console.error('❌ ComfyUI服务器连接失败:', error)
     return { status: 'error', error: error.message }
   }
 }

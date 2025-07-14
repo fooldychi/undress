@@ -3,6 +3,7 @@ export { default as MobilePageContainer } from './MobilePageContainer.vue'
 export { default as MobileCard } from './MobileCard.vue'
 export { default as MobileActionButton } from './MobileActionButton.vue'
 export { default as MobileStatusCard } from './MobileStatusCard.vue'
+export { default as MobileFixedStatusBar } from './MobileFixedStatusBar.vue'
 
 // 通用组件 (保留旧组件以兼容性)
 export { default as VantImageUpload } from '../common/VantImageUpload.vue'

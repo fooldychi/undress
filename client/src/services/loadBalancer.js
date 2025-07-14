@@ -33,8 +33,6 @@ class ComfyUILoadBalancer {
    */
   async initialize() {
     try {
-      console.log('🚀 初始化 ComfyUI 负载均衡器...')
-
       // 获取服务器配置
       const config = await configService.getConfig()
 
@@ -68,7 +66,6 @@ class ComfyUILoadBalancer {
 
       // 如果没有配置服务器，使用默认配置
       if (this.servers.length === 0) {
-        console.warn('⚠️ 未找到配置的服务器，使用默认配置')
         // 从本地配置获取默认服务器
         const localConfig = JSON.parse(localStorage.getItem('comfyui_config') || '{}')
         const defaultUrl = localConfig.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com'
@@ -80,23 +77,15 @@ class ComfyUILoadBalancer {
         })
       }
 
-      console.log(`✅ 发现 ${this.servers.length} 个 ComfyUI 服务器:`)
-      this.servers.forEach((server, index) => {
-        console.log(`   ${index + 1}. ${server.url} (${server.type})`)
-      })
-
       // 初始化服务器负载信息
       await this.updateServerLoads()
 
       // 启动健康监控
       this.startHealthMonitoring()
 
-      console.log('✅ ComfyUI 负载均衡器初始化完成')
-
     } catch (error) {
-      console.error('❌ 负载均衡器初始化失败:', error)
+      console.error('负载均衡器初始化失败:', error)
       // 不抛出错误，允许应用继续运行
-      console.log('🔄 使用降级模式，将使用单服务器配置')
     }
   }
 
@@ -108,17 +97,13 @@ class ComfyUILoadBalancer {
 
     // 如果距离上次更新时间不足间隔，跳过更新（除非强制更新或超过强制更新阈值）
     if (!forceUpdate && now - this.lastUpdateTime < this.updateInterval && now - this.lastUpdateTime < this.forceUpdateThreshold) {
-      console.log('⏭️ 跳过负载更新，距离上次更新时间不足')
       return
     }
 
     // 如果超过强制更新阈值，强制更新
     if (now - this.lastUpdateTime > this.forceUpdateThreshold) {
-      console.log('🔄 强制更新服务器负载信息（超过强制更新阈值）')
       forceUpdate = true
     }
-
-    console.log('🔄 更新服务器负载信息...')
 
     const updatePromises = this.servers.map(async (server) => {
       try {
@@ -136,7 +121,6 @@ class ComfyUILoadBalancer {
 
         // 如果服务器恢复健康，重置失败计数
         if (isHealthy && this.serverFailures.has(server.url)) {
-          console.log(`✅ 服务器 ${server.url} 已恢复健康，重置失败计数`)
           this.resetFailureCount(server.url)
         }
 
@@ -150,11 +134,7 @@ class ComfyUILoadBalancer {
           failureCount: this.serverFailures.get(server.url) || 0
         })
 
-        const queueInfo = queue.healthy ? `队列=${queue.total || 0}(运行:${queue.running || 0},等待:${queue.pending || 0})` : `队列检查失败`
-        console.log(`📊 ${server.url}: 健康=${health.healthy}, ${queueInfo}, 响应时间=${health.responseTime || 0}ms`)
-
       } catch (error) {
-        console.error(`❌ 更新服务器负载失败 ${server.url}:`, error)
         this.serverLoads.set(server.url, {
           ...server,
           healthy: false,
@@ -224,7 +204,6 @@ class ComfyUILoadBalancer {
       }
 
     } catch (error) {
-      console.warn(`⚠️ 健康检查失败 ${serverUrl}:`, error.message)
       return { healthy: false, error: error.message }
     }
   }
@@ -268,7 +247,6 @@ class ComfyUILoadBalancer {
       }
 
     } catch (error) {
-      console.warn(`⚠️ 队列信息获取失败 ${serverUrl}:`, error.message)
       return await this.getServerQueueInfoFallback(serverUrl)
     }
   }
@@ -348,7 +326,6 @@ class ComfyUILoadBalancer {
           // 过滤掉失败次数过多的服务器
           const failures = this.serverFailures.get(server.url) || 0
           if (failures >= this.failureThreshold) {
-            console.log(`⚠️ 跳过失败次数过多的服务器: ${server.url} (${failures}次)`)
             return false
           }
 
@@ -434,27 +411,24 @@ class ComfyUILoadBalancer {
       const defaultServer = config['comfyui.server_url']
 
       if (defaultServer && defaultServer !== 'https://your-comfyui-server.com') {
-        console.log(`🆘 配置服务默认服务器: ${defaultServer}`)
         return defaultServer
       }
     } catch (error) {
-      console.warn('⚠️ 无法从配置服务获取默认服务器:', error)
+      // 忽略配置服务错误
     }
 
     // 从本地存储获取
     try {
       const localConfig = JSON.parse(localStorage.getItem('comfyui_config') || '{}')
       if (localConfig.COMFYUI_SERVER_URL) {
-        console.log(`🆘 本地配置服务器: ${localConfig.COMFYUI_SERVER_URL}`)
         return localConfig.COMFYUI_SERVER_URL
       }
     } catch (error) {
-      console.warn('⚠️ 无法从本地存储获取服务器配置:', error)
+      // 忽略本地存储错误
     }
 
     // 最后的备用方案
     const fallbackUrl = 'https://your-comfyui-server.com'
-    console.log(`🆘 使用最后备用服务器: ${fallbackUrl}`)
     return fallbackUrl
   }
 
@@ -464,10 +438,6 @@ class ComfyUILoadBalancer {
   lockServer(serverUrl) {
     this.lockedServer = serverUrl
     this.lastLockTime = Date.now()
-    console.log(`🔒 锁定服务器: ${serverUrl}, 持续 ${this.lockDuration / 1000} 秒`)
-
-    // 显示当前所有服务器状态
-    this.logServerStatus()
   }
 
   /**
@@ -553,18 +523,13 @@ class ComfyUILoadBalancer {
    * 记录服务器失败
    */
   async recordFailure(serverUrl, errorType = 'unknown') {
-    console.log(`📝 记录服务器失败: ${serverUrl}, 错误类型: ${errorType}`)
-
     // 增加失败计数
     const currentFailures = this.serverFailures.get(serverUrl) || 0
     const newFailures = currentFailures + 1
     this.serverFailures.set(serverUrl, newFailures)
 
-    console.log(`⚠️ 服务器 ${serverUrl} 失败次数: ${newFailures}/${this.failureThreshold}`)
-
     // 如果失败的是当前锁定的服务器，立即解除锁定
     if (this.lockedServer === serverUrl) {
-      console.log('🔓 立即解除失败服务器的锁定')
       this.lockedServer = null
       this.lastLockTime = 0
     }
@@ -765,8 +730,6 @@ class ComfyUILoadBalancer {
    * 执行健康监控
    */
   async performHealthMonitoring() {
-    console.log('🏥 执行定期健康检查...')
-
     // 更新服务器负载信息
     await this.updateServerLoads()
 
@@ -774,7 +737,6 @@ class ComfyUILoadBalancer {
     if (this.lockedServer) {
       const lockedServerInfo = this.serverLoads.get(this.lockedServer)
       if (lockedServerInfo && !lockedServerInfo.healthy) {
-        console.warn(`⚠️ 锁定的服务器 ${this.lockedServer} 不健康，解除锁定`)
         this.lockedServer = null
         this.lastLockTime = 0
       }
@@ -784,10 +746,9 @@ class ComfyUILoadBalancer {
     const healthyServers = Array.from(this.serverLoads.values())
       .filter(server => server.healthy)
 
-    if (healthyServers.length > 0) {
-      console.log(`✅ 健康监控完成，发现 ${healthyServers.length} 个健康服务器`)
-    } else {
-      console.warn('⚠️ 健康监控警告：没有发现健康的服务器')
+    // 只在没有健康服务器时输出警告
+    if (healthyServers.length === 0) {
+      console.warn('警告：没有发现健康的ComfyUI服务器')
     }
   }
 
@@ -800,7 +761,6 @@ class ComfyUILoadBalancer {
     this.serverLoads.clear()
     this.serverFailures.clear()
     this.lockedServer = null
-    console.log('🗑️ 负载均衡器已销毁')
   }
 }
 

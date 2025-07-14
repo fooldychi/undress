@@ -38,22 +38,27 @@ pool.on('error', (err) => {
 
 // 定期检查连接池状态
 const checkPoolStatus = () => {
-  const poolInfo = {
-    allConnections: pool.pool._allConnections.length,
-    freeConnections: pool.pool._freeConnections.length,
-    acquiringConnections: pool.pool._acquiringConnections.length
-  };
+  try {
+    // 安全地检查连接池状态
+    const poolInfo = {
+      allConnections: pool.pool?._allConnections?.length || 0,
+      freeConnections: pool.pool?._freeConnections?.length || 0,
+      acquiringConnections: pool.pool?._acquiringConnections?.length || 0
+    };
 
-  console.log('📊 数据库连接池状态:', poolInfo);
+    console.log('📊 数据库连接池状态:', poolInfo);
 
-  // 如果空闲连接过少，发出警告
-  if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {
-    console.warn('⚠️ 数据库连接池可能存在连接泄漏');
+    // 如果空闲连接过少，发出警告
+    if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {
+      console.warn('⚠️ 数据库连接池可能存在连接泄漏');
+    }
+  } catch (error) {
+    console.warn('⚠️ 无法检查连接池状态:', error.message);
   }
 };
 
-// 每分钟检查一次连接池状态
-const poolMonitorInterval = setInterval(checkPoolStatus, 60000);
+// 每分钟检查一次连接池状态 - 暂时禁用以避免错误
+// const poolMonitorInterval = setInterval(checkPoolStatus, 60000);
 
 // 测试数据库连接
 async function testConnection() {

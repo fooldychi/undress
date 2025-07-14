@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 7,
             "patches": [
                 {
                     "date": 1752377172621,
@@ -32,6 +32,10 @@
                 {
                     "date": 1752406875980,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -37,23 +37,19 @@\n });\n \n // 定期检查连接池状态\n const checkPoolStatus = () => {\n-  try {\n-    const poolInfo = {\n-      allConnections: pool.pool._allConnections?.length || 0,\n-      freeConnections: pool.pool._freeConnections?.length || 0,\n-      acquiringConnections: pool.pool._acquiringConnections?.length || 0\n-    };\n+  const poolInfo = {\n+    allConnections: pool.pool._allConnections.length,\n+    freeConnections: pool.pool._freeConnections.length,\n+    acquiringConnections: pool.pool._acquiringConnections.length\n+  };\n \n-    console.log('📊 数据库连接池状态:', poolInfo);\n+  console.log('📊 数据库连接池状态:', poolInfo);\n \n-    // 如果空闲连接过少，发出警告\n-    if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {\n-      console.warn('⚠️ 数据库连接池可能存在连接泄漏');\n-    }\n-  } catch (error) {\n-    console.error('❌ 检查连接池状态时出错:', error.message);\n+  // 如果空闲连接过少，发出警告\n+  if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {\n+    console.warn('⚠️ 数据库连接池可能存在连接泄漏');\n   }\n };\n \n // 每分钟检查一次连接池状态\n"
+                },
+                {
+                    "date": 1752495799533,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -37,24 +37,29 @@\n });\n \n // 定期检查连接池状态\n const checkPoolStatus = () => {\n-  const poolInfo = {\n-    allConnections: pool.pool._allConnections.length,\n-    freeConnections: pool.pool._freeConnections.length,\n-    acquiringConnections: pool.pool._acquiringConnections.length\n-  };\n+  try {\n+    // 安全地检查连接池状态\n+    const poolInfo = {\n+      allConnections: pool.pool?._allConnections?.length || 0,\n+      freeConnections: pool.pool?._freeConnections?.length || 0,\n+      acquiringConnections: pool.pool?._acquiringConnections?.length || 0\n+    };\n \n-  console.log('📊 数据库连接池状态:', poolInfo);\n+    console.log('📊 数据库连接池状态:', poolInfo);\n \n-  // 如果空闲连接过少，发出警告\n-  if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {\n-    console.warn('⚠️ 数据库连接池可能存在连接泄漏');\n+    // 如果空闲连接过少，发出警告\n+    if (poolInfo.freeConnections < 2 && poolInfo.allConnections > 15) {\n+      console.warn('⚠️ 数据库连接池可能存在连接泄漏');\n+    }\n+  } catch (error) {\n+    console.warn('⚠️ 无法检查连接池状态:', error.message);\n   }\n };\n \n-// 每分钟检查一次连接池状态\n-const poolMonitorInterval = setInterval(checkPoolStatus, 60000);\n+// 每分钟检查一次连接池状态 - 暂时禁用以避免错误\n+// const poolMonitorInterval = setInterval(checkPoolStatus, 60000);\n \n // 测试数据库连接\n async function testConnection() {\n   try {\n"
                 }
             ],
             "date": 1752377172621,

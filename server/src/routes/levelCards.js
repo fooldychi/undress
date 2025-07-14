@@ -295,6 +295,7 @@ router.get('/point-logs', authenticateToken, async (req, res, next) => {
     // 获取积分记录（包含媒体文件URL）
     const logs = await query(`
       SELECT
+        id,
         action_type,
         points_amount,
         description,
