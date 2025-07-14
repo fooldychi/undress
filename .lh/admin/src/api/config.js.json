@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752325644385,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752459576782,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,4 +44,18 @@\n       timeout\n     }\n   })\n }\n+\n+/**\n+ * 批量测试多个ComfyUI服务器\n+ */\n+export function testMultipleServers(servers, timeout = 10000) {\n+  return request({\n+    url: '/admin/config/test-multiple',\n+    method: 'post',\n+    data: {\n+      servers,\n+      timeout\n+    }\n+  })\n+}\n"
                 }
             ],
             "date": 1752325644385,

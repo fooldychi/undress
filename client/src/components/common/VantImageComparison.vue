@@ -126,7 +126,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 4%;
-  width: 100% !important; /* 强制设置宽度，防止被覆盖 */
+  width: 100%;
   min-height: 300px;
   max-height: 500px;
   margin: 0 auto;
@@ -174,8 +174,6 @@ onUnmounted(() => {
 
 /* van-image组件样式 */
 .comparison-image {
-  width: 100% !important;
-  height: 100% !important;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -184,15 +182,9 @@ onUnmounted(() => {
   transform: scale(1.02);
 }
 
-/* 深度选择器确保样式应用到van-image内部 */
-.comparison-image :deep(.van-image) {
-  width: 100% !important;
-  height: 100% !important;
-}
+
 
 .comparison-image :deep(.van-image__img) {
-  width: 100% !important;
-  height: 100% !important;
   object-fit: contain;
   object-position: center;
 }
@@ -219,7 +211,7 @@ onUnmounted(() => {
   .comparison-container {
     gap: 8px;
     padding: 12px 0;
-    width: 100% !important;
+    width: 100%;
   }
 
   .image-wrapper {

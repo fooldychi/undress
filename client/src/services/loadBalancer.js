@@ -19,9 +19,6 @@ class ComfyUILoadBalancer {
     this.forceUpdateThreshold = 20000 // 20秒强制更新阈值
     this.failureThreshold = 2 // 连续失败2次后标记为不健康
     this.serverFailures = new Map() // 记录服务器失败次数
-    this.autoFailoverEnabled = true // 启用自动故障转移
-    this.lastFailoverTime = 0
-    this.failoverCooldown = 5000 // 故障转移冷却时间5秒
     this.healthMonitorInterval = null // 健康监控定时器
     this.healthMonitorFrequency = 30000 // 30秒检查一次健康状态
   }
@@ -517,46 +514,13 @@ class ComfyUILoadBalancer {
       this.serverLoads.set(serverUrl, serverInfo)
     }
 
-    // 如果达到失败阈值且启用自动故障转移，触发故障转移
-    if (newFailures >= this.failureThreshold && this.autoFailoverEnabled) {
-      await this.triggerFailover(serverUrl)
-    }
+    // 记录失败但不自动切换，由用户手动决定
 
     // 强制更新服务器负载信息
     this.lastUpdateTime = 0
   }
 
-  /**
-   * 触发故障转移
-   */
-  async triggerFailover(failedServerUrl) {
-    const now = Date.now()
 
-    // 检查故障转移冷却时间
-    if (now - this.lastFailoverTime < this.failoverCooldown) {
-      console.log('⏳ 故障转移冷却中，跳过此次转移')
-      return
-    }
-
-    console.log(`🔄 触发故障转移，失败服务器: ${failedServerUrl}`)
-    this.lastFailoverTime = now
-
-    // 强制重新评估所有服务器
-    await this.forceReassessment()
-
-    // 尝试选择新的服务器
-    try {
-      const newServer = await this.selectServerByMinQueue()
-      if (newServer && newServer !== failedServerUrl) {
-        console.log(`✅ 故障转移成功，新服务器: ${newServer}`)
-        return newServer
-      } else {
-        console.warn('⚠️ 故障转移失败，没有可用的替代服务器')
-      }
-    } catch (error) {
-      console.error('❌ 故障转移过程中出错:', error)
-    }
-  }
 
   /**
    * 重置服务器失败计数

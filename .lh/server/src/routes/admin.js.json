@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 17,
+            "activePatchIndex": 19,
             "patches": [
                 {
                     "date": 1752319729592,
@@ -76,6 +76,14 @@
                 {
                     "date": 1752347695895,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -373,12 +373,12 @@\n     `);\n     console.log('✅ 等级卡交易记录表创建成功');\n \n     // 4. 插入等级卡类型数据（包含体验卡）\n-    const existingTypes = await query('SELECT COUNT(*) as count FROM level_card_types');\n+    const existingTypes = await query('SELECT COUNT(*) as count FROM card_types');\n     if (existingTypes[0].count === 0) {\n       await query(`\n-        INSERT INTO level_card_types (name, icon, price, points, description) VALUES\n+        INSERT INTO card_types (name, icon, price, points, description) VALUES\n         ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),\n         ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),\n         ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),\n         ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')\n"
+                },
+                {
+                    "date": 1752460685118,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -343,9 +343,9 @@\n         bound_at DATETIME NULL COMMENT '绑定时间',\n         expires_at DATETIME NULL COMMENT '过期时间',\n         created_at DATETIME NOT NULL,\n         updated_at DATETIME NULL,\n-        FOREIGN KEY (type_id) REFERENCES level_card_types(id),\n+        FOREIGN KEY (type_id) REFERENCES card_types(id),\n         FOREIGN KEY (bound_user_id) REFERENCES users(id),\n         INDEX idx_card_number (card_number),\n         INDEX idx_bound_user (bound_user_id),\n         INDEX idx_status (status)\n"
+                },
+                {
+                    "date": 1752460809707,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1019,9 +1019,9 @@\n \n     // 获取卡片类型信息\n     const cardTypeResult = await query(`\n       SELECT id, name, points, price, description\n-      FROM level_card_types\n+      FROM card_types\n       WHERE id = ?\n     `, [cardTypeId]);\n \n     if (cardTypeResult.length === 0) {\n"
                 }
             ],
             "date": 1752319729592,

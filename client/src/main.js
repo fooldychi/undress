@@ -6,6 +6,7 @@ import router from './router'
 import configService from './services/configService.js'
 import loadBalancer from './services/loadBalancer.js'
 import { exposeTestFunctions } from './utils/loadBalancerTest.js'
+import { initializeWebSocket } from './services/comfyui.js'
 
 // 开发环境下引入测试工具
 if (import.meta.env.DEV) {
@@ -43,7 +44,6 @@ window.addEventListener('unhandledrejection', (event) => {
 // 确保DOM加载完成
 async function initApp() {
   try {
-    console.log('🚀 初始化配置服务...')
     // 初始化配置服务
     try {
       await configService.initialize()
@@ -51,7 +51,6 @@ async function initApp() {
       console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)
     }
 
-    console.log('🚀 初始化负载均衡器...')
     // 初始化负载均衡器
     try {
       await loadBalancer.initialize()
@@ -59,13 +58,16 @@ async function initApp() {
       console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)
     }
 
-    console.log('📦 创建Vue应用实例...')
+    // 初始化 ComfyUI WebSocket 连接
+    try {
+      await initializeWebSocket()
+      console.log('✅ ComfyUI WebSocket 初始化完成')
+    } catch (error) {
+      console.warn('⚠️ ComfyUI WebSocket 初始化失败，将在需要时重试:', error.message)
+    }
+
     const app = createApp(App)
-
-    console.log('🔧 配置路由...')
     app.use(router)
-
-    console.log('🎨 配置Vant UI...')
     app.use(Vant)
 
     // 添加Vue错误处理
@@ -112,9 +114,7 @@ async function initApp() {
       }, 5000)
     }
 
-    console.log('🔧 挂载应用到#app...')
     app.mount('#app')
-
     console.log('✅ Vue应用启动成功!')
 
     // 在开发环境中暴露测试函数

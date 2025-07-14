@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 25,
+            "activePatchIndex": 28,
             "patches": [
                 {
                     "date": 1752333548051,
@@ -108,6 +108,18 @@
                 {
                     "date": 1752433308913,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -583,8 +583,56 @@\n     return await this.selectServerByMinQueue()\n   }\n \n   /**\n+   * 手动触发服务器切换\n+   */\n+  async switchToNextServer() {\n+    console.log('🔄 手动触发服务器切换...')\n+\n+    // 如果当前有锁定的服务器，将其标记为失败\n+    if (this.lockedServer) {\n+      console.log(`📝 标记当前服务器为失败: ${this.lockedServer}`)\n+      await this.recordFailure(this.lockedServer, 'manual_switch')\n+    }\n+\n+    // 强制重新评估并选择新服务器\n+    await this.forceReassessment()\n+    const newServer = await this.selectServerByMinQueue()\n+\n+    console.log(`✅ 手动切换完成，新服务器: ${newServer}`)\n+    return newServer\n+  }\n+\n+  /**\n+   * 获取下一个可用服务器（不锁定）\n+   */\n+  async getNextAvailableServer(excludeUrls = []) {\n+    await this.updateServerLoads()\n+\n+    const availableServers = Array.from(this.serverLoads.values())\n+      .filter(server => {\n+        if (!server.healthy) return false\n+        if (excludeUrls.includes(server.url)) return false\n+\n+        const failures = this.serverFailures.get(server.url) || 0\n+        return failures < this.failureThreshold\n+      })\n+      .sort((a, b) => {\n+        const failureA = this.serverFailures.get(a.url) || 0\n+        const failureB = this.serverFailures.get(b.url) || 0\n+        if (failureA !== failureB) return failureA - failureB\n+\n+        const queueDiff = (a.queue.total || 0) - (b.queue.total || 0)\n+        if (queueDiff !== 0) return queueDiff\n+\n+        return a.priority - b.priority\n+      })\n+\n+    return availableServers.length > 0 ? availableServers[0].url : null\n+  }\n+\n+  /**\n    * 强制重新评估所有服务器\n    */\n   async forceReassessment() {\n     console.log('🔄 强制重新评估所有服务器...')\n"
+                },
+                {
+                    "date": 1752459661531,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,11 +18,8 @@\n     this.updateInterval = 8000 // 8秒更新间隔（更频繁的更新）\n     this.forceUpdateThreshold = 20000 // 20秒强制更新阈值\n     this.failureThreshold = 2 // 连续失败2次后标记为不健康\n     this.serverFailures = new Map() // 记录服务器失败次数\n-    this.autoFailoverEnabled = true // 启用自动故障转移\n-    this.lastFailoverTime = 0\n-    this.failoverCooldown = 5000 // 故障转移冷却时间5秒\n     this.healthMonitorInterval = null // 健康监控定时器\n     this.healthMonitorFrequency = 30000 // 30秒检查一次健康状态\n   }\n \n"
+                },
+                {
+                    "date": 1752459681684,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -513,12 +513,9 @@\n       serverInfo.lastErrorType = errorType\n       this.serverLoads.set(serverUrl, serverInfo)\n     }\n \n-    // 如果达到失败阈值且启用自动故障转移，触发故障转移\n-    if (newFailures >= this.failureThreshold && this.autoFailoverEnabled) {\n-      await this.triggerFailover(serverUrl)\n-    }\n+    // 记录失败但不自动切换，由用户手动决定\n \n     // 强制更新服务器负载信息\n     this.lastUpdateTime = 0\n   }\n"
+                },
+                {
+                    "date": 1752459701776,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -519,40 +519,10 @@\n     // 强制更新服务器负载信息\n     this.lastUpdateTime = 0\n   }\n \n-  /**\n-   * 触发故障转移\n-   */\n-  async triggerFailover(failedServerUrl) {\n-    const now = Date.now()\n \n-    // 检查故障转移冷却时间\n-    if (now - this.lastFailoverTime < this.failoverCooldown) {\n-      console.log('⏳ 故障转移冷却中，跳过此次转移')\n-      return\n-    }\n \n-    console.log(`🔄 触发故障转移，失败服务器: ${failedServerUrl}`)\n-    this.lastFailoverTime = now\n-\n-    // 强制重新评估所有服务器\n-    await this.forceReassessment()\n-\n-    // 尝试选择新的服务器\n-    try {\n-      const newServer = await this.selectServerByMinQueue()\n-      if (newServer && newServer !== failedServerUrl) {\n-        console.log(`✅ 故障转移成功，新服务器: ${newServer}`)\n-        return newServer\n-      } else {\n-        console.warn('⚠️ 故障转移失败，没有可用的替代服务器')\n-      }\n-    } catch (error) {\n-      console.error('❌ 故障转移过程中出错:', error)\n-    }\n-  }\n-\n   /**\n    * 重置服务器失败计数\n    */\n   resetFailureCount(serverUrl) {\n"
                 }
             ],
             "date": 1752333548051,

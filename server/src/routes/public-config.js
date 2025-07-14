@@ -15,10 +15,7 @@ router.get('/', async (req, res) => {
       'comfyui.timeout': parseInt(process.env.COMFYUI_TIMEOUT || '300000'),
       'ai.text_to_image_points': parseInt(process.env.AI_TEXT_TO_IMAGE_POINTS || '20'),
       'ai.face_swap_points': parseInt(process.env.AI_FACE_SWAP_POINTS || '20'),
-      'ai.undress_points': parseInt(process.env.AI_UNDRESS_POINTS || '20'),
-      'frontend.api_base_url': process.env.FRONTEND_API_BASE_URL || 'https://your-api-server.com/api',
-      'frontend.title': process.env.FRONTEND_TITLE || 'AI Magic - AI图像处理平台',
-      'frontend.version': process.env.FRONTEND_VERSION || '1.0.0'
+      'ai.undress_points': parseInt(process.env.AI_UNDRESS_POINTS || '20')
     };
 
     try {
@@ -26,7 +23,7 @@ router.get('/', async (req, res) => {
       const configs = await query(`
         SELECT config_key, config_value, config_type
         FROM system_config
-        WHERE config_group IN ('comfyui', 'ai', 'frontend')
+        WHERE config_group IN ('comfyui', 'ai')
         AND config_key NOT LIKE '%password%'
         AND config_key NOT LIKE '%secret%'
         ORDER BY config_group, config_key
@@ -55,7 +52,6 @@ router.get('/', async (req, res) => {
       console.log('📋 返回给客户端的配置:');
       console.log(`   ComfyUI主服务器: ${finalConfig['comfyui.server_url']}`);
       console.log(`   备用服务器: ${finalConfig['comfyui.backup_servers']}`);
-      console.log(`   自动切换: ${finalConfig['comfyui.auto_switch']}`);
       console.log(`   超时时间: ${finalConfig['comfyui.timeout']}ms`);
 
 

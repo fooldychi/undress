@@ -45,3 +45,17 @@ export function testComfyUIConnection(serverUrl, timeout = 10000) {
     }
   })
 }
+
+/**
+ * 批量测试多个ComfyUI服务器
+ */
+export function testMultipleServers(servers, timeout = 10000) {
+  return request({
+    url: '/admin/config/test-multiple',
+    method: 'post',
+    data: {
+      servers,
+      timeout
+    }
+  })
+}

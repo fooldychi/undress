@@ -7,7 +7,7 @@ async function createLevelCardsTables() {
 
     // 1. 创建等级卡类型表
     await query(`
-      CREATE TABLE IF NOT EXISTS level_card_types (
+      CREATE TABLE IF NOT EXISTS card_types (
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
         icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
@@ -35,7 +35,7 @@ async function createLevelCardsTables() {
         expires_at TIMESTAMP NULL COMMENT '过期时间',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (type_id) REFERENCES level_card_types(id),
+        FOREIGN KEY (type_id) REFERENCES card_types(id),
         FOREIGN KEY (bound_user_id) REFERENCES users(id),
         INDEX idx_card_number (card_number),
         INDEX idx_bound_user (bound_user_id),
@@ -65,12 +65,12 @@ async function createLevelCardsTables() {
 
     // 4. 插入等级卡类型数据
     console.log('📝 插入等级卡类型数据...');
-    
+
     // 检查是否已有数据
-    const existingTypes = await query('SELECT COUNT(*) as count FROM level_card_types');
+    const existingTypes = await query('SELECT COUNT(*) as count FROM card_types');
     if (existingTypes[0].count === 0) {
       await query(`
-        INSERT INTO level_card_types (name, icon, price, points, description) VALUES
+        INSERT INTO card_types (name, icon, price, points, description) VALUES
         ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
         ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
         ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')
@@ -94,21 +94,21 @@ async function generateLevelCards() {
     console.log('🎫 开始生成等级卡...');
 
     // 获取等级卡类型
-    const cardTypes = await query('SELECT * FROM level_card_types');
-    
+    const cardTypes = await query('SELECT * FROM card_types');
+
     for (const cardType of cardTypes) {
       console.log(`📋 生成${cardType.name}...`);
-      
+
       // 为每种类型生成5张卡
       for (let i = 1; i <= 5; i++) {
         const cardNumber = generateCardNumber(cardType.name, i);
         const cardPassword = generateCardPassword();
-        
+
         await query(`
           INSERT INTO level_cards (card_number, card_password, type_id, total_points, remaining_points, expires_at)
           VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 YEAR))
         `, [cardNumber, cardPassword, cardType.id, cardType.points, cardType.points]);
-        
+
         console.log(`  ✅ ${cardNumber} - ${cardPassword}`);
       }
     }
@@ -125,10 +125,10 @@ async function generateLevelCards() {
 function generateCardNumber(cardName, index) {
   const prefix = {
     '基础卡': 'BC',
-    '高级卡': 'AC', 
+    '高级卡': 'AC',
     '至尊卡': 'PC'
   };
-  
+
   const timestamp = Date.now().toString().slice(-6);
   return `${prefix[cardName]}${timestamp}${index.toString().padStart(2, '0')}`;
 }
@@ -149,26 +149,26 @@ if (require.main === module) {
     try {
       await createLevelCardsTables();
       await generateLevelCards();
-      
+
       // 显示生成的卡片
       console.log('\n📋 生成的等级卡列表:');
       const cards = await query(`
         SELECT lc.card_number, lc.card_password, lct.name as type_name, lct.icon, lc.total_points
         FROM level_cards lc
-        JOIN level_card_types lct ON lc.type_id = lct.id
+        JOIN card_types lct ON lc.type_id = lct.id
         ORDER BY lct.id, lc.card_number
       `);
-      
+
       console.log('\n' + '='.repeat(80));
       console.log('| 卡号          | 卡密     | 类型   | 积分  |');
       console.log('='.repeat(80));
-      
+
       cards.forEach(card => {
         console.log(`| ${card.card_number.padEnd(12)} | ${card.card_password.padEnd(8)} | ${card.icon}${card.type_name.padEnd(4)} | ${card.total_points.toString().padEnd(4)} |`);
       });
-      
+
       console.log('='.repeat(80));
-      
+
       process.exit(0);
     } catch (error) {
       console.error('执行失败:', error);

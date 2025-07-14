@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 19,
+            "activePatchIndex": 23,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -84,6 +84,22 @@
                 {
                     "date": 1752436317134,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,8 @@\n \r\n // 引入自定义样式（包含暗黑主题）\r\n import './style.css'\r\n import './styles/vant-theme.css'\r\n-import './styles/overrides.css'\r\n \r\n console.log('🚀 开始初始化Vue应用...');\r\n \r\n // 处理GitHub Pages SPA路由重定向\r\n"
+                },
+                {
+                    "date": 1752462962658,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,8 +5,9 @@\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n import { exposeTestFunctions } from './utils/loadBalancerTest.js'\r\n+import { initializeWebSocket } from './services/comfyui.js'\r\n \r\n // 开发环境下引入测试工具\r\n if (import.meta.env.DEV) {\r\n   import('./utils/testPointsConsumption.js')\r\n"
+                },
+                {
+                    "date": 1752462978762,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -59,8 +59,17 @@\n     } catch (error) {\r\n       console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)\r\n     }\r\n \r\n+    console.log('🔌 初始化 ComfyUI WebSocket...')\r\n+    // 初始化 ComfyUI WebSocket 连接\r\n+    try {\r\n+      await initializeWebSocket()\r\n+      console.log('✅ ComfyUI WebSocket 初始化完成')\r\n+    } catch (error) {\r\n+      console.warn('⚠️ ComfyUI WebSocket 初始化失败，将在需要时重试:', error.message)\r\n+    }\r\n+\r\n     console.log('📦 创建Vue应用实例...')\r\n     const app = createApp(App)\r\n \r\n     console.log('🔧 配置路由...')\r\n"
+                },
+                {
+                    "date": 1752467961919,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -43,40 +43,32 @@\n \r\n // 确保DOM加载完成\r\n async function initApp() {\r\n   try {\r\n-    console.log('🚀 初始化配置服务...')\r\n     // 初始化配置服务\r\n     try {\r\n       await configService.initialize()\r\n     } catch (error) {\r\n       console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)\r\n     }\r\n \r\n-    console.log('🚀 初始化负载均衡器...')\r\n     // 初始化负载均衡器\r\n     try {\r\n       await loadBalancer.initialize()\r\n     } catch (error) {\r\n       console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)\r\n     }\r\n \r\n-    console.log('🔌 初始化 ComfyUI WebSocket...')\r\n     // 初始化 ComfyUI WebSocket 连接\r\n     try {\r\n       await initializeWebSocket()\r\n       console.log('✅ ComfyUI WebSocket 初始化完成')\r\n     } catch (error) {\r\n       console.warn('⚠️ ComfyUI WebSocket 初始化失败，将在需要时重试:', error.message)\r\n     }\r\n \r\n-    console.log('📦 创建Vue应用实例...')\r\n     const app = createApp(App)\r\n-\r\n-    console.log('🔧 配置路由...')\r\n     app.use(router)\r\n-\r\n-    console.log('🎨 配置Vant UI...')\r\n     app.use(Vant)\r\n \r\n     // 添加Vue错误处理\r\n     app.config.errorHandler = (err, vm, info) => {\r\n"
+                },
+                {
+                    "date": 1752467991541,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -113,11 +113,9 @@\n         }\r\n       }, 5000)\r\n     }\r\n \r\n-    console.log('🔧 挂载应用到#app...')\r\n     app.mount('#app')\r\n-\r\n     console.log('✅ Vue应用启动成功!')\r\n \r\n     // 在开发环境中暴露测试函数\r\n     if (import.meta.env.DEV) {\r\n"
                 }
             ],
             "date": 1752330016769,

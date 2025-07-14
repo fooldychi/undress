@@ -8,7 +8,7 @@ async function initLevelCards() {
     // 1. 创建等级卡类型表
     console.log('📝 创建等级卡类型表...');
     await query(`
-      CREATE TABLE IF NOT EXISTS level_card_types (
+      CREATE TABLE IF NOT EXISTS card_types (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
         icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
@@ -45,10 +45,10 @@ async function initLevelCards() {
     console.log('✅ 等级卡表创建成功');
 
     // 3. 插入等级卡类型数据（包含体验卡）
-    const existingTypes = await query('SELECT COUNT(*) as count FROM level_card_types');
+    const existingTypes = await query('SELECT COUNT(*) as count FROM card_types');
     if (existingTypes[0].count === 0) {
       await query(`
-        INSERT INTO level_card_types (name, icon, price, points, description) VALUES
+        INSERT INTO card_types (name, icon, price, points, description) VALUES
         ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
         ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
         ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
@@ -60,9 +60,9 @@ async function initLevelCards() {
     }
 
     console.log('🎉 等级卡数据库表初始化完成！');
-    
+
     // 显示创建的类型
-    const cardTypes = await query('SELECT * FROM level_card_types ORDER BY points ASC');
+    const cardTypes = await query('SELECT * FROM card_types ORDER BY points ASC');
     console.log('\n📋 等级卡类型列表:');
     cardTypes.forEach(type => {
       console.log(`${type.icon} ${type.name} - ${type.points}积分 - ¥${type.price}`);

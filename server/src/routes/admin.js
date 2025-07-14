@@ -344,7 +344,7 @@ router.post('/init-level-cards', async (req, res, next) => {
         expires_at DATETIME NULL COMMENT '过期时间',
         created_at DATETIME NOT NULL,
         updated_at DATETIME NULL,
-        FOREIGN KEY (type_id) REFERENCES level_card_types(id),
+        FOREIGN KEY (type_id) REFERENCES card_types(id),
         FOREIGN KEY (bound_user_id) REFERENCES users(id),
         INDEX idx_card_number (card_number),
         INDEX idx_bound_user (bound_user_id),
@@ -1020,7 +1020,7 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
     // 获取卡片类型信息
     const cardTypeResult = await query(`
       SELECT id, name, points, price, description
-      FROM level_card_types
+      FROM card_types
       WHERE id = ?
     `, [cardTypeId]);
 

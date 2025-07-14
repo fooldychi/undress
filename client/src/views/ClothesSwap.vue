@@ -61,20 +61,35 @@ const processImage = async () => {
   }
 
   isLoading.value = true
-  processingStatus.value = '正在加载服务...'
-  progressPercent.value = 10
+  processingStatus.value = '正在初始化WebSocket连接...'
+  progressPercent.value = 5
   startTime.value = Date.now()
 
   try {
     console.log('🚀 开始一键褪衣处理')
 
-    processingStatus.value = '正在上传图片...'
-    progressPercent.value = 30
+    processingStatus.value = '正在上传图片到ComfyUI...'
+    progressPercent.value = 15
 
-    // 调用褪衣处理服务
-    const result = await processUndressImage(selectedImage.value)
+    // 调用褪衣处理服务，传入进度回调函数
+    const result = await processUndressImage(
+      selectedImage.value,
+      // 进度回调函数 - 接收WebSocket实时更新
+      (status, progress) => {
+        // 更新前端显示
+        processingStatus.value = status
+        progressPercent.value = Math.max(progress, progressPercent.value) // 确保进度不倒退
+
+        // 显示明显的进度标记
+        if (progress >= 100) {
+          processingStatus.value = '正在获取处理结果...'
+        }
+      }
+    )
 
     if (result.success && result.resultImage) {
+      console.log('✅ 处理成功，显示结果')
+
       resultImage.value = result.resultImage
       // 保存原图用于对比
       originalImageForComparison.value = result.originalImage || selectedImage.value
@@ -88,8 +103,10 @@ const processImage = async () => {
       // 显示成功toast
       const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
       Toast.success(`🎉 处理完成！${pointsInfo}可以拖拽中间线对比原图和处理结果`)
+
       console.log('✅ 褪衣处理完成')
     } else {
+      console.error('❌ 处理失败，结果无效')
       throw new Error(result.error || '褪衣处理失败')
     }
 

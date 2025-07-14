@@ -5,7 +5,11 @@
       <div class="header-actions">
         <el-button @click="testConnection" :loading="testing">
           <el-icon><Connection /></el-icon>
-          测试连接
+          测试主服务器
+        </el-button>
+        <el-button @click="testAllServers" :loading="testingAll" type="success">
+          <el-icon><Connection /></el-icon>
+          测试所有服务器
         </el-button>
         <el-button type="primary" @click="saveConfig" :loading="saving">
           <el-icon><Check /></el-icon>
@@ -77,14 +81,7 @@
               <div class="form-tip">单位：毫秒，建议设置为5000-15000</div>
             </el-form-item>
 
-            <el-form-item label="自动切换备用服务器">
-              <el-switch
-                v-model="config.autoSwitch"
-                active-text="启用"
-                inactive-text="禁用"
-              />
-              <div class="form-tip">主服务器故障时自动切换到备用服务器</div>
-            </el-form-item>
+
           </el-col>
         </el-row>
 
@@ -128,8 +125,10 @@ import { getSystemConfig, saveSystemConfig, testComfyUIConnection } from '@/api/
 const loading = ref(false)
 const saving = ref(false)
 const testing = ref(false)
+const testingAll = ref(false)
 const configForm = ref(null)
 const connectionStatus = ref(null)
+const allServersStatus = ref([])
 
 // 配置数据
 const config = reactive({
@@ -137,7 +136,6 @@ const config = reactive({
   backupServers: '',
   requestTimeout: 30000,
   healthCheckTimeout: 10000,
-  autoSwitch: true,
   clientId: '',
   maxRetries: 3
 })
@@ -187,7 +185,6 @@ const loadConfig = async () => {
       config.backupServers = configData['comfyui.backup_servers'] || ''
       config.requestTimeout = configData['comfyui.request_timeout'] || 30000
       config.healthCheckTimeout = configData['comfyui.health_check_timeout'] || 10000
-      config.autoSwitch = Boolean(configData['comfyui.auto_switch'])
       config.clientId = configData['comfyui.client_id'] || ''
       config.maxRetries = configData['comfyui.max_retries'] || 3
 
@@ -238,12 +235,6 @@ const saveConfig = async () => {
         config_key: 'comfyui.health_check_timeout',
         config_value: config.healthCheckTimeout.toString(),
         config_type: 'number',
-        config_group: 'comfyui'
-      },
-      {
-        config_key: 'comfyui.auto_switch',
-        config_value: config.autoSwitch.toString(),
-        config_type: 'boolean',
         config_group: 'comfyui'
       },
       {
@@ -302,6 +293,113 @@ const testConnection = async () => {
   } finally {
     testing.value = false
   }
+}
+
+// 测试所有服务器
+const testAllServers = async () => {
+  // 收集所有服务器地址
+  const servers = []
+
+  // 主服务器
+  if (config.serverUrl) {
+    servers.push({ url: config.serverUrl, type: 'primary', name: '主服务器' })
+  }
+
+  // 备用服务器
+  if (config.backupServers) {
+    const backupUrls = config.backupServers.split('\n')
+      .map(url => url.trim())
+      .filter(url => url && url.startsWith('http'))
+
+    backupUrls.forEach((url, index) => {
+      servers.push({ url, type: 'backup', name: `备用服务器${index + 1}` })
+    })
+  }
+
+  if (servers.length === 0) {
+    ElMessage.warning('请先配置服务器地址')
+    return
+  }
+
+  testingAll.value = true
+  allServersStatus.value = []
+
+  ElMessage.info(`开始测试 ${servers.length} 个服务器...`)
+
+  // 并发测试所有服务器
+  const testPromises = servers.map(async (server) => {
+    try {
+      const startTime = Date.now()
+      const response = await testComfyUIConnection(server.url, config.healthCheckTimeout)
+      const responseTime = Date.now() - startTime
+
+      return {
+        ...server,
+        success: response.success,
+        message: response.message,
+        responseTime,
+        data: response.data
+      }
+    } catch (error) {
+      return {
+        ...server,
+        success: false,
+        message: error.message,
+        responseTime: config.healthCheckTimeout,
+        error: error.message
+      }
+    }
+  })
+
+  try {
+    const results = await Promise.all(testPromises)
+    allServersStatus.value = results
+
+    const successCount = results.filter(r => r.success).length
+    const failCount = results.length - successCount
+
+    if (successCount === results.length) {
+      ElMessage.success(`所有 ${results.length} 个服务器连接正常`)
+    } else if (successCount > 0) {
+      ElMessage.warning(`${successCount} 个服务器正常，${failCount} 个服务器异常`)
+    } else {
+      ElMessage.error(`所有 ${results.length} 个服务器连接失败`)
+    }
+
+    // 显示详细结果
+    showServerTestResults(results)
+
+  } catch (error) {
+    console.error('批量测试失败:', error)
+    ElMessage.error('批量测试失败')
+  } finally {
+    testingAll.value = false
+  }
+}
+
+// 显示服务器测试结果
+const showServerTestResults = (results) => {
+  const resultHtml = results.map(result => {
+    const statusIcon = result.success ? '✅' : '❌'
+    const statusText = result.success ? '正常' : '异常'
+    const responseTime = result.responseTime ? `${result.responseTime}ms` : '超时'
+
+    return `
+      <div style="margin-bottom: 10px; padding: 8px; border-radius: 4px; background: ${result.success ? '#f0f9ff' : '#fef2f2'};">
+        <strong>${statusIcon} ${result.name}</strong><br>
+        <small style="color: #666;">
+          地址: ${result.url}<br>
+          状态: ${statusText} | 响应时间: ${responseTime}<br>
+          ${result.message || ''}
+        </small>
+      </div>
+    `
+  }).join('')
+
+  ElMessageBox.alert(resultHtml, '服务器测试结果', {
+    dangerouslyUseHTMLString: true,
+    customClass: 'server-test-results'
+  })
 }
 
 // 页面加载时获取配置

@@ -2,10 +2,14 @@
   <div class="app">
     <router-view />
     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->
+
+    <!-- WebSocket 连接状态指示器 -->
+    <WebSocketStatus />
   </div>
 </template>
 
 <script setup>
+import WebSocketStatus from './components/WebSocketStatus.vue'
 // VantUI Toast 无需导入容器组件
 </script>
 

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 31,
+            "activePatchIndex": 38,
             "patches": [
                 {
                     "date": 1752325471997,
@@ -132,6 +132,34 @@
                 {
                     "date": 1752410284026,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -37,11 +37,9 @@\n               <el-input\n                 v-model=\"config.serverUrl\"\n                 placeholder=\"https://your-comfyui-server.com\"\n                 clearable\n-              >\n-                <template #prepend>HTTPS://</template>\n-              </el-input>\n+              />\n               <div class=\"form-tip\">ComfyUI主服务器的完整地址</div>\n             </el-form-item>\n \n             <el-form-item label=\"备用服务器地址\" prop=\"backupServers\">\n@@ -371,4 +369,5 @@\n   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);\n   border-radius: 8px;\n }\n </style>\n+\n"
+                },
+                {
+                    "date": 1752459510525,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,10 +4,14 @@\n       <h1 class=\"page-title\">系统配置</h1>\n       <div class=\"header-actions\">\n         <el-button @click=\"testConnection\" :loading=\"testing\">\n           <el-icon><Connection /></el-icon>\n-          测试连接\n+          测试主服务器\n         </el-button>\n+        <el-button @click=\"testAllServers\" :loading=\"testingAll\" type=\"success\">\n+          <el-icon><Connection /></el-icon>\n+          测试所有服务器\n+        </el-button>\n         <el-button type=\"primary\" @click=\"saveConfig\" :loading=\"saving\">\n           <el-icon><Check /></el-icon>\n           保存配置\n         </el-button>\n"
+                },
+                {
+                    "date": 1752459525601,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -131,10 +131,12 @@\n \n const loading = ref(false)\n const saving = ref(false)\n const testing = ref(false)\n+const testingAll = ref(false)\n const configForm = ref(null)\n const connectionStatus = ref(null)\n+const allServersStatus = ref([])\n \n // 配置数据\n const config = reactive({\n   serverUrl: '',\n"
+                },
+                {
+                    "date": 1752459557476,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -309,8 +309,115 @@\n     testing.value = false\n   }\n }\n \n+// 测试所有服务器\n+const testAllServers = async () => {\n+  // 收集所有服务器地址\n+  const servers = []\n+\n+  // 主服务器\n+  if (config.serverUrl) {\n+    servers.push({ url: config.serverUrl, type: 'primary', name: '主服务器' })\n+  }\n+\n+  // 备用服务器\n+  if (config.backupServers) {\n+    const backupUrls = config.backupServers.split('\\n')\n+      .map(url => url.trim())\n+      .filter(url => url && url.startsWith('http'))\n+\n+    backupUrls.forEach((url, index) => {\n+      servers.push({ url, type: 'backup', name: `备用服务器${index + 1}` })\n+    })\n+  }\n+\n+  if (servers.length === 0) {\n+    ElMessage.warning('请先配置服务器地址')\n+    return\n+  }\n+\n+  testingAll.value = true\n+  allServersStatus.value = []\n+\n+  ElMessage.info(`开始测试 ${servers.length} 个服务器...`)\n+\n+  // 并发测试所有服务器\n+  const testPromises = servers.map(async (server) => {\n+    try {\n+      const startTime = Date.now()\n+      const response = await testComfyUIConnection(server.url, config.healthCheckTimeout)\n+      const responseTime = Date.now() - startTime\n+\n+      return {\n+        ...server,\n+        success: response.success,\n+        message: response.message,\n+        responseTime,\n+        data: response.data\n+      }\n+    } catch (error) {\n+      return {\n+        ...server,\n+        success: false,\n+        message: error.message,\n+        responseTime: config.healthCheckTimeout,\n+        error: error.message\n+      }\n+    }\n+  })\n+\n+  try {\n+    const results = await Promise.all(testPromises)\n+    allServersStatus.value = results\n+\n+    const successCount = results.filter(r => r.success).length\n+    const failCount = results.length - successCount\n+\n+    if (successCount === results.length) {\n+      ElMessage.success(`所有 ${results.length} 个服务器连接正常`)\n+    } else if (successCount > 0) {\n+      ElMessage.warning(`${successCount} 个服务器正常，${failCount} 个服务器异常`)\n+    } else {\n+      ElMessage.error(`所有 ${results.length} 个服务器连接失败`)\n+    }\n+\n+    // 显示详细结果\n+    showServerTestResults(results)\n+\n+  } catch (error) {\n+    console.error('批量测试失败:', error)\n+    ElMessage.error('批量测试失败')\n+  } finally {\n+    testingAll.value = false\n+  }\n+}\n+\n+// 显示服务器测试结果\n+const showServerTestResults = (results) => {\n+  const resultHtml = results.map(result => {\n+    const statusIcon = result.success ? '✅' : '❌'\n+    const statusText = result.success ? '正常' : '异常'\n+    const responseTime = result.responseTime ? `${result.responseTime}ms` : '超时'\n+\n+    return `\n+      <div style=\"margin-bottom: 10px; padding: 8px; border-radius: 4px; background: ${result.success ? '#f0f9ff' : '#fef2f2'};\">\n+        <strong>${statusIcon} ${result.name}</strong><br>\n+        <small style=\"color: #666;\">\n+          地址: ${result.url}<br>\n+          状态: ${statusText} | 响应时间: ${responseTime}<br>\n+          ${result.message || ''}\n+        </small>\n+      </div>\n+    `\n+  }).join('')\n+\n+  ElMessageBox.alert(resultHtml, '服务器测试结果', {\n+    dangerouslyUseHTMLString: true,\n+    customClass: 'server-test-results'\n+  })\n+}\n+\n // 页面加载时获取配置\n onMounted(() => {\n   loadConfig()\n })\n"
+                },
+                {
+                    "date": 1752459594555,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -80,16 +80,9 @@\n               />\n               <div class=\"form-tip\">单位：毫秒，建议设置为5000-15000</div>\n             </el-form-item>\n \n-            <el-form-item label=\"自动切换备用服务器\">\n-              <el-switch\n-                v-model=\"config.autoSwitch\"\n-                active-text=\"启用\"\n-                inactive-text=\"禁用\"\n-              />\n-              <div class=\"form-tip\">主服务器故障时自动切换到备用服务器</div>\n-            </el-form-item>\n+\n           </el-col>\n         </el-row>\n \n         <el-divider content-position=\"left\">高级设置</el-divider>\n"
+                },
+                {
+                    "date": 1752459611666,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -135,9 +135,8 @@\n   serverUrl: '',\n   backupServers: '',\n   requestTimeout: 30000,\n   healthCheckTimeout: 10000,\n-  autoSwitch: true,\n   clientId: '',\n   maxRetries: 3\n })\n \n"
+                },
+                {
+                    "date": 1752459628069,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -184,9 +184,8 @@\n       config.serverUrl = configData['comfyui.server_url'] || ''\n       config.backupServers = configData['comfyui.backup_servers'] || ''\n       config.requestTimeout = configData['comfyui.request_timeout'] || 30000\n       config.healthCheckTimeout = configData['comfyui.health_check_timeout'] || 10000\n-      config.autoSwitch = Boolean(configData['comfyui.auto_switch'])\n       config.clientId = configData['comfyui.client_id'] || ''\n       config.maxRetries = configData['comfyui.max_retries'] || 3\n \n       ElMessage.success('配置加载成功')\n"
+                },
+                {
+                    "date": 1752459645632,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -237,14 +237,8 @@\n         config_type: 'number',\n         config_group: 'comfyui'\n       },\n       {\n-        config_key: 'comfyui.auto_switch',\n-        config_value: config.autoSwitch.toString(),\n-        config_type: 'boolean',\n-        config_group: 'comfyui'\n-      },\n-      {\n         config_key: 'comfyui.client_id',\n         config_value: config.clientId,\n         config_type: 'string',\n         config_group: 'comfyui'\n"
                 }
             ],
             "date": 1752325471997,

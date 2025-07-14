@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 61,
+            "activePatchIndex": 67,
             "patches": [
                 {
                     "date": 1752384971595,
@@ -252,6 +252,30 @@
                 {
                     "date": 1752434989992,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -271,5 +271,4 @@\n     transform: none;\n   }\n }\n </style>\n-\n"
+                },
+                {
+                    "date": 1752461761239,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -173,10 +173,8 @@\n }\n \n /* van-image组件样式 */\n .comparison-image {\n-  width: 100% !important;\n-  height: 100% !important;\n   cursor: pointer;\n   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n }\n \n"
+                },
+                {
+                    "date": 1752461774575,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -183,10 +183,8 @@\n }\n \n /* 深度选择器确保样式应用到van-image内部 */\n .comparison-image :deep(.van-image) {\n-  width: 100% !important;\n-  height: 100% !important;\n }\n \n .comparison-image :deep(.van-image__img) {\n   width: 100% !important;\n"
+                },
+                {
+                    "date": 1752461809535,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -125,9 +125,9 @@\n   display: inline-flex; /* 改为inline-flex，确保可以被text-align: center居中 */\n   align-items: center;\n   justify-content: center;\n   gap: 4%;\n-  width: 100% !important; /* 强制设置宽度，防止被覆盖 */\n+  width: 100%;\n   min-height: 300px;\n   max-height: 500px;\n   margin: 0 auto;\n   box-sizing: border-box;\n"
+                },
+                {
+                    "date": 1752461823451,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -214,9 +214,9 @@\n @media (max-width: 768px) {\n   .comparison-container {\n     gap: 8px;\n     padding: 12px 0;\n-    width: 100% !important;\n+    width: 100%;\n   }\n \n   .image-wrapper {\n     height: 300px; /* 移动端固定较小高度 */\n"
+                },
+                {
+                    "date": 1752462148223,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -186,10 +186,8 @@\n .comparison-image :deep(.van-image) {\n }\n \n .comparison-image :deep(.van-image__img) {\n-  width: 100% !important;\n-  height: 100% !important;\n   object-fit: contain;\n   object-position: center;\n }\n \n"
+                },
+                {
+                    "date": 1752462213653,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -181,12 +181,10 @@\n .comparison-image:hover {\n   transform: scale(1.02);\n }\n \n-/* 深度选择器确保样式应用到van-image内部 */\n-.comparison-image :deep(.van-image) {\n-}\n \n+\n .comparison-image :deep(.van-image__img) {\n   object-fit: contain;\n   object-position: center;\n }\n"
                 }
             ],
             "date": 1752384971595,

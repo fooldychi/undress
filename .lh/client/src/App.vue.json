@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752369807054,
@@ -32,6 +32,18 @@
                 {
                     "date": 1752436320304,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,10 +22,5 @@\n   min-height: 100vh;\r\n   display: flex;\r\n   flex-direction: column;\r\n }\r\n-\r\n-/* 覆盖所有.home-footer的margin-top */\r\n-.home-footer {\r\n-  margin-top: 0 !important;\r\n-}\r\n </style>\r\n"
+                },
+                {
+                    "date": 1752463025792,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,12 +1,16 @@\n <template>\r\n   <div class=\"app\">\r\n     <router-view />\r\n     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->\r\n+\r\n+    <!-- WebSocket 连接状态指示器 -->\r\n+    <WebSocketStatus />\r\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n+import WebSocketStatus from './components/WebSocketStatus.vue'\r\n // VantUI Toast 无需导入容器组件\r\n </script>\r\n \r\n <style>\r\n"
+                },
+                {
+                    "date": 1752463811376,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,13 +4,22 @@\n     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->\r\n \r\n     <!-- WebSocket 连接状态指示器 -->\r\n     <WebSocketStatus />\r\n+\r\n+    <!-- 开发环境下的 WebSocket 调试面板 -->\r\n+    <WebSocketDebugPanel v-if=\"isDev\" />\r\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n+import { ref } from 'vue'\r\n import WebSocketStatus from './components/WebSocketStatus.vue'\r\n+import WebSocketDebugPanel from './components/WebSocketDebugPanel.vue'\r\n+\r\n+// 检查是否为开发环境\r\n+const isDev = ref(import.meta.env.DEV)\r\n+\r\n // VantUI Toast 无需导入容器组件\r\n </script>\r\n \r\n <style>\r\n"
+                },
+                {
+                    "date": 1752464153131,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,22 +4,13 @@\n     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->\r\n \r\n     <!-- WebSocket 连接状态指示器 -->\r\n     <WebSocketStatus />\r\n-\r\n-    <!-- 开发环境下的 WebSocket 调试面板 -->\r\n-    <WebSocketDebugPanel v-if=\"isDev\" />\r\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n-import { ref } from 'vue'\r\n import WebSocketStatus from './components/WebSocketStatus.vue'\r\n-import WebSocketDebugPanel from './components/WebSocketDebugPanel.vue'\r\n-\r\n-// 检查是否为开发环境\r\n-const isDev = ref(import.meta.env.DEV)\r\n-\r\n // VantUI Toast 无需导入容器组件\r\n </script>\r\n \r\n <style>\r\n"
                 }
             ],
             "date": 1752369807054,
