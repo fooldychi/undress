@@ -21,6 +21,11 @@ class ComfyUILoadBalancer {
     this.serverFailures = new Map() // 记录服务器失败次数
     this.healthMonitorInterval = null // 健康监控定时器
     this.healthMonitorFrequency = 30000 // 30秒检查一次健康状态
+
+    // WebSocket专用锁定机制
+    this.webSocketLockedServer = null
+    this.webSocketLockTime = 0
+    this.webSocketLockDuration = 300000 // WebSocket锁定5分钟，因为是长连接
   }
 
   /**
@@ -313,7 +318,16 @@ class ComfyUILoadBalancer {
     try {
       console.log('🎯 开始选择最优服务器...')
 
-      // 检查是否有锁定的服务器
+      // 优先检查WebSocket锁定的服务器
+      if (this.isWebSocketServerLocked()) {
+        const webSocketServer = this.getWebSocketLockedServer()
+        if (webSocketServer) {
+          console.log(`🔒🌐 使用WebSocket锁定的服务器: ${webSocketServer}`)
+          return webSocketServer
+        }
+      }
+
+      // 检查是否有普通锁定的服务器
       if (this.isServerLocked()) {
         const lockedServer = this.getLockedServer()
         if (lockedServer) {
@@ -445,7 +459,7 @@ class ComfyUILoadBalancer {
   }
 
   /**
-   * 锁定服务器
+   * 锁定服务器（普通HTTP请求）
    */
   lockServer(serverUrl) {
     this.lockedServer = serverUrl
@@ -454,6 +468,57 @@ class ComfyUILoadBalancer {
 
     // 显示当前所有服务器状态
     this.logServerStatus()
+  }
+
+  /**
+   * 锁定服务器用于WebSocket连接
+   */
+  lockServerForWebSocket(serverUrl) {
+    this.webSocketLockedServer = serverUrl
+    this.webSocketLockTime = Date.now()
+    console.log(`🔒🌐 锁定服务器用于WebSocket: ${serverUrl}, 持续 ${this.webSocketLockDuration / 1000} 秒`)
+
+    // 同时设置普通锁定，确保一致性
+    this.lockServer(serverUrl)
+  }
+
+  /**
+   * 释放WebSocket服务器锁定
+   */
+  unlockWebSocketServer() {
+    if (this.webSocketLockedServer) {
+      console.log(`🔓🌐 释放WebSocket服务器锁定: ${this.webSocketLockedServer}`)
+      this.webSocketLockedServer = null
+      this.webSocketLockTime = 0
+    }
+  }
+
+  /**
+   * 检查WebSocket服务器是否被锁定
+   */
+  isWebSocketServerLocked() {
+    if (!this.webSocketLockedServer) return false
+
+    const now = Date.now()
+    const isLocked = (now - this.webSocketLockTime) < this.webSocketLockDuration
+
+    if (!isLocked) {
+      console.log('🔓🌐 WebSocket服务器锁定已过期')
+      this.webSocketLockedServer = null
+      this.webSocketLockTime = 0
+    }
+
+    return isLocked
+  }
+
+  /**
+   * 获取WebSocket锁定的服务器
+   */
+  getWebSocketLockedServer() {
+    if (this.isWebSocketServerLocked()) {
+      return this.webSocketLockedServer
+    }
+    return null
   }
 
   /**

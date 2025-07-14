@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 28,
+            "activePatchIndex": 31,
             "patches": [
                 {
                     "date": 1752333548051,
@@ -120,6 +120,18 @@
                 {
                     "date": 1752459701776,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -519,40 +519,10 @@\n     // 强制更新服务器负载信息\n     this.lastUpdateTime = 0\n   }\n \n-  /**\n-   * 触发故障转移\n-   */\n-  async triggerFailover(failedServerUrl) {\n-    const now = Date.now()\n \n-    // 检查故障转移冷却时间\n-    if (now - this.lastFailoverTime < this.failoverCooldown) {\n-      console.log('⏳ 故障转移冷却中，跳过此次转移')\n-      return\n-    }\n \n-    console.log(`🔄 触发故障转移，失败服务器: ${failedServerUrl}`)\n-    this.lastFailoverTime = now\n-\n-    // 强制重新评估所有服务器\n-    await this.forceReassessment()\n-\n-    // 尝试选择新的服务器\n-    try {\n-      const newServer = await this.selectServerByMinQueue()\n-      if (newServer && newServer !== failedServerUrl) {\n-        console.log(`✅ 故障转移成功，新服务器: ${newServer}`)\n-        return newServer\n-      } else {\n-        console.warn('⚠️ 故障转移失败，没有可用的替代服务器')\n-      }\n-    } catch (error) {\n-      console.error('❌ 故障转移过程中出错:', error)\n-    }\n-  }\n-\n   /**\n    * 重置服务器失败计数\n    */\n   resetFailureCount(serverUrl) {\n"
+                },
+                {
+                    "date": 1752469902720,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,8 +20,13 @@\n     this.failureThreshold = 2 // 连续失败2次后标记为不健康\n     this.serverFailures = new Map() // 记录服务器失败次数\n     this.healthMonitorInterval = null // 健康监控定时器\n     this.healthMonitorFrequency = 30000 // 30秒检查一次健康状态\n+\n+    // WebSocket专用锁定机制\n+    this.webSocketLockedServer = null\n+    this.webSocketLockTime = 0\n+    this.webSocketLockDuration = 300000 // WebSocket锁定5分钟，因为是长连接\n   }\n \n   /**\n    * 初始化负载均衡器\n"
+                },
+                {
+                    "date": 1752469927232,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -449,9 +449,9 @@\n     return fallbackUrl\n   }\n \n   /**\n-   * 锁定服务器\n+   * 锁定服务器（普通HTTP请求）\n    */\n   lockServer(serverUrl) {\n     this.lockedServer = serverUrl\n     this.lastLockTime = Date.now()\n@@ -461,8 +461,59 @@\n     this.logServerStatus()\n   }\n \n   /**\n+   * 锁定服务器用于WebSocket连接\n+   */\n+  lockServerForWebSocket(serverUrl) {\n+    this.webSocketLockedServer = serverUrl\n+    this.webSocketLockTime = Date.now()\n+    console.log(`🔒🌐 锁定服务器用于WebSocket: ${serverUrl}, 持续 ${this.webSocketLockDuration / 1000} 秒`)\n+\n+    // 同时设置普通锁定，确保一致性\n+    this.lockServer(serverUrl)\n+  }\n+\n+  /**\n+   * 释放WebSocket服务器锁定\n+   */\n+  unlockWebSocketServer() {\n+    if (this.webSocketLockedServer) {\n+      console.log(`🔓🌐 释放WebSocket服务器锁定: ${this.webSocketLockedServer}`)\n+      this.webSocketLockedServer = null\n+      this.webSocketLockTime = 0\n+    }\n+  }\n+\n+  /**\n+   * 检查WebSocket服务器是否被锁定\n+   */\n+  isWebSocketServerLocked() {\n+    if (!this.webSocketLockedServer) return false\n+\n+    const now = Date.now()\n+    const isLocked = (now - this.webSocketLockTime) < this.webSocketLockDuration\n+\n+    if (!isLocked) {\n+      console.log('🔓🌐 WebSocket服务器锁定已过期')\n+      this.webSocketLockedServer = null\n+      this.webSocketLockTime = 0\n+    }\n+\n+    return isLocked\n+  }\n+\n+  /**\n+   * 获取WebSocket锁定的服务器\n+   */\n+  getWebSocketLockedServer() {\n+    if (this.isWebSocketServerLocked()) {\n+      return this.webSocketLockedServer\n+    }\n+    return null\n+  }\n+\n+  /**\n    * 检查服务器是否被锁定\n    */\n   isServerLocked() {\n     if (!this.lockedServer) return false\n"
+                },
+                {
+                    "date": 1752469945266,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -317,9 +317,18 @@\n   async selectServerByMinQueue() {\n     try {\n       console.log('🎯 开始选择最优服务器...')\n \n-      // 检查是否有锁定的服务器\n+      // 优先检查WebSocket锁定的服务器\n+      if (this.isWebSocketServerLocked()) {\n+        const webSocketServer = this.getWebSocketLockedServer()\n+        if (webSocketServer) {\n+          console.log(`🔒🌐 使用WebSocket锁定的服务器: ${webSocketServer}`)\n+          return webSocketServer\n+        }\n+      }\n+\n+      // 检查是否有普通锁定的服务器\n       if (this.isServerLocked()) {\n         const lockedServer = this.getLockedServer()\n         if (lockedServer) {\n           console.log(`🔒 使用锁定的服务器: ${lockedServer}`)\n"
                 }
             ],
             "date": 1752333548051,
