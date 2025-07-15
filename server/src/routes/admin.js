@@ -1217,11 +1217,10 @@ router.post('/test-comfyui', adminAuth, async (req, res, next) => {
     // 测试ComfyUI连接
     const fetch = require('node-fetch');
 
-    // 尝试多个端点来检测ComfyUI服务器
+    // 使用ComfyUI官方端点进行检测
     const testEndpoints = [
-      `${serverUrl}/system_stats`,  // ComfyUI系统状态端点
-      `${serverUrl}/history`,       // ComfyUI历史记录端点
-      `${serverUrl}/`,              // 根路径
+      `${serverUrl}/api/queue`,        // ComfyUI官方队列端点
+      `${serverUrl}/api/system_stats`, // ComfyUI官方系统状态端点
     ];
 
     let lastError = null;

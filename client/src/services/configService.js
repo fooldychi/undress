@@ -45,6 +45,25 @@ class ConfigService {
   }
 
   /**
+   * 获取默认配置（当服务端不可用时使用）
+   */
+  getDefaultConfig() {
+    return {
+      'comfyui.server_url': 'https://l9s75ay3rp-8188.cnb.run',
+      'comfyui.backup_servers': 'https://0rv00xh2vg-8188.cnb.run',
+      'comfyui.client_id': 'abc1373d4ad648a3a81d0587fbe5534b',
+      'comfyui.timeout': 300000,
+      'comfyui.health_check_timeout': 10000,
+      'comfyui.auto_switch': true,
+      'comfyui.retry_attempts': 3,
+      'comfyui.switch_threshold': 2,
+      'ai.text_to_image_points': 20,
+      'ai.face_swap_points': 20,
+      'ai.undress_points': 20
+    }
+  }
+
+  /**
    * 获取配置（带缓存）
    */
   async getConfig(forceRefresh = false) {
@@ -60,12 +79,20 @@ class ConfigService {
       // 从服务端获取最新配置
       return await this.fetchServerConfig()
     } catch (error) {
+      console.warn('⚠️ 无法从服务端获取配置:', error.message)
+
       // 如果获取失败，返回缓存的配置（如果有）
       if (this.configCache) {
         console.warn('⚠️ 使用缓存配置作为备用')
         return this.configCache
       }
-      throw error
+
+      // 最后的备用方案：使用默认配置
+      console.warn('⚠️ 使用默认配置作为备用')
+      const defaultConfig = this.getDefaultConfig()
+      this.configCache = defaultConfig
+      this.lastFetchTime = now
+      return defaultConfig
     }
   }
 

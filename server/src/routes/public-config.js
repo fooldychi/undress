@@ -9,8 +9,8 @@ router.get('/', async (req, res) => {
 
     // 使用环境变量或系统默认值作为备用配置
     const defaultConfigs = {
-      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com',
-      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || '',
+      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://l9s75ay3rp-8188.cnb.run',
+      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || 'https://0rv00xh2vg-8188.cnb.run',
       'comfyui.health_check_timeout': parseInt(process.env.COMFYUI_HEALTH_CHECK_TIMEOUT || '10000'),
       'comfyui.timeout': parseInt(process.env.COMFYUI_TIMEOUT || '300000'),
       'ai.text_to_image_points': parseInt(process.env.AI_TEXT_TO_IMAGE_POINTS || '20'),
@@ -75,8 +75,8 @@ router.get('/', async (req, res) => {
 
     // 最后的备用配置 - 使用环境变量
     const fallbackConfig = {
-      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com',
-      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || '',
+      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://l9s75ay3rp-8188.cnb.run',
+      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || 'https://0rv00xh2vg-8188.cnb.run',
       'comfyui.health_check_timeout': parseInt(process.env.COMFYUI_HEALTH_CHECK_TIMEOUT || '10000'),
       'comfyui.timeout': parseInt(process.env.COMFYUI_TIMEOUT || '300000'),
       'ai.text_to_image_points': parseInt(process.env.AI_TEXT_TO_IMAGE_POINTS || '20'),

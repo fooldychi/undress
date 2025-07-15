@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 24,
+            "activePatchIndex": 30,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -104,6 +104,30 @@
                 {
                     "date": 1752511416943,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -47,24 +47,23 @@\n     // 初始化配置服务\r\n     try {\r\n       await configService.initialize()\r\n     } catch (error) {\r\n-      console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)\r\n+      // 使用默认配置\r\n     }\r\n \r\n     // 初始化负载均衡器\r\n     try {\r\n       await loadBalancer.initialize()\r\n     } catch (error) {\r\n-      console.warn('⚠️ 负载均衡器初始化失败，将使用单服务器模式:', error)\r\n+      // 使用单服务器模式\r\n     }\r\n \r\n     // 初始化 ComfyUI WebSocket 连接\r\n     try {\r\n       await initializeWebSocket()\r\n-      console.log('✅ ComfyUI WebSocket 初始化完成')\r\n     } catch (error) {\r\n-      console.warn('⚠️ ComfyUI WebSocket 初始化失败，将在需要时重试:', error.message)\r\n+      // 将在需要时重试\r\n     }\r\n \r\n     const app = createApp(App)\r\n     app.use(router)\r\n"
+                },
+                {
+                    "date": 1752512801256,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -51,13 +51,9 @@\n       // 使用默认配置\r\n     }\r\n \r\n     // 初始化负载均衡器\r\n-    try {\r\n-      await loadBalancer.initialize()\r\n-    } catch (error) {\r\n-      // 使用单服务器模式\r\n-    }\r\n+    await loadBalancer.initialize()\r\n \r\n     // 初始化 ComfyUI WebSocket 连接\r\n     try {\r\n       await initializeWebSocket()\r\n"
+                },
+                {
+                    "date": 1752512826329,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,14 +53,9 @@\n \r\n     // 初始化负载均衡器\r\n     await loadBalancer.initialize()\r\n \r\n-    // 初始化 ComfyUI WebSocket 连接\r\n-    try {\r\n-      await initializeWebSocket()\r\n-    } catch (error) {\r\n-      // 将在需要时重试\r\n-    }\r\n+    // WebSocket 连接将在用户发起生图请求时自动初始化\r\n \r\n     const app = createApp(App)\r\n     app.use(router)\r\n     app.use(Vant)\r\n"
+                },
+                {
+                    "date": 1752512885102,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,8 +10,9 @@\n \r\n // 开发环境下引入测试工具\r\n if (import.meta.env.DEV) {\r\n   import('./utils/testPointsConsumption.js')\r\n+  import('./utils/testSimpleLoadBalancer.js')\r\n }\r\n \r\n // 引入Vant UI\r\n import Vant, { Toast } from 'vant'\r\n"
+                },
+                {
+                    "date": 1752513548368,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -54,8 +54,16 @@\n \r\n     // 初始化负载均衡器\r\n     await loadBalancer.initialize()\r\n \r\n+    // 初始化服务器连接测试，提供详细的服务器状态反馈\r\n+    console.log('🔍 开始服务器连接测试...')\r\n+    try {\r\n+      await loadBalancer.initializeServerConnection()\r\n+    } catch (error) {\r\n+      console.warn('⚠️ 服务器连接测试失败，将在需要时重试:', error.message)\r\n+    }\r\n+\r\n     // WebSocket 连接将在用户发起生图请求时自动初始化\r\n \r\n     const app = createApp(App)\r\n     app.use(router)\r\n"
+                },
+                {
+                    "date": 1752549327542,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,9 +4,8 @@\n \r\n // 引入配置服务和负载均衡器\r\n import configService from './services/configService.js'\r\n import loadBalancer from './services/loadBalancer.js'\r\n-import { exposeTestFunctions } from './utils/loadBalancerTest.js'\r\n import { initializeWebSocket } from './services/comfyui.js'\r\n \r\n // 开发环境下引入测试工具\r\n if (import.meta.env.DEV) {\r\n"
+                },
+                {
+                    "date": 1752549390022,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -114,12 +114,9 @@\n \r\n     app.mount('#app')\r\n     console.log('✅ Vue应用启动成功!')\r\n \r\n-    // 在开发环境中暴露测试函数\r\n-    if (import.meta.env.DEV) {\r\n-      exposeTestFunctions()\r\n-    }\r\n+    // 测试函数已在各自的模块中自动暴露到全局\r\n \r\n   } catch (error) {\r\n     console.error('❌ Vue应用启动失败:', error)\r\n \r\n"
                 }
             ],
             "date": 1752330016769,

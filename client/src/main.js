@@ -5,12 +5,12 @@ import router from './router'
 // 引入配置服务和负载均衡器
 import configService from './services/configService.js'
 import loadBalancer from './services/loadBalancer.js'
-import { exposeTestFunctions } from './utils/loadBalancerTest.js'
 import { initializeWebSocket } from './services/comfyui.js'
 
 // 开发环境下引入测试工具
 if (import.meta.env.DEV) {
   import('./utils/testPointsConsumption.js')
+  import('./utils/testSimpleLoadBalancer.js')
 }
 
 // 引入Vant UI
@@ -24,17 +24,16 @@ import './styles/vant-theme.css'
 console.log('🚀 开始初始化Vue应用...');
 
 // 处理GitHub Pages SPA路由重定向
-(function() {
-  const redirect = new URLSearchParams(window.location.search).get('redirect');
-  if (redirect) {
-    console.log('🔄 检测到路由重定向:', redirect);
-    history.replaceState(null, null, redirect);
+if (window.location.search.includes('redirect=')) {
+  const redirectPath = new URLSearchParams(window.location.search).get('redirect')
+  if (redirectPath) {
+    window.history.replaceState({}, '', redirectPath)
   }
-})();
+}
 
-// 添加全局错误处理
+// 全局错误处理
 window.addEventListener('error', (event) => {
-  console.error('全局JavaScript错误:', event.error)
+  console.error('全局错误:', event.error)
 })
 
 window.addEventListener('unhandledrejection', (event) => {
@@ -44,155 +43,77 @@ window.addEventListener('unhandledrejection', (event) => {
 // 确保DOM加载完成
 async function initApp() {
   try {
+    console.log('🚀 初始化配置服务...')
     // 初始化配置服务
     try {
       await configService.initialize()
     } catch (error) {
+      console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)
       // 使用默认配置
     }
 
     // 初始化负载均衡器
+    await loadBalancer.initialize()
+
+    // 初始化服务器连接测试，提供详细的服务器状态反馈
+    console.log('🔍 开始服务器连接测试...')
     try {
-      await loadBalancer.initialize()
+      await loadBalancer.initializeServerConnection()
+      
+      // 显示负载均衡状态
+      console.log('🎯 显示负载均衡状态...')
+      await loadBalancer.showLoadBalancingStatus()
     } catch (error) {
-      // 使用单服务器模式
+      console.warn('⚠️ 服务器连接测试失败，将在需要时重试:', error.message)
     }
 
-    // 初始化 ComfyUI WebSocket 连接
-    try {
-      await initializeWebSocket()
-    } catch (error) {
-      // 将在需要时重试
-    }
+    // WebSocket 连接将在用户发起生图请求时自动初始化
 
     const app = createApp(App)
     app.use(router)
     app.use(Vant)
 
-    // 添加Vue错误处理
+    // 全局错误处理
     app.config.errorHandler = (err, vm, info) => {
       console.error('Vue应用错误:', err, info)
-
-      // 显示用户友好的错误信息
-      const errorDiv = document.createElement('div')
-      errorDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #ff4444;
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        z-index: 10000;
-        max-width: 300px;
-        font-family: monospace;
-        font-size: 12px;
-      `
-      errorDiv.innerHTML = `
-        <strong>Vue错误:</strong><br>
-        ${err.message}<br>
-        <small>${info}</small>
-        <button onclick="this.parentElement.remove()" style="
-          background: rgba(255,255,255,0.2);
-          border: none;
-          color: white;
-          padding: 4px 8px;
-          border-radius: 4px;
-          cursor: pointer;
-          margin-top: 8px;
-          display: block;
-        ">关闭</button>
-      `
-      document.body.appendChild(errorDiv)
-
-      // 5秒后自动移除
-      setTimeout(() => {
-        if (errorDiv.parentElement) {
-          errorDiv.remove()
-        }
-      }, 5000)
+      
+      // 显示用户友好的错误提示
+      Toast.fail('应用发生错误，请刷新页面重试')
     }
 
+    // 全局属性
+    app.config.globalProperties.$toast = Toast
+
+    // 挂载应用
     app.mount('#app')
     console.log('✅ Vue应用启动成功!')
 
-    // 在开发环境中暴露测试函数
-    if (import.meta.env.DEV) {
-      exposeTestFunctions()
-    }
+    // 测试函数已在各自的模块中自动暴露到全局
 
   } catch (error) {
     console.error('❌ Vue应用启动失败:', error)
 
     // 显示启动失败页面
-    const appElement = document.getElementById('app')
-    if (appElement) {
-      appElement.innerHTML = `
-        <div style="
-          min-height: 100vh;
-          background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          color: white;
-          text-align: center;
-          padding: 20px;
-        ">
-          <div style="
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 600px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-          ">
-            <h1 style="margin: 0 0 20px 0; font-size: 2rem;">🚨 应用启动失败</h1>
-            <p style="font-size: 1.1rem; margin: 0 0 20px 0;">
-              <strong>错误:</strong> ${error.message}
-            </p>
-            <div style="margin: 20px 0;">
-              <button onclick="location.reload()" style="
-                background: #fff;
-                color: #ee5a24;
-                border: none;
-                padding: 12px 24px;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: bold;
-                font-size: 1rem;
-                margin-right: 10px;
-              ">重新加载</button>
-              <a href="/simple.html" style="
-                background: rgba(255,255,255,0.2);
-                color: white;
-                text-decoration: none;
-                padding: 12px 24px;
-                border-radius: 8px;
-                display: inline-block;
-                font-weight: bold;
-              ">简化版本</a>
-            </div>
-            <details style="margin: 20px 0; text-align: left;">
-              <summary style="cursor: pointer; font-weight: bold; text-align: center;">查看详细错误信息</summary>
-              <pre style="
-                background: rgba(0,0,0,0.3);
-                padding: 15px;
-                border-radius: 8px;
-                overflow: auto;
-                margin: 10px 0;
-                font-size: 12px;
-                white-space: pre-wrap;
-              ">${error.stack || '无堆栈信息'}</pre>
-            </details>
+    document.body.innerHTML = `
+      <div class="error-page">
+        <div class="error-content">
+          <h1 class="error-title">应用启动失败</h1>
+          <p class="error-message">抱歉，应用无法正常启动。请尝试刷新页面或联系技术支持。</p>
+          <div class="error-actions">
+            <button class="error-button" onclick="window.location.reload()">刷新页面</button>
+            <a class="error-button secondary" href="/">返回首页</a>
           </div>
+          <details style="margin-top: 20px; text-align: left;">
+            <summary style="cursor: pointer;">技术详情</summary>
+            <pre style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 12px; overflow: auto;">${error.stack || error.message}</pre>
+          </details>
         </div>
-      `
-    }
+      </div>
+    `
   }
 }
 
-// 等待DOM加载完成
+// 启动应用
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp)
 } else {

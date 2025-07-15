@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 38,
+            "activePatchIndex": 39,
             "patches": [
                 {
                     "date": 1752325471997,
@@ -160,6 +160,10 @@
                 {
                     "date": 1752459645632,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -237,14 +237,8 @@\n         config_type: 'number',\n         config_group: 'comfyui'\n       },\n       {\n-        config_key: 'comfyui.auto_switch',\n-        config_value: config.autoSwitch.toString(),\n-        config_type: 'boolean',\n-        config_group: 'comfyui'\n-      },\n-      {\n         config_key: 'comfyui.client_id',\n         config_value: config.clientId,\n         config_type: 'string',\n         config_group: 'comfyui'\n"
+                },
+                {
+                    "date": 1752513601069,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,12 +50,12 @@\n               <el-input\n                 v-model=\"config.backupServers\"\n                 type=\"textarea\"\n                 :rows=\"3\"\n-                placeholder=\"https://backup1.example.com&#10;https://backup2.example.com\"\n+                placeholder=\"https://backup1.example.com&#10;https://backup2.example.com&#10;或使用逗号分隔: https://backup1.com,https://backup2.com\"\n                 clearable\n               />\n-              <div class=\"form-tip\">每行一个备用服务器地址，主服务器不可用时自动切换</div>\n+              <div class=\"form-tip\">支持两种格式：每行一个地址，或使用逗号分隔。主服务器不可用时自动切换</div>\n             </el-form-item>\n           </el-col>\n \n           <el-col :span=\"12\">\n"
                 }
             ],
             "date": 1752325471997,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1752329632027,
@@ -24,6 +24,14 @@
                 {
                     "date": 1752459934307,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -51,9 +51,8 @@\n \n       console.log('📋 返回给客户端的配置:');\n       console.log(`   ComfyUI主服务器: ${finalConfig['comfyui.server_url']}`);\n       console.log(`   备用服务器: ${finalConfig['comfyui.backup_servers']}`);\n-      console.log(`   自动切换: ${finalConfig['comfyui.auto_switch']}`);\n       console.log(`   超时时间: ${finalConfig['comfyui.timeout']}ms`);\n \n \n       res.json({\n"
+                },
+                {
+                    "date": 1752514297296,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,10 +8,10 @@\n     console.log('📥 客户端请求公开配置...');\n \n     // 使用环境变量或系统默认值作为备用配置\n     const defaultConfigs = {\n-      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com',\n-      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || '',\n+      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://l9s75ay3rp-8188.cnb.run',\n+      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || 'https://0rv00xh2vg-8188.cnb.run',\n       'comfyui.health_check_timeout': parseInt(process.env.COMFYUI_HEALTH_CHECK_TIMEOUT || '10000'),\n       'comfyui.timeout': parseInt(process.env.COMFYUI_TIMEOUT || '300000'),\n       'ai.text_to_image_points': parseInt(process.env.AI_TEXT_TO_IMAGE_POINTS || '20'),\n       'ai.face_swap_points': parseInt(process.env.AI_FACE_SWAP_POINTS || '20'),\n"
+                },
+                {
+                    "date": 1752514316463,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -74,10 +74,10 @@\n     console.error('❌ 获取公开配置失败:', error);\n \n     // 最后的备用配置 - 使用环境变量\n     const fallbackConfig = {\n-      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com',\n-      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || '',\n+      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://l9s75ay3rp-8188.cnb.run',\n+      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || 'https://0rv00xh2vg-8188.cnb.run',\n       'comfyui.health_check_timeout': parseInt(process.env.COMFYUI_HEALTH_CHECK_TIMEOUT || '10000'),\n       'comfyui.timeout': parseInt(process.env.COMFYUI_TIMEOUT || '300000'),\n       'ai.text_to_image_points': parseInt(process.env.AI_TEXT_TO_IMAGE_POINTS || '20'),\n       'ai.face_swap_points': parseInt(process.env.AI_FACE_SWAP_POINTS || '20'),\n"
                 }
             ],
             "date": 1752329632027,

@@ -1,0 +1,26 @@
+{
+    "sourceFile": "client/src/utils/loadBalancerTest.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1752518873242,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752518892851,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -33,22 +33,19 @@\n   }\n }\n \n /**\n- * 模拟服务器失败\n+ * 测试直接连接\n  */\n-export async function simulateServerFailure(serverUrl) {\n-  console.log(`🔥 模拟服务器失败: ${serverUrl}`)\n+export async function testDirectConnection(serverUrl) {\n+  console.log(`🔗 测试直接连接: ${serverUrl}`)\n \n   try {\n-    await loadBalancer.recordFailure(serverUrl)\n-    console.log('✅ 服务器失败记录完成')\n+    const result = await loadBalancer.testDirectConnection(serverUrl)\n+    console.log('✅ 连接测试结果:', result)\n \n-    // 显示更新后的状态\n-    loadBalancer.logServerStatus()\n-\n   } catch (error) {\n-    console.error('❌ 模拟服务器失败时出错:', error)\n+    console.error('❌ 连接测试失败:', error)\n   }\n }\n \n /**\n"
+                },
+                {
+                    "date": 1752518916123,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,13 +53,13 @@\n  */\n export function exposeTestFunctions() {\n   if (typeof window !== 'undefined') {\n     window.testLoadBalancer = testLoadBalancer\n-    window.simulateServerFailure = simulateServerFailure\n+    window.testDirectConnection = testDirectConnection\n     window.loadBalancer = loadBalancer\n \n     console.log('🔧 负载均衡器测试函数已暴露到全局:')\n     console.log('   - testLoadBalancer(): 测试负载均衡器')\n-    console.log('   - simulateServerFailure(url): 模拟服务器失败')\n+    console.log('   - testDirectConnection(url): 测试直接连接')\n     console.log('   - loadBalancer: 负载均衡器实例')\n   }\n }\n"
+                }
+            ],
+            "date": 1752518873242,
+            "name": "Commit-0",
+            "content": "// 负载均衡器测试工具\nimport loadBalancer from '../services/loadBalancer.js'\n\n/**\n * 测试负载均衡器功能\n */\nexport async function testLoadBalancer() {\n  console.log('🧪 开始测试负载均衡器...')\n\n  try {\n    // 1. 初始化负载均衡器\n    console.log('\\n🔧 初始化负载均衡器:')\n    await loadBalancer.initialize()\n\n    // 2. 测试服务器连接\n    console.log('\\n🔍 测试服务器连接:')\n    await loadBalancer.initializeServerConnection()\n\n    // 3. 测试服务器选择\n    console.log('\\n🎯 测试服务器选择:')\n    for (let i = 0; i < 3; i++) {\n      const server = await loadBalancer.getOptimalServer()\n      console.log(`   第${i + 1}次选择: ${server}`)\n\n      // 等待一秒\n      await new Promise(resolve => setTimeout(resolve, 1000))\n    }\n\n    console.log('\\n✅ 负载均衡器测试完成')\n\n  } catch (error) {\n    console.error('❌ 负载均衡器测试失败:', error)\n  }\n}\n\n/**\n * 模拟服务器失败\n */\nexport async function simulateServerFailure(serverUrl) {\n  console.log(`🔥 模拟服务器失败: ${serverUrl}`)\n\n  try {\n    await loadBalancer.recordFailure(serverUrl)\n    console.log('✅ 服务器失败记录完成')\n\n    // 显示更新后的状态\n    loadBalancer.logServerStatus()\n\n  } catch (error) {\n    console.error('❌ 模拟服务器失败时出错:', error)\n  }\n}\n\n/**\n * 在浏览器控制台中暴露测试函数\n */\nexport function exposeTestFunctions() {\n  if (typeof window !== 'undefined') {\n    window.testLoadBalancer = testLoadBalancer\n    window.simulateServerFailure = simulateServerFailure\n    window.loadBalancer = loadBalancer\n\n    console.log('🔧 负载均衡器测试函数已暴露到全局:')\n    console.log('   - testLoadBalancer(): 测试负载均衡器')\n    console.log('   - simulateServerFailure(url): 模拟服务器失败')\n    console.log('   - loadBalancer: 负载均衡器实例')\n  }\n}\n"
+        }
+    ]
+}

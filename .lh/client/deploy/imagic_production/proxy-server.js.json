@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 7,
             "patches": [
                 {
                     "date": 1752328206209,
@@ -12,6 +12,30 @@
                 {
                     "date": 1752328900490,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,10 +20,10 @@\n \r\n // 配置multer处理文件上传\r\n const upload = multer({ storage: multer.memoryStorage() });\r\n \r\n-// ComfyUI服务器地址 - 从环境变量获取\r\n-const COMFYUI_BASE_URL = process.env.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com';\r\n+// ComfyUI服务器地址\r\n+const COMFYUI_BASE_URL = 'https://dzqgp58z0s-8188.cnb.run';\r\n \r\n console.log('🚀 启动ComfyUI代理服务器...');\r\n \r\n // 健康检查\r\n"
+                },
+                {
+                    "date": 1752556295776,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -103,9 +103,9 @@\n   try {\r\n     console.log('📡 处理prompt提交请求...');\r\n     console.log('📋 请求体大小:', JSON.stringify(req.body).length, 'bytes');\r\n \r\n-    const response = await fetch(`${COMFYUI_BASE_URL}/prompt`, {\r\n+    const response = await fetch(`${COMFYUI_BASE_URL}/api/prompt`, {\r\n       method: 'POST',\r\n       headers: {\r\n         'Content-Type': 'application/json',\r\n         'Accept': 'application/json'\r\n"
+                },
+                {
+                    "date": 1752556332546,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -58,9 +58,9 @@\n \r\n     console.log(`🌐 转发到: ${COMFYUI_BASE_URL}/upload/image`);\r\n \r\n     // 发送到ComfyUI服务器\r\n-    const response = await fetch(`${COMFYUI_BASE_URL}/upload/image`, {\r\n+    const response = await fetch(`${COMFYUI_BASE_URL}/api/upload/image`, {\r\n       method: 'POST',\r\n       body: formData,\r\n       headers: formData.getHeaders(),\r\n       timeout: 30000, // 30秒超时\r\n"
+                },
+                {
+                    "date": 1752556349373,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -152,9 +152,9 @@\n   changeOrigin: true,\r\n   timeout: 30000,\r\n   proxyTimeout: 30000,\r\n   pathRewrite: {\r\n-    '^/api': '',\r\n+    '^/api': '/api',\r\n   },\r\n   onProxyReq: (proxyReq, req, res) => {\r\n     console.log(`📡 代理请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url.replace('/api', '')}`);\r\n     proxyReq.setTimeout(30000);\r\n"
+                },
+                {
+                    "date": 1752556367075,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -155,9 +155,9 @@\n   pathRewrite: {\r\n     '^/api': '/api',\r\n   },\r\n   onProxyReq: (proxyReq, req, res) => {\r\n-    console.log(`📡 代理请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url.replace('/api', '')}`);\r\n+    console.log(`📡 代理请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url}`);\r\n     proxyReq.setTimeout(30000);\r\n   },\r\n   onProxyRes: (proxyRes, req, res) => {\r\n     console.log(`📥 代理响应: ${proxyRes.statusCode} ${req.url}`);\r\n"
+                },
+                {
+                    "date": 1752556893504,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -106,14 +106,12 @@\n \r\n     const response = await fetch(`${COMFYUI_BASE_URL}/api/prompt`, {\r\n       method: 'POST',\r\n       headers: {\r\n-        'Content-Type': 'application/json',\r\n-        'Accept': 'application/json'\r\n+        'Content-Type': 'application/json'\r\n       },\r\n       body: JSON.stringify(req.body),\r\n-      timeout: 30000, // 30秒超时\r\n-      agent: false // 禁用keep-alive\r\n+      timeout: 30000 // 30秒超时\r\n     });\r\n \r\n     console.log(`📥 ComfyUI响应: ${response.status} ${response.statusText}`);\r\n \r\n"
+                },
+                {
+                    "date": 1752557329713,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -62,10 +62,9 @@\n     const response = await fetch(`${COMFYUI_BASE_URL}/api/upload/image`, {\r\n       method: 'POST',\r\n       body: formData,\r\n       headers: formData.getHeaders(),\r\n-      timeout: 30000, // 30秒超时\r\n-      agent: false // 禁用keep-alive\r\n+      timeout: 30000 // 30秒超时\r\n     });\r\n \r\n     console.log(`📥 ComfyUI响应: ${response.status} ${response.statusText}`);\r\n \r\n"
                 }
             ],
             "date": 1752328206209,

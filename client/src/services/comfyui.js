@@ -187,42 +187,14 @@ function getCurrentConfig(forceRefresh = false) {
   return getComfyUIConfig(forceRefresh)
 }
 
-// 获取API基础URL - 使用负载均衡
-async function getApiBaseUrl(forceReassessment = false, excludeUrls = []) {
+// 获取API基础URL - 使用负载均衡选择的最优服务器
+async function getApiBaseUrl() {
   try {
-    // 如果WebSocket已连接且没有强制重新评估，优先使用WebSocket连接的服务器
-    if (!forceReassessment && currentWebSocketServer && isWsConnected) {
-      console.log('🔗 使用WebSocket连接的服务器保持一致性:', currentWebSocketServer)
-      return currentWebSocketServer
-    }
-
-    // 如果需要强制重新评估，触发负载均衡器重新评估
-    if (forceReassessment) {
-      console.log('🔄 强制重新评估服务器...')
-      await loadBalancer.forceReassessment()
-    }
+    console.log('🎯 使用负载均衡选择最优服务器...')
 
     // 使用负载均衡器选择最优服务器
-    let optimalServer
-    if (excludeUrls.length > 0) {
-      console.log('🔄 获取下一个可用服务器，排除:', excludeUrls)
-      optimalServer = await loadBalancer.getNextAvailableServer(excludeUrls)
-    } else {
-      optimalServer = await loadBalancer.getOptimalServer()
-    }
-
+    const optimalServer = await loadBalancer.getOptimalServer()
     console.log('🎯 负载均衡选择的服务器:', optimalServer)
-
-    // 如果选择的服务器与当前WebSocket服务器不同，且WebSocket已连接，需要重连WebSocket
-    if (currentWebSocketServer && currentWebSocketServer !== optimalServer && isWsConnected) {
-      console.log(`⚠️ 检测到服务器切换 (${currentWebSocketServer} → ${optimalServer})，需要重连WebSocket`)
-      // 异步重连WebSocket，不阻塞当前请求
-      setTimeout(() => {
-        initializeWebSocket(true).catch(error => {
-          console.error('❌ 异步WebSocket重连失败:', error)
-        })
-      }, 100)
-    }
 
     // 确保URL格式正确，移除末尾的斜杠
     let baseUrl = optimalServer
@@ -230,9 +202,12 @@ async function getApiBaseUrl(forceReassessment = false, excludeUrls = []) {
       baseUrl = baseUrl.slice(0, -1)
     }
 
+    console.log(`🔗 最终API基础URL: ${baseUrl}`)
     return baseUrl
   } catch (error) {
-    // 降级到配置的服务器
+    console.error('❌ 获取API基础URL失败:', error)
+
+    // 备用方案：使用配置中的默认服务器
     const config = getComfyUIConfig(true)
     let baseUrl = config.COMFYUI_SERVER_URL
 
@@ -244,49 +219,7 @@ async function getApiBaseUrl(forceReassessment = false, excludeUrls = []) {
   }
 }
 
-// 带重试的API调用包装器
-async function callWithRetry(apiCall, maxRetries = 2, excludeUrls = []) {
-  let lastError = null
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await apiCall()
-      return result
-    } catch (error) {
-      lastError = error
-
-      // 如果不是最后一次尝试，且是网络相关错误，尝试下一个服务器
-      if (attempt < maxRetries &&
-          (error.message.includes('fetch') ||
-           error.message.includes('network') ||
-           error.message.includes('timeout') ||
-           error.message.includes('500') ||
-           error.message.includes('502') ||
-           error.message.includes('503'))) {
-
-        // 获取当前失败的服务器URL
-        const currentServer = await getApiBaseUrl()
-        if (currentServer) {
-          excludeUrls.push(currentServer)
-
-          // 记录失败
-          let errorType = 'api_error'
-          if (error.message.includes('timeout')) errorType = 'timeout'
-          else if (error.message.includes('network')) errorType = 'network'
-          else if (error.message.includes('fetch')) errorType = 'connection'
-          else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) errorType = 'server_error'
-
-          await loadBalancer.recordFailure(currentServer, errorType)
-        }
-
-        // 等待一段时间再重试
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
-      }
-    }
-  }
-
-  throw lastError
-}
+// 删除重试机制，直接使用最优服务器
 
 // 重置为默认配置
 function resetToDefaultConfig() {
@@ -301,89 +234,69 @@ function generateClientId() {
 
 // 第一步：上传Base64图片到ComfyUI服务器并获取文件名
 async function uploadImageToComfyUI(base64Image) {
-  try {
-    const config = getComfyUIConfig()
-    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
-    console.log('🔄 第一步：上传图片到ComfyUI服务器')
-    console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
+  const config = getComfyUIConfig()
+  const apiBaseUrl = await getApiBaseUrl()
+  console.log('🔄 第一步：上传图片到ComfyUI服务器')
+  console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
 
-    // 验证base64格式
-    if (!base64Image || !base64Image.startsWith('data:image/')) {
-      throw new Error('无效的base64图片格式')
-    }
-
-    // 从base64数据中提取图片信息
-    const base64Data = base64Image.split(',')[1]
-    const mimeType = base64Image.split(',')[0].split(':')[1].split(';')[0]
-    const extension = mimeType.split('/')[1] || 'jpg'
-
-    // 生成唯一文件名
-    const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`
-
-    // 将base64转换为Blob
-    const byteCharacters = atob(base64Data)
-    const byteNumbers = new Array(byteCharacters.length)
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i)
-    }
-    const byteArray = new Uint8Array(byteNumbers)
-    const blob = new Blob([byteArray], { type: mimeType })
-
-    console.log('📤 上传文件信息:', {
-      filename,
-      type: mimeType,
-      size: `${(blob.size / 1024).toFixed(2)} KB`
-    })
-
-    // 直连上传图片
-    const formData = new FormData()
-    formData.append('image', blob, filename)
-    formData.append('type', 'input')
-    formData.append('subfolder', '')
-    formData.append('overwrite', 'false')
-
-    console.log('🔄 开始上传图片...')
-
-    const response = await fetch(`${apiBaseUrl}/upload/image`, {
-      method: 'POST',
-      body: formData
-    })
-
-    console.log('📥 上传响应状态:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => response.statusText)
-      throw new Error(`上传失败: ${response.status} ${response.statusText} - ${errorText}`)
-    }
-
-    const result = await response.json()
-    console.log('✅ 图片上传成功:', result)
-
-    // 验证返回结果
-    if (!result.name) {
-      throw new Error('上传响应中缺少文件名')
-    }
-
-    return result.name
-
-  } catch (error) {
-    console.error('❌ 图片上传失败:', error)
-
-    // 如果是网络错误或服务器错误，记录失败并可能触发重新评估
-    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
-      const currentServer = await getApiBaseUrl()
-
-      // 确定错误类型
-      let errorType = 'upload_error'
-      if (error.message.includes('timeout')) errorType = 'timeout'
-      else if (error.message.includes('network')) errorType = 'network'
-      else if (error.message.includes('fetch')) errorType = 'connection'
-
-      await loadBalancer.recordFailure(currentServer, errorType)
-    }
-
-    throw new Error(`图片上传失败: ${error.message}`)
+  // 验证base64格式
+  if (!base64Image || !base64Image.startsWith('data:image/')) {
+    throw new Error('无效的base64图片格式')
   }
+
+  // 从base64数据中提取图片信息
+  const base64Data = base64Image.split(',')[1]
+  const mimeType = base64Image.split(',')[0].split(':')[1].split(';')[0]
+  const extension = mimeType.split('/')[1] || 'jpg'
+
+  // 生成唯一文件名
+  const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`
+
+  // 将base64转换为Blob
+  const byteCharacters = atob(base64Data)
+  const byteNumbers = new Array(byteCharacters.length)
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i)
+  }
+  const byteArray = new Uint8Array(byteNumbers)
+  const blob = new Blob([byteArray], { type: mimeType })
+
+  console.log('📤 上传文件信息:', {
+    filename,
+    type: mimeType,
+    size: `${(blob.size / 1024).toFixed(2)} KB`
+  })
+
+  // 直连上传图片
+  const formData = new FormData()
+  formData.append('image', blob, filename)
+  formData.append('type', 'input')
+  formData.append('subfolder', '')
+  formData.append('overwrite', 'false')
+
+  console.log('🔄 开始上传图片...')
+
+  const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
+    method: 'POST',
+    body: formData
+  })
+
+  console.log('📥 上传响应状态:', response.status, response.statusText)
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText)
+    throw new Error(`上传失败: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  const result = await response.json()
+  console.log('✅ 图片上传成功:', result)
+
+  // 验证返回结果
+  if (!result.name) {
+    throw new Error('上传响应中缺少文件名')
+  }
+
+  return result.name
 }
 
 // 创建工作流提示词，将用户图片关联到节点49
@@ -418,74 +331,54 @@ function createUndressWorkflowPrompt(uploadedImageName) {
 
 // 第二步：提交工作流到ComfyUI
 async function submitWorkflow(workflowPrompt) {
-  let selectedServer = null
-  try {
-    // 确保 WebSocket 连接
-    await initializeWebSocket()
+  // 确保 WebSocket 连接
+  await initializeWebSocket()
 
-    const config = getComfyUIConfig()
-    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
-    selectedServer = apiBaseUrl // 记录选择的服务器
+  const config = getComfyUIConfig()
+  const apiBaseUrl = await getApiBaseUrl()
+  console.log('🔄 第二步：提交工作流到ComfyUI')
+  console.log('📡 API地址:', `${apiBaseUrl}/api/prompt`)
 
-    // 构建请求体，按照ComfyUI API文档格式
-    const requestBody = {
-      client_id: config.CLIENT_ID,
-      prompt: workflowPrompt
-    }
-
-    // 第二步API调用：提交工作流到ComfyUI
-    const promptUrl = `${apiBaseUrl}/prompt`
-
-    const response = await fetch(promptUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody),
-      mode: 'cors',
-      credentials: 'omit'
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`工作流提交失败: ${response.status} ${response.statusText} - ${errorText}`)
-    }
-
-    const result = await response.json()
-
-    // 验证返回结果
-    if (!result.prompt_id) {
-      throw new Error('工作流响应中缺少prompt_id')
-    }
-
-    return result.prompt_id // 返回任务ID
-
-  } catch (error) {
-    console.error('❌ 工作流提交失败:', error)
-
-    // 记录服务器失败
-    if (selectedServer) {
-      // 确定错误类型
-      let errorType = 'workflow_error'
-      if (error.message.includes('timeout')) errorType = 'timeout'
-      else if (error.message.includes('network')) errorType = 'network'
-      else if (error.message.includes('fetch')) errorType = 'connection'
-      else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) errorType = 'server_error'
-
-      await loadBalancer.recordFailure(selectedServer, errorType)
-    }
-
-    throw new Error(`工作流提交失败: ${error.message}`)
+  // 构建请求体，按照ComfyUI API文档格式
+  const requestBody = {
+    client_id: config.CLIENT_ID,
+    prompt: workflowPrompt
   }
+
+  // 第二步API调用：提交工作流到ComfyUI
+  const promptUrl = `${apiBaseUrl}/api/prompt`
+
+  const response = await fetch(promptUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`工作流提交失败: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  const result = await response.json()
+
+  // 验证返回结果
+  if (!result.prompt_id) {
+    throw new Error('工作流响应中缺少prompt_id')
+  }
+
+  console.log('✅ 工作流提交成功，任务ID:', result.prompt_id)
+  return result.prompt_id // 返回任务ID
 }
 
 // 检查任务状态
 async function checkTaskStatus(promptId) {
   try {
     const config = getComfyUIConfig()
-    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
-    console.log('🔍 查询任务状态:', `${apiBaseUrl}/history/${promptId}`)
-    const response = await fetch(`${apiBaseUrl}/history/${promptId}`)
+    const apiBaseUrl = await getApiBaseUrl()
+    console.log('🔍 查询任务状态:', `${apiBaseUrl}/api/history/${promptId}`)
+    const response = await fetch(`${apiBaseUrl}/api/history/${promptId}`)
 
     if (!response.ok) {
       throw new Error(`状态查询失败: ${response.status} ${response.statusText}`)
@@ -496,20 +389,6 @@ async function checkTaskStatus(promptId) {
 
   } catch (error) {
     console.error('状态查询失败:', error)
-
-    // 如果是网络错误或服务器错误，记录失败
-    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
-      const currentServer = await getApiBaseUrl()
-
-      // 确定错误类型
-      let errorType = 'status_check_error'
-      if (error.message.includes('timeout')) errorType = 'timeout'
-      else if (error.message.includes('network')) errorType = 'network'
-      else if (error.message.includes('fetch')) errorType = 'connection'
-
-      await loadBalancer.recordFailure(currentServer, errorType)
-    }
-
     throw new Error(`状态查询失败: ${error.message}`)
   }
 }
@@ -518,7 +397,7 @@ async function checkTaskStatus(promptId) {
 async function getGeneratedImage(taskResult) {
   try {
     const config = getComfyUIConfig()
-    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
+    const apiBaseUrl = await getApiBaseUrl()
 
     // 从任务结果中找到输出图片
     const outputs = taskResult.outputs
@@ -570,7 +449,7 @@ async function getGeneratedImage(taskResult) {
       type: imageInfo.type,
       subfolder: imageInfo.subfolder || ''
     })
-    const imageUrl = `${apiBaseUrl}/view?${params.toString()}`
+    const imageUrl = `${apiBaseUrl}/api/view?${params.toString()}`
 
     console.log('🌐 获取图片URL:', imageUrl)
 
@@ -650,34 +529,16 @@ async function initializeWebSocket(forceNewConnection = false) {
   try {
     // 检查是否需要重新连接
     if (!forceNewConnection && wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-      // 检查当前连接的服务器是否仍然是最优选择
-      const currentOptimalServer = await getApiBaseUrl()
-      if (currentWebSocketServer === currentOptimalServer) {
-        console.log('🎯 WebSocket 已连接到最优服务器，无需重新初始化')
-        return true
-      } else {
-        console.log(`🔄 最优服务器已变更 (${currentWebSocketServer} → ${currentOptimalServer})，重新连接WebSocket`)
-        // 关闭当前连接
-        if (wsConnection) {
-          wsConnection.close()
-        }
-      }
+      console.log('🎯 WebSocket 已连接，无需重新初始化')
+      return true
     }
 
     const config = getComfyUIConfig()
 
-    // 为WebSocket连接锁定服务器，避免在连接过程中切换
-    console.log('🔒 为WebSocket连接锁定服务器选择...')
+    // 获取服务器URL用于WebSocket连接
     const baseUrl = await getApiBaseUrl()
     currentWebSocketServer = baseUrl
-
-    // 通知负载均衡器锁定当前服务器用于WebSocket
-    try {
-      await loadBalancer.lockServerForWebSocket(baseUrl)
-      console.log(`🔒🌐 已锁定服务器用于WebSocket: ${baseUrl}`)
-    } catch (error) {
-      console.warn('⚠️ 无法锁定服务器，继续使用当前选择:', error)
-    }
+    console.log(`🔌 准备连接WebSocket服务器: ${baseUrl}`)
 
     // 确保使用正确的WebSocket URL格式
     let wsUrl
@@ -687,14 +548,43 @@ async function initializeWebSocket(forceNewConnection = false) {
       wsUrl = baseUrl.replace('http://', 'ws://') + '/ws?clientId=' + config.CLIENT_ID
     }
 
-    // 先测试HTTP连接是否正常
+    // 先测试HTTP连接是否正常 - 使用统一的官方端点配置
     try {
-      const testResponse = await fetch(`${baseUrl}/system_stats`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000)
-      })
-      if (!testResponse.ok) {
-        throw new Error(`HTTP连接异常: ${testResponse.status}`)
+      const testEndpoints = comfyUIConfig.getHealthCheckEndpoints()
+      let connectionOk = false
+
+      for (const endpoint of testEndpoints) {
+        try {
+          const testResponse = await fetch(`${baseUrl}${endpoint}`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(comfyUIConfig.HEALTH_CHECK.TIMEOUT / 2) // 使用一半超时时间
+          })
+
+          if (testResponse.ok) {
+            // 验证响应是否为有效的ComfyUI响应
+            try {
+              const data = await testResponse.json()
+              const isValid = comfyUIConfig.validateResponse(endpoint, data)
+              if (isValid) {
+                console.log(`✅ HTTP连接测试成功: ${endpoint} (已验证ComfyUI响应)`)
+                connectionOk = true
+                break
+              } else {
+                console.log(`⚠️ 端点 ${endpoint} 响应但验证失败`)
+              }
+            } catch (jsonError) {
+              console.log(`✅ HTTP连接测试成功: ${endpoint} (非JSON响应但连接正常)`)
+              connectionOk = true
+              break
+            }
+          }
+        } catch (endpointError) {
+          console.log(`⚠️ 端点 ${endpoint} 测试失败: ${endpointError.message}`)
+        }
+      }
+
+      if (!connectionOk) {
+        throw new Error('所有HTTP端点测试失败')
       }
     } catch (httpError) {
       throw new Error(`ComfyUI服务器不可达: ${httpError.message}`)
@@ -731,16 +621,8 @@ async function initializeWebSocket(forceNewConnection = false) {
         // 停止健康检查
         stopWebSocketHealthCheck()
 
-        // 释放服务器锁定
-        if (currentWebSocketServer) {
-          try {
-            loadBalancer.unlockWebSocketServer()
-            console.log(`🔓🌐 已释放WebSocket服务器锁定: ${currentWebSocketServer}`)
-          } catch (error) {
-            console.warn('⚠️ 释放服务器锁定失败:', error)
-          }
-          currentWebSocketServer = null
-        }
+        // 清理WebSocket服务器记录
+        currentWebSocketServer = null
 
         // 显示前端通知
         showWebSocketStatusNotification('WebSocket连接已断开', 'warning')
@@ -1347,9 +1229,7 @@ async function processUndressImage(base64Image, onProgress = null) {
 
     const serverStatus = await checkComfyUIServerStatus()
     if (serverStatus.status === 'error') {
-      console.warn('⚠️ 服务器状态异常，重新评估...')
-      // 强制重新评估服务器
-      await getApiBaseUrl(true)
+      throw new Error(`ComfyUI服务器不可用: ${serverStatus.error}`)
     }
 
     // 检查积分（优先使用等级卡系统）
@@ -1421,7 +1301,7 @@ async function processUndressImage(base64Image, onProgress = null) {
       })
       const config = getComfyUIConfig()
       const apiBaseUrl = await getApiBaseUrl()
-      originalImage = `${apiBaseUrl}/view?${params.toString()}`
+      originalImage = `${apiBaseUrl}/api/view?${params.toString()}`
     } catch (error) {
       console.warn('⚠️ 获取原图失败:', error)
     }
@@ -1450,22 +1330,46 @@ async function processUndressImage(base64Image, onProgress = null) {
   }
 }
 
-// 检查ComfyUI服务器状态
+// 检查ComfyUI服务器状态 - 使用统一的官方端点配置
 async function checkComfyUIServerStatus() {
   try {
-    const apiBaseUrl = await getApiBaseUrl() // 现在是异步的
+    const apiBaseUrl = await getApiBaseUrl()
+    const testEndpoints = comfyUIConfig.getHealthCheckEndpoints()
 
-    const response = await fetch(`${apiBaseUrl}/system_stats`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(10000) // 10秒超时
-    })
+    console.log('🔍 检查ComfyUI服务器状态:', apiBaseUrl)
+    console.log('📋 使用端点列表:', testEndpoints)
 
-    if (response.ok) {
-      const stats = await response.json()
-      return { status: 'ok', stats }
-    } else {
-      return { status: 'error', code: response.status }
+    for (const endpoint of testEndpoints) {
+      try {
+        const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(comfyUIConfig.HEALTH_CHECK.TIMEOUT)
+        })
+
+        if (response.ok) {
+          try {
+            const data = await response.json()
+            const isValid = comfyUIConfig.validateResponse(endpoint, data)
+
+            if (isValid) {
+              console.log(`✅ 服务器状态检查成功: ${endpoint} (已验证ComfyUI响应)`)
+              return { status: 'ok', endpoint, data, validated: true }
+            } else {
+              console.log(`⚠️ 端点 ${endpoint} 响应但验证失败`)
+              continue
+            }
+          } catch (jsonError) {
+            // 即使不是JSON，只要响应成功就认为服务器正常
+            console.log(`✅ 服务器状态检查成功: ${endpoint} (非JSON响应但连接正常)`)
+            return { status: 'ok', endpoint, note: '非JSON响应但连接正常' }
+          }
+        }
+      } catch (endpointError) {
+        console.log(`端点 ${endpoint} 测试失败: ${endpointError.message}`)
+      }
     }
+
+    return { status: 'error', error: '所有端点测试失败' }
   } catch (error) {
     return { status: 'error', error: error.message }
   }

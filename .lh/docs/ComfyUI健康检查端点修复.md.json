@@ -1,0 +1,18 @@
+{
+    "sourceFile": "docs/ComfyUI健康检查端点修复.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752548168615,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752548168615,
+            "name": "Commit-0",
+            "content": "# ComfyUI健康检查端点修复\n\n## 问题描述\n\n之前的健康检查存在以下问题：\n1. 客户端和服务端使用的端点不一致\n2. 没有完全按照ComfyUI官方文档的端点进行检测\n3. 请求头设置不够完整，与实际浏览器请求不匹配\n\n## 修复内容\n\n### 1. 统一使用ComfyUI官方端点\n\n基于ComfyUI官方文档 (https://docs.comfy.org/development/comfyui-server/comms_routes)，更新了端点列表：\n\n```javascript\nconst testEndpoints = [\n  '/api/queue',        // ComfyUI官方队列端点\n  '/api/system_stats'  // ComfyUI官方系统状态端点\n]\n```\n\n### 2. 优化请求头设置\n\n根据实际浏览器请求信息，更新了请求头：\n\n```javascript\nheaders: {\n  'Accept': 'application/json, */*',\n  'Accept-Language': 'zh-CN,zh;q=0.9',\n  'Cache-Control': 'no-cache',\n  'comfy-user': 'health-monitor',\n  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0 Safari/537.36'\n}\n```\n\n### 3. 修复的文件\n\n#### 服务端 (`server/src/routes/config.js`)\n- 更新健康检查端点列表\n- 支持多端点测试，找到第一个可用端点即返回成功\n- 改进错误处理和日志记录\n\n#### 客户端 (`client/src/services/loadBalancer.js`)\n- 统一端点列表与服务端保持一致\n- 优化请求头设置\n- 改进端点测试逻辑\n\n#### ComfyUI服务 (`client/src/services/comfyui.js`)\n- 更新WebSocket连接前的HTTP测试\n- 更新服务器状态检查函数\n- 支持多端点测试\n\n## 测试验证\n\n创建了测试脚本 `test-comfyui-health.js` 用于验证修复效果：\n\n```bash\n# 在浏览器控制台中运行\ntestServerHealth('https://l9s75ay3rp-8188.cnb.run')\n\n# 或在Node.js中运行\nnode test-comfyui-health.js\n```\n\n## 预期效果\n\n修复后，健康检查应该能够：\n1. 正确识别ComfyUI服务器的健康状态\n2. 使用官方推荐的端点进行检测\n3. 提供更准确的连接状态反馈\n4. 减少误报和漏报\n\n## 实际请求参考\n\n基于实际服务器请求信息：\n- URL: `https://l9s75ay3rp-8188.cnb.run/api/queue`\n- 方法: GET\n- 状态: 200 OK\n- Content-Type: `application/json; charset=utf-8`\n- Content-Length: 97529\n\n这表明 `/api/queue` 端点是可用的，并且返回大量JSON数据（97KB），符合ComfyUI队列端点的特征。\n\n## 注意事项\n\n1. 健康检查会按优先级测试端点，找到第一个可用端点即认为服务器健康\n2. 即使某些端点返回非JSON格式，只要HTTP状态码正常也认为连接成功\n3. 请求头中的 `comfy-user` 字段用于标识健康检查请求\n4. 超时时间设置为10秒，适合网络环境较差的情况\n\n## 后续优化建议\n\n1. 可以考虑缓存健康检查结果，避免频繁请求\n2. 可以根据端点响应特征进一步验证ComfyUI服务的完整性\n3. 可以添加WebSocket连接健康检查\n4. 可以实现健康检查结果的持久化存储\n"
+        }
+    ]
+}

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接诊断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: #f8f9ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 网络连接诊断工具</h1>
+        <p>专门诊断 "Failed to fetch" 错误的原因。</p>
+        
+        <div>
+            <button onclick="runFullDiagnosis()">运行完整诊断</button>
+            <button onclick="testBasicConnectivity()">基础连接测试</button>
+            <button onclick="clearResults()">清除结果</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const servers = [
+            'https://l9s75ay3rp-8188.cnb.run',
+            'https://0rv00xh2vg-8188.cnb.run'
+        ];
+        
+        let resultsElement = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            resultsElement.appendChild(div);
+        }
+        
+        function addSection(title) {
+            const div = document.createElement('div');
+            div.className = 'test-section';
+            div.innerHTML = `<h3>${title}</h3>`;
+            resultsElement.appendChild(div);
+            return div;
+        }
+        
+        function clearResults() {
+            resultsElement.innerHTML = '';
+        }
+
+        // 1. 基础连接测试
+        async function testBasicConnectivity() {
+            const section = addSection('🌐 基础连接测试');
+            
+            for (const serverUrl of servers) {
+                addResult(`🔍 测试服务器: ${serverUrl}`, 'info');
+                
+                // 测试不同的方法
+                const tests = [
+                    { name: 'HEAD 请求', method: 'HEAD', path: '/' },
+                    { name: 'GET 根路径', method: 'GET', path: '/' },
+                    { name: 'OPTIONS 预检', method: 'OPTIONS', path: '/' },
+                ];
+                
+                for (const test of tests) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 5000);
+                        
+                        const startTime = Date.now();
+                        const response = await fetch(`${serverUrl}${test.path}`, {
+                            method: test.method,
+                            signal: controller.signal,
+                            headers: {
+                                'Accept': '*/*',
+                                'Cache-Control': 'no-cache'
+                            }
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        const endTime = Date.now();
+                        
+                        addResult(`✅ ${test.name}: ${response.status} (${endTime - startTime}ms)`, 'success');
+                        
+                    } catch (error) {
+                        addResult(`❌ ${test.name}: ${error.message}`, 'error');
+                        
+                        // 详细错误分析
+                        if (error.name === 'AbortError') {
+                            addResult(`   原因: 请求超时 (>5秒)`, 'warning');
+                        } else if (error.message.includes('Failed to fetch')) {
+                            addResult(`   原因: 网络连接失败，可能是:`, 'warning');
+                            addResult(`   - 服务器不可达`, 'warning');
+                            addResult(`   - DNS 解析失败`, 'warning');
+                            addResult(`   - SSL/TLS 证书问题`, 'warning');
+                            addResult(`   - 防火墙阻止`, 'warning');
+                        }
+                    }
+                }
+                
+                addResult('', 'info'); // 分隔线
+            }
+        }
+
+        // 2. SSL/TLS 证书测试
+        async function testSSLCertificate() {
+            const section = addSection('🔒 SSL/TLS 证书测试');
+            
+            for (const serverUrl of servers) {
+                addResult(`🔍 检查 SSL 证书: ${serverUrl}`, 'info');
+                
+                try {
+                    // 使用 fetch 测试 HTTPS 连接
+                    const response = await fetch(serverUrl, {
+                        method: 'HEAD',
+                        headers: { 'Accept': '*/*' }
+                    });
+                    
+                    addResult(`✅ SSL 证书有效`, 'success');
+                    
+                } catch (error) {
+                    if (error.message.includes('certificate') || 
+                        error.message.includes('SSL') || 
+                        error.message.includes('TLS')) {
+                        addResult(`❌ SSL 证书问题: ${error.message}`, 'error');
+                        addResult(`💡 建议: 检查服务器的 SSL 证书配置`, 'warning');
+                    } else {
+                        addResult(`⚠️ 无法确定 SSL 状态: ${error.message}`, 'warning');
+                    }
+                }
+            }
+        }
+
+        // 3. DNS 解析测试
+        async function testDNSResolution() {
+            const section = addSection('🌍 DNS 解析测试');
+            
+            for (const serverUrl of servers) {
+                const hostname = new URL(serverUrl).hostname;
+                addResult(`🔍 DNS 解析测试: ${hostname}`, 'info');
+                
+                try {
+                    // 使用一个简单的请求来测试 DNS 解析
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    
+                    const startTime = Date.now();
+                    await fetch(`https://${hostname}`, {
+                        method: 'HEAD',
+                        signal: controller.signal,
+                        headers: { 'Accept': '*/*' }
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    const endTime = Date.now();
+                    
+                    addResult(`✅ DNS 解析成功 (${endTime - startTime}ms)`, 'success');
+                    
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        addResult(`⚠️ DNS 解析超时`, 'warning');
+                    } else if (error.message.includes('getaddrinfo') || 
+                               error.message.includes('NXDOMAIN')) {
+                        addResult(`❌ DNS 解析失败: ${error.message}`, 'error');
+                        addResult(`💡 建议: 检查域名是否正确或 DNS 服务器设置`, 'warning');
+                    } else {
+                        addResult(`⚠️ DNS 测试不确定: ${error.message}`, 'warning');
+                    }
+                }
+            }
+        }
+
+        // 4. 端口连接测试
+        async function testPortConnectivity() {
+            const section = addSection('🔌 端口连接测试');
+            
+            for (const serverUrl of servers) {
+                const url = new URL(serverUrl);
+                const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+                
+                addResult(`🔍 测试端口连接: ${url.hostname}:${port}`, 'info');
+                
+                try {
+                    // 使用 WebSocket 来测试端口连接（如果失败会立即报错）
+                    const ws = new WebSocket(`wss://${url.hostname}:${port}`);
+                    
+                    await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            ws.close();
+                            resolve(); // 超时也算连接成功（端口开放）
+                        }, 2000);
+                        
+                        ws.onopen = () => {
+                            clearTimeout(timeout);
+                            ws.close();
+                            resolve();
+                        };
+                        
+                        ws.onerror = (error) => {
+                            clearTimeout(timeout);
+                            reject(error);
+                        };
+                    });
+                    
+                    addResult(`✅ 端口 ${port} 可达`, 'success');
+                    
+                } catch (error) {
+                    addResult(`❌ 端口 ${port} 不可达: ${error.message}`, 'error');
+                    addResult(`💡 建议: 检查防火墙设置或服务器端口配置`, 'warning');
+                }
+            }
+        }
+
+        // 5. 网络环境检测
+        async function detectNetworkEnvironment() {
+            const section = addSection('🌐 网络环境检测');
+            
+            // 检测是否在企业网络环境
+            addResult(`🔍 检测网络环境...`, 'info');
+            
+            // 检测用户代理
+            addResult(`浏览器: ${navigator.userAgent}`, 'info');
+            
+            // 检测连接类型
+            if (navigator.connection) {
+                addResult(`连接类型: ${navigator.connection.effectiveType || 'unknown'}`, 'info');
+                addResult(`下行速度: ${navigator.connection.downlink || 'unknown'} Mbps`, 'info');
+            }
+            
+            // 检测是否有代理
+            try {
+                const testUrls = [
+                    'https://httpbin.org/ip',
+                    'https://api.ipify.org?format=json'
+                ];
+                
+                for (const testUrl of testUrls) {
+                    try {
+                        const response = await fetch(testUrl, { 
+                            method: 'GET',
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            addResult(`外部 IP 检测成功: ${JSON.stringify(data)}`, 'success');
+                            break;
+                        }
+                    } catch (e) {
+                        addResult(`外部 IP 检测失败: ${testUrl}`, 'warning');
+                    }
+                }
+            } catch (error) {
+                addResult(`⚠️ 可能在受限网络环境中`, 'warning');
+            }
+        }
+
+        // 6. 详细错误分析
+        async function analyzeDetailedErrors() {
+            const section = addSection('🔬 详细错误分析');
+            
+            for (const serverUrl of servers) {
+                addResult(`🔍 详细分析: ${serverUrl}`, 'info');
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    const response = await fetch(`${serverUrl}/queue`, {
+                        method: 'GET',
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache',
+                            'User-Agent': 'NetworkDiagnostic/1.0'
+                        }
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    addResult(`✅ 队列端点连接成功: ${response.status}`, 'success');
+                    
+                } catch (error) {
+                    addResult(`❌ 详细错误信息:`, 'error');
+                    addResult(`   错误名称: ${error.name}`, 'error');
+                    addResult(`   错误消息: ${error.message}`, 'error');
+                    addResult(`   错误堆栈: ${error.stack?.substring(0, 200)}...`, 'error');
+                    
+                    // 根据错误类型提供建议
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        addResult(`💡 可能的原因:`, 'warning');
+                        addResult(`   1. 服务器完全不可达`, 'warning');
+                        addResult(`   2. 网络连接被阻止`, 'warning');
+                        addResult(`   3. SSL/TLS 握手失败`, 'warning');
+                        addResult(`   4. DNS 解析失败`, 'warning');
+                        addResult(`   5. 防火墙或代理阻止`, 'warning');
+                    }
+                }
+            }
+        }
+
+        window.testBasicConnectivity = testBasicConnectivity;
+
+        window.runFullDiagnosis = async function() {
+            clearResults();
+            addResult('🚀 开始完整网络诊断...', 'info');
+            
+            await testBasicConnectivity();
+            await testSSLCertificate();
+            await testDNSResolution();
+            await detectNetworkEnvironment();
+            await analyzeDetailedErrors();
+            
+            addResult('✅ 诊断完成', 'success');
+        };
+
+        window.clearResults = clearResults;
+
+        // 页面加载时显示说明
+        window.addEventListener('load', () => {
+            addResult('📋 网络诊断工具已准备就绪', 'info');
+            addResult('💡 点击"运行完整诊断"开始检测网络连接问题', 'info');
+        });
+    </script>
+</body>
+</html>

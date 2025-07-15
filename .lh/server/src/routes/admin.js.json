@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 19,
+            "activePatchIndex": 20,
             "patches": [
                 {
                     "date": 1752319729592,
@@ -84,6 +84,10 @@
                 {
                     "date": 1752460809707,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1019,9 +1019,9 @@\n \n     // 获取卡片类型信息\n     const cardTypeResult = await query(`\n       SELECT id, name, points, price, description\n-      FROM level_card_types\n+      FROM card_types\n       WHERE id = ?\n     `, [cardTypeId]);\n \n     if (cardTypeResult.length === 0) {\n"
+                },
+                {
+                    "date": 1752548154247,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1216,13 +1216,12 @@\n \n     // 测试ComfyUI连接\n     const fetch = require('node-fetch');\n \n-    // 尝试多个端点来检测ComfyUI服务器\n+    // 使用ComfyUI官方端点进行检测\n     const testEndpoints = [\n-      `${serverUrl}/system_stats`,  // ComfyUI系统状态端点\n-      `${serverUrl}/history`,       // ComfyUI历史记录端点\n-      `${serverUrl}/`,              // 根路径\n+      `${serverUrl}/api/queue`,        // ComfyUI官方队列端点\n+      `${serverUrl}/api/system_stats`, // ComfyUI官方系统状态端点\n     ];\n \n     let lastError = null;\n     let response = null;\n"
                 }
             ],
             "date": 1752319729592,

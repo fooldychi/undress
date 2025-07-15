@@ -19,7 +19,7 @@ async function initComfyUIConfig() {
         config_value: '',
         config_type: 'string',
         config_group: 'comfyui',
-        description: 'ComfyUI备用服务器地址列表（每行一个）',
+        description: 'ComfyUI备用服务器地址列表（每行一个或逗号分隔）',
         is_encrypted: 0
       },
       {
@@ -76,7 +76,7 @@ async function initComfyUIConfig() {
         // 插入新配置
         await query(`
           INSERT INTO system_config (
-            config_key, config_value, config_type, config_group, 
+            config_key, config_value, config_type, config_group,
             description, is_encrypted, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, NOW())
         `, [
@@ -87,7 +87,7 @@ async function initComfyUIConfig() {
           config.description,
           config.is_encrypted
         ]);
-        
+
         console.log(`✅ 添加配置: ${config.config_key}`);
       } else {
         console.log(`ℹ️ 配置已存在: ${config.config_key}`);
@@ -97,7 +97,7 @@ async function initComfyUIConfig() {
     // 删除旧的基础配置和AI服务配置（如果存在）
     const configsToRemove = [
       'system.name',
-      'system.description', 
+      'system.description',
       'system.default_points',
       'ai.face_swap_enabled',
       'ai.clothing_swap_enabled',
@@ -109,7 +109,7 @@ async function initComfyUIConfig() {
         'DELETE FROM system_config WHERE config_key = ?',
         [configKey]
       );
-      
+
       if (result.affectedRows > 0) {
         console.log(`🗑️ 删除旧配置: ${configKey}`);
       }
@@ -119,9 +119,9 @@ async function initComfyUIConfig() {
 
     // 显示当前配置
     const allConfigs = await query(`
-      SELECT config_key, config_value, description 
-      FROM system_config 
-      WHERE config_group = 'comfyui' 
+      SELECT config_key, config_value, description
+      FROM system_config
+      WHERE config_group = 'comfyui'
       ORDER BY config_key
     `);
 

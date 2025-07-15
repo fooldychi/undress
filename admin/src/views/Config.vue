@@ -51,10 +51,10 @@
                 v-model="config.backupServers"
                 type="textarea"
                 :rows="3"
-                placeholder="https://backup1.example.com&#10;https://backup2.example.com"
+                placeholder="https://backup1.example.com&#10;https://backup2.example.com&#10;或使用逗号分隔: https://backup1.com,https://backup2.com"
                 clearable
               />
-              <div class="form-tip">每行一个备用服务器地址，主服务器不可用时自动切换</div>
+              <div class="form-tip">支持两种格式：每行一个地址，或使用逗号分隔。主服务器不可用时自动切换</div>
             </el-form-item>
           </el-col>
 

@@ -248,51 +248,96 @@ router.post('/test', async (req, res) => {
 
       console.log(`🔍 测试ComfyUI连接: ${testUrl}`);
 
-      // 构建健康检查URL
-      const healthCheckUrl = `${testUrl.replace(/\/$/, '')}/system_stats`;
+      // 基于ComfyUI官方文档的健康检查端点
+      const baseUrl = testUrl.replace(/\/$/, '');
+      const testEndpoints = [
+        '/api/queue',        // ComfyUI官方队列端点
+        '/api/system_stats'  // ComfyUI官方系统状态端点
+      ];
 
       // 使用fetch进行连接测试
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+      let lastError = null;
+      let successResult = null;
+
       try {
-        const response = await fetch(healthCheckUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Imagic-Admin/1.0'
-          },
-          signal: controller.signal
-        });
+        for (const endpoint of testEndpoints) {
+        try {
+          const healthCheckUrl = `${baseUrl}${endpoint}`;
+          console.log(`🔍 测试端点: ${endpoint}`);
 
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ ComfyUI连接测试成功');
-
-          res.json({
-            success: true,
-            message: 'ComfyUI服务器连接正常',
-            data: {
-              status: 'connected',
-              responseTime: Date.now(),
-              serverInfo: data
-            }
+          const response = await fetch(healthCheckUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json, */*',
+              'Accept-Language': 'zh-CN,zh;q=0.9',
+              'Cache-Control': 'no-cache',
+              'comfy-user': 'health-monitor',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
+            },
+            signal: controller.signal
           });
-        } else {
-          console.log(`❌ ComfyUI连接测试失败: HTTP ${response.status}`);
 
-          res.json({
-            success: false,
-            message: `服务器响应错误: HTTP ${response.status}`,
-            data: {
-              status: 'error',
-              statusCode: response.status
+          if (response.ok) {
+            try {
+              const data = await response.json();
+              console.log(`✅ ComfyUI端点测试成功: ${endpoint}`);
+
+              successResult = {
+                success: true,
+                message: `ComfyUI服务器连接正常 (端点: ${endpoint})`,
+                data: {
+                  status: 'connected',
+                  endpoint: endpoint,
+                  responseTime: Date.now(),
+                  serverInfo: data
+                }
+              };
+              break; // 找到可用端点，退出循环
+            } catch (jsonError) {
+              console.log(`⚠️ 端点 ${endpoint} 响应非JSON格式，但连接正常`);
+              successResult = {
+                success: true,
+                message: `ComfyUI服务器连接正常 (端点: ${endpoint})`,
+                data: {
+                  status: 'connected',
+                  endpoint: endpoint,
+                  responseTime: Date.now(),
+                  note: '响应非JSON格式但连接正常'
+                }
+              };
+              break;
             }
-          });
+          } else {
+            lastError = `端点 ${endpoint}: HTTP ${response.status}`;
+            console.log(`❌ ${lastError}`);
+          }
+        } catch (endpointError) {
+          lastError = `端点 ${endpoint}: ${endpointError.message}`;
+          console.log(`❌ ${lastError}`);
         }
-      } catch (fetchError) {
+      }
+
+      clearTimeout(timeoutId);
+
+      // 返回结果
+      if (successResult) {
+        res.json(successResult);
+      } else {
+        console.log('❌ 所有ComfyUI端点测试失败');
+        res.json({
+          success: false,
+          message: `所有ComfyUI端点测试失败。最后错误: ${lastError}`,
+          data: {
+            status: 'error',
+            testedEndpoints: testEndpoints,
+            lastError: lastError
+          }
+        });
+      }
+    } catch (fetchError) {
         clearTimeout(timeoutId);
 
         if (fetchError.name === 'AbortError') {

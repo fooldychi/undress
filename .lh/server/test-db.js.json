@@ -1,0 +1,18 @@
+{
+    "sourceFile": "server/test-db.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752548823002,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752548823002,
+            "name": "Commit-0",
+            "content": "const { query, testConnection } = require('./src/config/database');\n\nasync function testDatabase() {\n  console.log('🔍 测试数据库连接和表结构...');\n\n  try {\n    // 测试连接\n    const connected = await testConnection();\n    if (!connected) {\n      console.error('❌ 数据库连接失败');\n      return;\n    }\n\n    // 检查system_config表是否存在\n    console.log('\\n📋 检查system_config表...');\n    try {\n      const tables = await query(\"SHOW TABLES LIKE 'system_config'\");\n      if (tables.length === 0) {\n        console.log('❌ system_config表不存在');\n\n        // 创建表\n        console.log('🔧 创建system_config表...');\n        await query(`\n          CREATE TABLE system_config (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            config_key VARCHAR(255) NOT NULL UNIQUE,\n            config_value TEXT,\n            config_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',\n            config_group VARCHAR(100) DEFAULT 'general',\n            description TEXT,\n            is_encrypted TINYINT(1) DEFAULT 0,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            INDEX idx_config_group (config_group),\n            INDEX idx_config_key (config_key)\n          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci\n        `);\n        console.log('✅ system_config表创建成功');\n\n        // 插入默认配置\n        console.log('📝 插入默认配置...');\n        const defaultConfigs = [\n          ['comfyui.server_url', 'https://l9s75ay3rp-8188.cnb.run', 'string', 'comfyui', 'ComfyUI主服务器地址'],\n          ['comfyui.backup_servers', 'https://0rv00xh2vg-8188.cnb.run', 'string', 'comfyui', 'ComfyUI备用服务器地址列表'],\n          ['comfyui.health_check_timeout', '10000', 'number', 'comfyui', 'ComfyUI健康检查超时时间(毫秒)'],\n          ['comfyui.timeout', '300000', 'number', 'comfyui', 'ComfyUI请求超时时间(毫秒)'],\n          ['ai.face_swap_points', '20', 'number', 'ai', '换脸消耗积分'],\n          ['ai.undress_points', '20', 'number', 'ai', '换衣消耗积分']\n        ];\n\n        for (const [key, value, type, group, desc] of defaultConfigs) {\n          await query(\n            'INSERT INTO system_config (config_key, config_value, config_type, config_group, description) VALUES (?, ?, ?, ?, ?)',\n            [key, value, type, group, desc]\n          );\n        }\n        console.log('✅ 默认配置插入成功');\n\n      } else {\n        console.log('✅ system_config表存在');\n      }\n\n      // 查询现有配置\n      console.log('\\n📊 当前配置:');\n      const configs = await query('SELECT * FROM system_config ORDER BY config_group, config_key');\n      configs.forEach(config => {\n        console.log(`   ${config.config_key}: ${config.config_value} (${config.config_type})`);\n      });\n\n    } catch (error) {\n      console.error('❌ 检查表结构失败:', error);\n    }\n\n  } catch (error) {\n    console.error('❌ 数据库测试失败:', error);\n  }\n\n  process.exit(0);\n}\n\ntestDatabase();\n"
+        }
+    ]
+}

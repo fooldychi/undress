@@ -59,12 +59,11 @@ app.post('/api/upload/image', upload.single('image'), async (req, res) => {
     console.log(`🌐 转发到: ${COMFYUI_BASE_URL}/upload/image`);
 
     // 发送到ComfyUI服务器
-    const response = await fetch(`${COMFYUI_BASE_URL}/upload/image`, {
+    const response = await fetch(`${COMFYUI_BASE_URL}/api/upload/image`, {
       method: 'POST',
       body: formData,
       headers: formData.getHeaders(),
-      timeout: 30000, // 30秒超时
-      agent: false // 禁用keep-alive
+      timeout: 30000 // 30秒超时
     });
 
     console.log(`📥 ComfyUI响应: ${response.status} ${response.statusText}`);
@@ -104,15 +103,13 @@ app.post('/api/prompt', async (req, res) => {
     console.log('📡 处理prompt提交请求...');
     console.log('📋 请求体大小:', JSON.stringify(req.body).length, 'bytes');
 
-    const response = await fetch(`${COMFYUI_BASE_URL}/prompt`, {
+    const response = await fetch(`${COMFYUI_BASE_URL}/api/prompt`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(req.body),
-      timeout: 30000, // 30秒超时
-      agent: false // 禁用keep-alive
+      timeout: 30000 // 30秒超时
     });
 
     console.log(`📥 ComfyUI响应: ${response.status} ${response.statusText}`);
@@ -153,10 +150,10 @@ app.use('/api', createProxyMiddleware({
   timeout: 30000,
   proxyTimeout: 30000,
   pathRewrite: {
-    '^/api': '',
+    '^/api': '/api',
   },
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`📡 代理请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url.replace('/api', '')}`);
+    console.log(`📡 代理请求: ${req.method} ${req.url} -> ${COMFYUI_BASE_URL}${req.url}`);
     proxyReq.setTimeout(30000);
   },
   onProxyRes: (proxyRes, req, res) => {
