@@ -202,7 +202,7 @@ async function getApiBaseUrl() {
       baseUrl = baseUrl.slice(0, -1)
     }
 
-    console.log(`🔗 最终API基础URL: ${baseUrl}`)
+    console.log('🔗 最终API基础URL:', baseUrl)
     return baseUrl
   } catch (error) {
     console.error('❌ 获取API基础URL失败:', error)
@@ -232,9 +232,10 @@ function generateClientId() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 }
 
+
+
 // 第一步：上传Base64图片到ComfyUI服务器并获取文件名
 async function uploadImageToComfyUI(base64Image) {
-  const config = getComfyUIConfig()
   const apiBaseUrl = await getApiBaseUrl()
   console.log('🔄 第一步：上传图片到ComfyUI服务器')
   console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
@@ -332,7 +333,7 @@ function createUndressWorkflowPrompt(uploadedImageName) {
 // 第二步：提交工作流到ComfyUI
 async function submitWorkflow(workflowPrompt) {
   // 确保 WebSocket 连接
-  await initializeWebSocket()
+  await initializeWebSocket(false)
 
   const config = getComfyUIConfig()
   const apiBaseUrl = await getApiBaseUrl()
@@ -375,9 +376,8 @@ async function submitWorkflow(workflowPrompt) {
 // 检查任务状态
 async function checkTaskStatus(promptId) {
   try {
-    const config = getComfyUIConfig()
     const apiBaseUrl = await getApiBaseUrl()
-    console.log('🔍 查询任务状态:', `${apiBaseUrl}/api/history/${promptId}`)
+    console.log(`🔍 查询任务状态:`, `${apiBaseUrl}/api/history/${promptId}`)
     const response = await fetch(`${apiBaseUrl}/api/history/${promptId}`)
 
     if (!response.ok) {
@@ -396,7 +396,6 @@ async function checkTaskStatus(promptId) {
 // 获取生成的图片
 async function getGeneratedImage(taskResult) {
   try {
-    const config = getComfyUIConfig()
     const apiBaseUrl = await getApiBaseUrl()
 
     // 从任务结果中找到输出图片
@@ -487,7 +486,7 @@ let wsHealthCheckTimer = null
 let lastMessageTime = Date.now()
 let connectionAttempts = 0
 let maxConnectionAttempts = 5
-let currentWebSocketServer = null // 记录当前WebSocket连接的服务器
+
 
 // 前端通知函数
 function showWebSocketStatusNotification(message, type = 'info') {
@@ -535,9 +534,8 @@ async function initializeWebSocket(forceNewConnection = false) {
 
     const config = getComfyUIConfig()
 
-    // 获取服务器URL用于WebSocket连接
-    const baseUrl = await getApiBaseUrl()
-    currentWebSocketServer = baseUrl
+    // 获取最优服务器
+    const baseUrl = await loadBalancer.getOptimalServer()
     console.log(`🔌 准备连接WebSocket服务器: ${baseUrl}`)
 
     // 确保使用正确的WebSocket URL格式
@@ -620,9 +618,6 @@ async function initializeWebSocket(forceNewConnection = false) {
 
         // 停止健康检查
         stopWebSocketHealthCheck()
-
-        // 清理WebSocket服务器记录
-        currentWebSocketServer = null
 
         // 显示前端通知
         showWebSocketStatusNotification('WebSocket连接已断开', 'warning')
@@ -964,7 +959,7 @@ function handleWebSocketMessage(message) {
 }
 
 // 处理状态消息 - 队列状态变化
-function handleStatusMessage(data) {
+function handleStatusMessage() {
   // 队列状态消息，通常用于监控队列状态
   // 这里可以根据需要添加队列状态处理逻辑
 }
@@ -1299,7 +1294,6 @@ async function processUndressImage(base64Image, onProgress = null) {
         type: 'input',
         subfolder: ''
       })
-      const config = getComfyUIConfig()
       const apiBaseUrl = await getApiBaseUrl()
       originalImage = `${apiBaseUrl}/api/view?${params.toString()}`
     } catch (error) {

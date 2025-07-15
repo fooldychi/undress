@@ -133,6 +133,7 @@ class LoadBalancer {
    * 获取最优服务器 - 基于队列数量的负载均衡
    */
   async getOptimalServer() {
+
     // 检查是否需要刷新健康状态
     const now = Date.now()
     if (now - this.lastHealthCheck > this.healthCheckInterval) {
@@ -613,6 +614,8 @@ class LoadBalancer {
 
     return selectedServer.url
   }
+
+
 }
 
 // 创建单例实例
