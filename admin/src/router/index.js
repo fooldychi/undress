@@ -76,6 +76,15 @@ const routes = [
           title: '系统配置 - iComfy管理系统',
           icon: 'Setting'
         }
+      },
+      {
+        path: 'workflow-config',
+        name: 'WorkflowConfig',
+        component: () => import('@/views/WorkflowConfig.vue'),
+        meta: {
+          title: '工作流配置 - iComfy管理系统',
+          icon: 'Operation'
+        }
       }
     ]
   },
@@ -97,16 +106,16 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   NProgress.start()
-  
+
   // 设置页面标题
   if (to.meta.title) {
     document.title = to.meta.title
   }
-  
+
   // 检查认证
   const token = getToken()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)
-  
+
   if (requiresAuth && !token) {
     next('/login')
   } else if (to.path === '/login' && token) {

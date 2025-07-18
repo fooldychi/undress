@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 20,
+            "activePatchIndex": 21,
             "patches": [
                 {
                     "date": 1752319729592,
@@ -88,6 +88,10 @@
                 {
                     "date": 1752548154247,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1216,13 +1216,12 @@\n \n     // 测试ComfyUI连接\n     const fetch = require('node-fetch');\n \n-    // 尝试多个端点来检测ComfyUI服务器\n+    // 使用ComfyUI官方端点进行检测\n     const testEndpoints = [\n-      `${serverUrl}/system_stats`,  // ComfyUI系统状态端点\n-      `${serverUrl}/history`,       // ComfyUI历史记录端点\n-      `${serverUrl}/`,              // 根路径\n+      `${serverUrl}/api/queue`,        // ComfyUI官方队列端点\n+      `${serverUrl}/api/system_stats`, // ComfyUI官方系统状态端点\n     ];\n \n     let lastError = null;\n     let response = null;\n"
+                },
+                {
+                    "date": 1752810925519,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -813,9 +813,9 @@\n       });\n     });\n \n     // 确保所有必要的分组都存在\n-    const requiredGroups = ['server', 'database', 'jwt', 'comfyui', 'ai', 'frontend', 'cors', 'upload', 'log'];\n+    const requiredGroups = ['server', 'database', 'jwt', 'comfyui', 'ai', 'frontend', 'cors', 'upload', 'log', 'workflow'];\n     requiredGroups.forEach(group => {\n       if (!groupedConfigs[group]) {\n         groupedConfigs[group] = [];\n       }\n"
                 }
             ],
             "date": 1752319729592,

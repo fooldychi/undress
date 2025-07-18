@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
       const configs = await query(`
         SELECT config_key, config_value, config_type
         FROM system_config
-        WHERE config_group IN ('comfyui', 'ai')
+        WHERE config_group IN ('comfyui', 'ai', 'workflow')
         AND config_key NOT LIKE '%password%'
         AND config_key NOT LIKE '%secret%'
         ORDER BY config_group, config_key
@@ -101,7 +101,7 @@ router.get('/:group', async (req, res) => {
     const { group } = req.params;
 
     // 只允许获取公开的配置分组
-    const allowedGroups = ['comfyui', 'ai', 'frontend'];
+    const allowedGroups = ['comfyui', 'ai', 'frontend', 'workflow'];
     if (!allowedGroups.includes(group)) {
       return res.status(403).json({
         success: false,

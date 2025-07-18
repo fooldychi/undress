@@ -814,7 +814,7 @@ router.get('/config', adminAuth, async (req, res, next) => {
     });
 
     // 确保所有必要的分组都存在
-    const requiredGroups = ['server', 'database', 'jwt', 'comfyui', 'ai', 'frontend', 'cors', 'upload', 'log'];
+    const requiredGroups = ['server', 'database', 'jwt', 'comfyui', 'ai', 'frontend', 'cors', 'upload', 'log', 'workflow'];
     requiredGroups.forEach(group => {
       if (!groupedConfigs[group]) {
         groupedConfigs[group] = [];

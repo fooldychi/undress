@@ -148,6 +148,7 @@ app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/admin/config', require('./routes/config'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/config', require('./routes/public-config'));
+app.use('/api/workflow-config', require('./routes/workflow-config'));
 
 // 404处理
 app.use('*', (req, res) => {

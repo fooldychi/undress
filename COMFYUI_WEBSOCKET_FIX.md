@@ -1,53 +1,104 @@
-# ComfyUI WebSocket 任务完成检测修复
+# ComfyUI WebSocket 任务完成检测修复 - 2024年更新版
 
 ## 问题描述
 
-之前系统存在ComfyUI已经处理结束，但客户端进度仍未结束的情况。虽然最终有返回结果，但这种不同步可能与HTTP轮询和WebSocket双重机制产生冲突。
+目前系统存在ComfyUI已经处理完成，但客户端没有返回结果的情况。经过分析，这主要是由WebSocket连接不稳定和消息处理逻辑复杂导致的。
 
 ## 根本原因分析
 
-1. **双重检测机制冲突**：系统同时使用WebSocket实时通信和HTTP轮询备份机制
-2. **进度更新不准确**：进度计算逻辑限制在50-95%之间，无法准确反映实际状态
-3. **任务完成检测延迟**：HTTP轮询间隔和WebSocket健康检查可能导致延迟
-4. **消息处理不完整**：某些WebSocket消息类型未被正确处理
+1. **复杂的消息处理逻辑**：原有代码包含大量复杂的JSON修复逻辑，可能导致关键消息被误处理
+2. **WebSocket连接不稳定**：连接状态检查不够严格，任务提交时连接可能已断开
+3. **任务完成信号处理不可靠**：依赖单一的`execution_success`消息，缺少备用机制和重试
+4. **健康检查机制不完善**：WebSocket健康检查不够频繁，无法及时发现连接问题
 
 ## 修复方案
 
-### 1. 完全移除HTTP轮询机制
+### 1. 简化WebSocket消息处理逻辑
 
 **修改文件**: `client/src/services/comfyui.js`
 
-- 删除 `fallbackToHttpPolling()` 函数
-- 移除所有HTTP轮询相关代码
-- 简化WebSocket重连逻辑，不再依赖HTTP轮询作为备份
-
-### 2. 优化WebSocket消息处理
-
-**改进的消息处理**:
+**修改前**：复杂的消息修复逻辑
 ```javascript
-// 处理执行成功消息 - 立即更新进度到99%
-function handleExecutionSuccessMessage(data) {
-  if (task.onProgress) {
-    task.onProgress('处理完成，正在加载结果...', 99)
+try {
+  message = JSON.parse(rawData)
+} catch (parseError) {
+  // 大量复杂的修复逻辑...
+  let fixedData = rawData;
+  // 移除BOM、修复JSON等...
+}
+```
+
+**修改后**：简化的消息处理
+```javascript
+try {
+  message = JSON.parse(rawData)
+} catch (parseError) {
+  console.warn('WebSocket消息解析失败，跳过:', parseError.message)
+  return
+}
+```
+
+### 2. 增强WebSocket连接稳定性保证
+
+**新增函数**：`ensureWebSocketConnection()`
+```javascript
+async function ensureWebSocketConnection() {
+  // 检查当前连接状态
+  if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
+    return true
   }
-  // 然后获取完整结果
+
+  // 重新建立连接并等待稳定
+  await initializeWebSocket(true)
+
+  // 等待连接稳定
+  let attempts = 0;
+  while (attempts < 10) {
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
+      return true
+    }
+    await new Promise(resolve => setTimeout(resolve, 500))
+    attempts++
+  }
+
+  throw new Error('WebSocket连接无法稳定')
 }
 ```
 
-### 3. 改进进度回调机制
+### 3. 改进任务完成处理机制
 
-**修改前**:
+**修改前**：单次尝试获取结果
 ```javascript
-onProgress: (progress, status) => {
-  const adjustedProgress = Math.min(95, Math.max(50, 50 + (progress * 0.49)))
-  onProgress(`${status}`, adjustedProgress)
-}
+checkTaskStatus(promptId).then(result => {
+  if (task.onComplete) {
+    task.onComplete(result)
+  }
+  pendingTasks.delete(promptId)
+})
 ```
 
-**修改后**:
+**修改后**：增加重试机制
 ```javascript
-onProgress: (status, progress) => {
-  onProgress(status, progress) // 直接传递实际进度
+const fetchResult = () => {
+  checkTaskStatus(promptId).then(result => {
+    if (result) {
+      // 成功获取结果
+      if (task.onComplete) {
+        task.onComplete(result)
+      }
+      pendingTasks.delete(promptId)
+    } else if (retryCount < maxRetries) {
+      // 重试
+      retryCount++;
+      setTimeout(fetchResult, 500 * retryCount);
+    } else {
+      // 最终失败
+      if (task.onError) {
+        task.onError('获取处理结果失败')
+      }
+      pendingTasks.delete(promptId)
+    }
+  })
 }
 ```
 

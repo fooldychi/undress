@@ -42,6 +42,11 @@
             <el-icon><Setting /></el-icon>
             <template #title>系统配置</template>
           </el-menu-item>
+
+          <el-menu-item index="/workflow-config">
+            <el-icon><Operation /></el-icon>
+            <template #title>工作流配置</template>
+          </el-menu-item>
         </el-menu>
       </el-aside>
 
@@ -98,7 +103,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { Setting } from '@element-plus/icons-vue'
+import {
+  Setting,
+  DataBoard,
+  User,
+  CreditCard,
+  Coin,
+  Operation,
+  Expand,
+  Fold,
+  ArrowDown,
+  SwitchButton
+} from '@element-plus/icons-vue'
 import { getUser, clearAuth } from '@/utils/auth'
 import { logout } from '@/api/auth'
 

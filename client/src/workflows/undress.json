@@ -10,7 +10,7 @@
   },
   "20": {
     "inputs": {
-      "vae_name": "SD/vae-ft-mse-840000-ema-pruned.safetensors"
+      "vae_name": "vae-ft-mse-840000-ema-pruned.safetensors"
     },
     "class_type": "VAELoader",
     "_meta": {
@@ -19,7 +19,7 @@
   },
   "49": {
     "inputs": {
-      "image": "u=1798547219,2610197229&fm=253&fmt=auto&app=138&f=JPEG.jpg"
+      "image": "ComfyUI_00007_.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -175,16 +175,6 @@
       "title": "扩展遮罩"
     }
   },
-  "186": {
-    "inputs": {
-      "brushnet": "brushnet_segmentation_mask_fp16.safetensors",
-      "dtype": "float16"
-    },
-    "class_type": "BrushNetLoader",
-    "_meta": {
-      "title": "BrushNet（加载）"
-    }
-  },
   "190": {
     "inputs": {
       "scale": 0.8,
@@ -207,7 +197,7 @@
         0
       ],
       "brushnet": [
-        "186",
+        "730",
         0
       ],
       "positive": [
@@ -393,12 +383,6 @@
       "text": "completely_nude:1.5,bald_girl, ruanyi0336,\n",
       "token_normalization": "none",
       "weight_interpretation": "A1111",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "clip": [
         "664",
         1
@@ -414,12 +398,6 @@
       "text": "clothing,public_hair,navel_piercing\n\n(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime), text, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck,",
       "token_normalization": "none",
       "weight_interpretation": "A1111",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "clip": [
         "664",
         1
@@ -488,7 +466,7 @@
     "inputs": {
       "directory": "/workspace/input",
       "image_load_cap": 1,
-      "skip_first_images": 53,
+      "skip_first_images": 51,
       "select_every_nth": 1
     },
     "class_type": "VHS_LoadImagesPath",
@@ -688,12 +666,6 @@
   "575": {
     "inputs": {
       "expression": "a * b + 10\n\n\n",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "a": [
         "583",
         0
@@ -711,12 +683,6 @@
   "576": {
     "inputs": {
       "expression": "a * b + 10\n",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "a": [
         "583",
         1
@@ -955,12 +921,6 @@
   "623": {
     "inputs": {
       "expression": "((c**2) * b / a)**0.5 - 512\n\n\n\n",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "a": [
         "628",
         0
@@ -982,12 +942,6 @@
   "624": {
     "inputs": {
       "expression": "a * b \n\n",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "a": [
         "266",
         0
@@ -1017,12 +971,6 @@
   "628": {
     "inputs": {
       "expression": "a * b \n\n",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "a": [
         "583",
         0
@@ -1171,12 +1119,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_sjcjo_00003_.png&type=temp&subfolder=&rand=0.49747606989196824"
+            "url": "/api/view?filename=rgthree.compare._temp_bufqz_00003_.png&type=temp&subfolder=&rand=0.67353493680926"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_sjcjo_00004_.png&type=temp&subfolder=&rand=0.6886429887287118"
+            "url": "/api/view?filename=rgthree.compare._temp_bufqz_00004_.png&type=temp&subfolder=&rand=0.07298686568870916"
           }
         ]
       },
@@ -1279,6 +1227,26 @@
     }
   },
   "730": {
+    "inputs": {
+      "brushnet": "brushnet_segmentation_mask_fp16.safetensors",
+      "dtype": "float16"
+    },
+    "class_type": "BrushNetLoader",
+    "_meta": {
+      "title": "BrushNet（加载）"
+    }
+  },
+  "731": {
+    "inputs": {
+      "brushnet": "brushnet_segmentation_mask_fp16.safetensors",
+      "dtype": "float16"
+    },
+    "class_type": "BrushNetLoader",
+    "_meta": {
+      "title": "BrushNet（加载）"
+    }
+  },
+  "732": {
     "inputs": {
       "filename_prefix": "ComfyUI",
       "images": [

@@ -123,19 +123,36 @@ export function getIconStyle(iconClass) {
 }
 
 /**
- * 模拟从后台API获取功能配置
- * 后续可以替换为真实的API调用
+ * 从后台API获取启用的功能配置
+ * 根据工作流启用状态动态返回功能列表
  * @returns {Promise<Array>} 功能配置列表
  */
 export async function fetchFeaturesFromAPI() {
-  // 模拟API延迟
-  await new Promise(resolve => setTimeout(resolve, 100))
+  try {
+    console.log('🔄 从API获取功能配置...');
 
-  // 这里后续可以替换为真实的API调用
-  // const response = await fetch('/api/admin/features')
-  // return response.json()
+    // 调用后台API获取启用的功能
+    const response = await fetch('/api/workflow-config/features');
 
-  return getEnabledFeatures()
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || '获取功能配置失败');
+    }
+
+    console.log(`✅ 获取到 ${result.data.length} 个启用的功能`);
+    return result.data;
+
+  } catch (error) {
+    console.warn('⚠️ 从API获取功能配置失败，使用默认配置:', error.message);
+
+    // 降级到静态配置
+    return getEnabledFeatures();
+  }
 }
 
 /**

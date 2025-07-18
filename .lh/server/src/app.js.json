@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 26,
+            "activePatchIndex": 27,
             "patches": [
                 {
                     "date": 1752317973745,
@@ -112,6 +112,10 @@
                 {
                     "date": 1752506734554,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -86,23 +86,49 @@\n \n // 速率限制\n app.use(rateLimiter);\n \n-// 健康检查端点\n+// 健康检查端点 - 简化版本，适用于开发环境\n app.get('/health', async (req, res) => {\n   try {\n-    const healthReport = healthMonitor.getHealthReport();\n-    const detailedCheck = await healthMonitor.forceHealthCheck();\n+    // 检查数据库连接状态\n+    let dbStatus = false;\n+    let dbError = null;\n+    try {\n+      dbStatus = await testConnection();\n+    } catch (error) {\n+      dbError = error.message;\n+    }\n \n-    res.json({\n-      status: healthReport.current.healthy ? 'OK' : 'UNHEALTHY',\n+    // 检查内存使用情况\n+    const memoryUsage = process.memoryUsage();\n+    const formatBytes = (bytes) => Math.round(bytes / 1024 / 1024); // MB\n+\n+    const healthData = {\n+      status: 'OK',\n       timestamp: new Date().toISOString(),\n       uptime: process.uptime(),\n       environment: process.env.NODE_ENV,\n       pid: process.pid,\n-      health: healthReport,\n-      detailed: detailedCheck\n-    });\n+      database: {\n+        connected: dbStatus,\n+        error: dbError\n+      },\n+      memory: {\n+        rss: formatBytes(memoryUsage.rss),\n+        heapUsed: formatBytes(memoryUsage.heapUsed),\n+        heapTotal: formatBytes(memoryUsage.heapTotal),\n+        external: formatBytes(memoryUsage.external)\n+      }\n+    };\n+\n+    // 如果数据库连接失败，返回警告状态但不返回500错误\n+    if (!dbStatus) {\n+      healthData.status = 'WARNING';\n+      healthData.message = '数据库未连接，某些功能可能不可用';\n+    }\n+\n+    res.json(healthData);\n   } catch (error) {\n     res.status(500).json({\n       status: 'ERROR',\n       timestamp: new Date().toISOString(),\n"
+                },
+                {
+                    "date": 1752813100094,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -147,8 +147,9 @@\n // 注意：更具体的路由要放在前面\n app.use('/api/admin/config', require('./routes/config'));\n app.use('/api/admin', adminRoutes);\n app.use('/api/config', require('./routes/public-config'));\n+app.use('/api/workflow-config', require('./routes/workflow-config'));\n \n // 404处理\n app.use('*', (req, res) => {\n   res.status(404).json({\n"
                 }
             ],
             "date": 1752317973745,

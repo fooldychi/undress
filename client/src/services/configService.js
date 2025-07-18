@@ -211,4 +211,8 @@ class ConfigService {
 // 创建单例实例
 const configService = new ConfigService()
 
+// 导出便捷函数
+export const getPublicConfig = () => configService.getConfig()
+export const getConfig = () => configService.getConfig()
+
 export default configService

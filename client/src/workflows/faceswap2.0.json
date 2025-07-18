@@ -8,18 +8,12 @@
     },
     "class_type": "LayerUtility: CropBoxResolve",
     "_meta": {
-      "title": "裁剪框分析"
+      "title": "图层工具：裁剪框分析"
     }
   },
   "502": {
     "inputs": {
       "text": "young woman",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "clip": [
         "619",
         1
@@ -33,12 +27,6 @@
   "503": {
     "inputs": {
       "text": "text,watermark",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "clip": [
         "619",
         1
@@ -51,7 +39,7 @@
   },
   "504": {
     "inputs": {
-      "seed": 521273381478727,
+      "seed": 532500849472973,
       "steps": 40,
       "cfg": 1,
       "sampler_name": "euler_ancestral",
@@ -114,7 +102,7 @@
     },
     "class_type": "LayerUtility: CropByMask",
     "_meta": {
-      "title": "遮罩裁剪"
+      "title": "图层工具：遮罩裁剪"
     }
   },
   "511": {
@@ -366,12 +354,12 @@
     },
     "class_type": "LayerUtility: CropByMask",
     "_meta": {
-      "title": "遮罩裁剪"
+      "title": "图层工具：遮罩裁剪"
     }
   },
   "655": {
     "inputs": {
-      "image": "472309f790529822720e1637dc926ccb0a46f31f7eb5.jpg"
+      "image": "下载 (1).jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -396,7 +384,7 @@
   },
   "658": {
     "inputs": {
-      "image": "3094c87b9fe9c00f76146f32f36c3beb4839.jpeg"
+      "image": "下载.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -438,7 +426,7 @@
     },
     "class_type": "LayerUtility: CropByMask",
     "_meta": {
-      "title": "遮罩裁剪"
+      "title": "图层工具：遮罩裁剪"
     }
   },
   "661": {
@@ -459,7 +447,7 @@
   },
   "662": {
     "inputs": {
-      "image": "3094c87b9fe9c00f76146f32f36c3beb4839.jpeg"
+      "image": "u=1504442184,263066697&fm=30&app=106&f=JPEG.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -501,7 +489,7 @@
     },
     "class_type": "LayerUtility: CropByMask",
     "_meta": {
-      "title": "遮罩裁剪"
+      "title": "图层工具：遮罩裁剪"
     }
   },
   "665": {
@@ -554,7 +542,7 @@
   },
   "670": {
     "inputs": {
-      "image": "IhacWExRy8myl12Sm_ShTw066125e9ca85145244740d2ce5dc2a4b.jpg"
+      "image": "8b6e66e6304be7dff6191f8cbe4fa9c4_1734074846.4603_854.jpeg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -580,12 +568,12 @@
     },
     "class_type": "LayerUtility: CropByMask",
     "_meta": {
-      "title": "遮罩裁剪"
+      "title": "图层工具：遮罩裁剪"
     }
   },
   "737": {
     "inputs": {
-      "image": "clothes-swap-result-1751462849273.jpg"
+      "image": "ComfyUI_00001_.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -612,7 +600,7 @@
     },
     "class_type": "LayerUtility: LayerImageTransform",
     "_meta": {
-      "title": "图像变换"
+      "title": "图层工具：图层图像变换"
     }
   },
   "739": {
@@ -649,7 +637,7 @@
     },
     "class_type": "LayerUtility: LayerImageTransform",
     "_meta": {
-      "title": "图像变换"
+      "title": "图层工具：图层图像变换"
     }
   },
   "743": {
@@ -815,7 +803,7 @@
     },
     "class_type": "LayerMask: MaskGrow",
     "_meta": {
-      "title": "遮罩扩张"
+      "title": "图层遮罩：遮罩扩展"
     }
   },
   "767": {
@@ -830,7 +818,7 @@
     },
     "class_type": "LayerMask: MaskGrow",
     "_meta": {
-      "title": "遮罩扩张"
+      "title": "图层遮罩：遮罩扩展"
     }
   },
   "769": {
@@ -895,36 +883,6 @@
     "class_type": "ControlNetLoader",
     "_meta": {
       "title": "加载ControlNet模型"
-    }
-  },
-  "809": {
-    "inputs": {
-      "rgthree_comparer": {
-        "images": [
-          {
-            "name": "A",
-            "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_itzmp_00005_.png&type=temp&subfolder=&rand=0.7077054503766803"
-          },
-          {
-            "name": "B",
-            "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_itzmp_00006_.png&type=temp&subfolder=&rand=0.05246611075824492"
-          }
-        ]
-      },
-      "image_a": [
-        "511",
-        0
-      ],
-      "image_b": [
-        "737",
-        0
-      ]
-    },
-    "class_type": "Image Comparer (rgthree)",
-    "_meta": {
-      "title": "图像比较器"
     }
   },
   "810": {

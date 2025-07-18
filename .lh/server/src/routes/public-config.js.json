@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1752329632027,
@@ -32,6 +32,14 @@
                 {
                     "date": 1752514316463,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -74,10 +74,10 @@\n     console.error('❌ 获取公开配置失败:', error);\n \n     // 最后的备用配置 - 使用环境变量\n     const fallbackConfig = {\n-      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://your-comfyui-server.com',\n-      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || '',\n+      'comfyui.server_url': process.env.COMFYUI_SERVER_URL || 'https://l9s75ay3rp-8188.cnb.run',\n+      'comfyui.backup_servers': process.env.COMFYUI_BACKUP_SERVERS || 'https://0rv00xh2vg-8188.cnb.run',\n       'comfyui.health_check_timeout': parseInt(process.env.COMFYUI_HEALTH_CHECK_TIMEOUT || '10000'),\n       'comfyui.timeout': parseInt(process.env.COMFYUI_TIMEOUT || '300000'),\n       'ai.text_to_image_points': parseInt(process.env.AI_TEXT_TO_IMAGE_POINTS || '20'),\n       'ai.face_swap_points': parseInt(process.env.AI_FACE_SWAP_POINTS || '20'),\n"
+                },
+                {
+                    "date": 1752810943290,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,9 +22,9 @@\n       // 尝试从数据库获取配置\n       const configs = await query(`\n         SELECT config_key, config_value, config_type\n         FROM system_config\n-        WHERE config_group IN ('comfyui', 'ai')\n+        WHERE config_group IN ('comfyui', 'ai', 'workflow')\n         AND config_key NOT LIKE '%password%'\n         AND config_key NOT LIKE '%secret%'\n         ORDER BY config_group, config_key\n       `);\n"
+                },
+                {
+                    "date": 1752810957527,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -100,9 +100,9 @@\n   try {\n     const { group } = req.params;\n \n     // 只允许获取公开的配置分组\n-    const allowedGroups = ['comfyui', 'ai', 'frontend'];\n+    const allowedGroups = ['comfyui', 'ai', 'frontend', 'workflow'];\n     if (!allowedGroups.includes(group)) {\n       return res.status(403).json({\n         success: false,\n         message: '不允许访问该配置分组'\n"
                 }
             ],
             "date": 1752329632027,

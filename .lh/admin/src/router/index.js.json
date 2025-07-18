@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1752402572417,
@@ -28,6 +28,10 @@
                 {
                     "date": 1752406876089,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -75,38 +75,8 @@\n         meta: {\n           title: '系统配置 - iComfy管理系统',\n           icon: 'Setting'\n         }\n-      },\n-      {\n-        path: 'api-debug',\n-        name: 'ApiDebug',\n-        component: () => import('@/views/ApiDebug.vue'),\n-        meta: {\n-          title: 'API调试 - iComfy管理系统',\n-          icon: 'Setting',\n-          hidden: true\n-        }\n-      },\n-      {\n-        path: 'config-test',\n-        name: 'ConfigTest',\n-        component: () => import('@/views/ConfigTest.vue'),\n-        meta: {\n-          title: '配置测试 - iComfy管理系统',\n-          icon: 'Setting',\n-          hidden: true\n-        }\n-      },\n-      {\n-        path: 'debug-config',\n-        name: 'DebugConfig',\n-        component: () => import('@/views/DebugConfig.vue'),\n-        meta: {\n-          title: '配置调试 - iComfy管理系统',\n-          icon: 'Setting',\n-          hidden: true\n-        }\n       }\n     ]\n   },\n   {\n@@ -126,18 +96,18 @@\n \n // 路由守卫\n router.beforeEach((to, from, next) => {\n   NProgress.start()\n-\n+  \n   // 设置页面标题\n   if (to.meta.title) {\n     document.title = to.meta.title\n   }\n-\n+  \n   // 检查认证\n   const token = getToken()\n   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)\n-\n+  \n   if (requiresAuth && !token) {\n     next('/login')\n   } else if (to.path === '/login' && token) {\n     next('/dashboard')\n"
+                },
+                {
+                    "date": 1752810591677,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -75,8 +75,17 @@\n         meta: {\n           title: '系统配置 - iComfy管理系统',\n           icon: 'Setting'\n         }\n+      },\n+      {\n+        path: 'workflow-config',\n+        name: 'WorkflowConfig',\n+        component: () => import('@/views/WorkflowConfig.vue'),\n+        meta: {\n+          title: '工作流配置 - iComfy管理系统',\n+          icon: 'Operation'\n+        }\n       }\n     ]\n   },\n   {\n@@ -96,18 +105,18 @@\n \n // 路由守卫\n router.beforeEach((to, from, next) => {\n   NProgress.start()\n-  \n+\n   // 设置页面标题\n   if (to.meta.title) {\n     document.title = to.meta.title\n   }\n-  \n+\n   // 检查认证\n   const token = getToken()\n   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)\n-  \n+\n   if (requiresAuth && !token) {\n     next('/login')\n   } else if (to.path === '/login' && token) {\n     next('/dashboard')\n"
                 }
             ],
             "date": 1752402572417,
