@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 14,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1752813382472,
@@ -64,6 +64,10 @@
                 {
                     "date": 1752829434348,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -40,10 +40,13 @@\n       const workflow = result[config.workflow_type];\n       if (!workflow) return;\n \n       if (config.node_type === 'input') {\n-        workflow.inputNodes[config.node_key] = {\n-          nodeId: config.node_id,\n+        // 为了与公开API保持一致，直接使用node_id作为值\n+        workflow.inputNodes[config.node_key] = config.node_id;\n+        // 额外信息存储在metadata中\n+        if (!workflow.metadata) workflow.metadata = { inputNodes: {}, outputNodes: {} };\n+        workflow.metadata.inputNodes[config.node_key] = {\n           description: config.description,\n           enabled: config.is_enabled\n         };\n       } else if (config.node_type === 'output') {\n"
+                },
+                {
+                    "date": 1752836046760,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -363,9 +363,12 @@\n \n // 获取启用的功能列表（用于首页显示）\n router.get('/features', async (req, res) => {\n   try {\n-    console.log('📥 获取启用的功能列表...');\n+    // 简化日志输出\n+    if (process.env.NODE_ENV === 'development') {\n+      console.log('📥 获取启用的功能列表...');\n+    }\n \n     // 获取启用的工作流\n     const enabledWorkflows = await query(`\n       SELECT workflow_type, workflow_name, is_enabled\n"
                 }
             ],
             "date": 1752813382472,

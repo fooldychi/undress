@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 13,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1752286351267,
@@ -60,6 +60,10 @@
                 {
                     "date": 1752288804814,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,11 +5,8 @@\n       <div class=\"compact-main\">\r\n         <span class=\"points-icon\">💎</span>\r\n         <span class=\"points-value\">{{ pointsStatus.current }}</span>\r\n       </div>\r\n-      <div class=\"compact-status\" v-if=\"!pointsStatus.canGenerate\">\r\n-        <span class=\"status-text\">点数不足</span>\r\n-      </div>\r\n     </div>\r\n \r\n     <!-- 完整模式：原有显示 -->\r\n     <template v-else>\r\n"
+                },
+                {
+                    "date": 1752834899502,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -324,24 +324,18 @@\n const checkingPayment = ref(false)\r\n const currentOrderId = ref('')\r\n const paymentStatusText = ref('等待支付...')\r\n \r\n-// 定时器\r\n-let statusUpdateTimer = null\r\n+// 定时器（仅保留支付检查定时器）\r\n let paymentCheckTimer = null\r\n \r\n-// 组件挂载时启动定时器\r\n+// 组件挂载时初始化\r\n onMounted(() => {\r\n   updatePointsStatus()\r\n-  // 每30秒更新一次状态\r\n-  statusUpdateTimer = setInterval(updatePointsStatus, 30000)\r\n })\r\n \r\n // 组件卸载时清理定时器\r\n onUnmounted(() => {\r\n-  if (statusUpdateTimer) {\r\n-    clearInterval(statusUpdateTimer)\r\n-  }\r\n   if (paymentCheckTimer) {\r\n     clearInterval(paymentCheckTimer)\r\n   }\r\n })\r\n"
                 }
             ],
             "date": 1752286351267,

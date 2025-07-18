@@ -10,7 +10,7 @@ class LevelCardPointsManager {
   constructor() {
     this.pointsInfo = null
     this.lastUpdateTime = 0
-    this.updateInterval = 30000 // 30秒更新一次
+    this.cacheTimeout = 60000 // 缓存有效期1分钟（仅用于减少重复请求）
     this.retryCount = 0
     this.maxRetries = 3
     this.retryDelay = 1000 // 初始重试延迟1秒
@@ -29,9 +29,9 @@ class LevelCardPointsManager {
     }
 
     try {
-      // 如果缓存还有效，直接返回缓存数据
+      // 如果缓存还有效，直接返回缓存数据（减少重复请求）
       const now = Date.now()
-      if (this.pointsInfo && (now - this.lastUpdateTime) < this.updateInterval) {
+      if (this.pointsInfo && (now - this.lastUpdateTime) < this.cacheTimeout) {
         return this.formatPointsStatus(this.pointsInfo)
       }
 

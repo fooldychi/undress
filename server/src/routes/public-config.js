@@ -5,7 +5,10 @@ const { query } = require('../config/database');
 // 获取前端公开配置（不需要认证）
 router.get('/', async (req, res) => {
   try {
-    console.log('📥 客户端请求公开配置...');
+    // 简化日志输出
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📥 客户端请求公开配置...');
+    }
 
     // 使用环境变量或系统默认值作为备用配置
     const defaultConfigs = {
@@ -49,10 +52,13 @@ router.get('/', async (req, res) => {
       // 合并默认配置和数据库配置
       const finalConfig = { ...defaultConfigs, ...configMap };
 
-      console.log('📋 返回给客户端的配置:');
-      console.log(`   ComfyUI主服务器: ${finalConfig['comfyui.server_url']}`);
-      console.log(`   备用服务器: ${finalConfig['comfyui.backup_servers']}`);
-      console.log(`   超时时间: ${finalConfig['comfyui.timeout']}ms`);
+      // 只在开发环境显示详细配置
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📋 返回给客户端的配置:');
+        console.log(`   ComfyUI主服务器: ${finalConfig['comfyui.server_url']}`);
+        console.log(`   备用服务器: ${finalConfig['comfyui.backup_servers']}`);
+        console.log(`   超时时间: ${finalConfig['comfyui.timeout']}ms`);
+      }
 
 
       res.json({

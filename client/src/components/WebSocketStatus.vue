@@ -122,19 +122,23 @@ export default {
       if (wsConnection) {
         wsConnection.addEventListener('open', () => {
           updateStatus()
-          addNotification('WebSocket连接成功', 'success')
+          // 只在调试模式下显示连接成功通知
+          if (import.meta.env.DEV) {
+            addNotification('WebSocket连接成功', 'success')
+          }
         })
 
         wsConnection.addEventListener('close', () => {
           updateStatus()
-          addNotification('WebSocket连接已断开', 'warning')
+          // 简化连接断开通知
+          addNotification('连接已断开', 'warning')
         })
 
         wsConnection.addEventListener('error', () => {
           statusClass.value = 'error'
           statusText.value = 'ComfyUI 连接错误'
           showStatus.value = true
-          addNotification('WebSocket连接错误', 'error')
+          addNotification('连接错误', 'error')
         })
       }
     })

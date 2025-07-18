@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 83,
+            "activePatchIndex": 87,
             "patches": [
                 {
                     "date": 1752290191013,
@@ -340,6 +340,22 @@
                 {
                     "date": 1752436551953,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -270,15 +270,10 @@\n   -webkit-backdrop-filter: blur(10px);\r\n   border: 1px solid rgba(240, 147, 251, 0.3);\r\n }\r\n \r\n-.texttoimage-icon {\r\n-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(79, 172, 254, 0.1));\r\n-  backdrop-filter: blur(10px);\r\n-  -webkit-backdrop-filter: blur(10px);\r\n-  border: 1px solid rgba(79, 172, 254, 0.3);\r\n-}\r\n \r\n+\r\n .feature-content {\r\n   display: flex;\r\n   flex-direction: column;\r\n   gap: 12px;\r\n@@ -398,12 +393,9 @@\n     background: linear-gradient(135deg, rgba(240, 147, 251, 0.3), rgba(240, 147, 251, 0.1));\r\n     border-color: rgba(240, 147, 251, 0.4);\r\n   }\r\n \r\n-  .texttoimage-icon {\r\n-    background: linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(79, 172, 254, 0.1));\r\n-    border-color: rgba(79, 172, 254, 0.4);\r\n-  }\r\n+\r\n }\r\n \r\n /* 减少动画在低性能设备上的影响 */\r\n @media (prefers-reduced-motion: reduce) {\r\n"
+                },
+                {
+                    "date": 1752835953561,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -86,8 +86,9 @@\n import { MobilePageContainer, MobileCard } from '../components/mobile'\r\n import { authApi } from '../services/api.js'\r\n import { fetchFeaturesFromAPI } from '../config/features.js'\r\n import { generateIconStyle, isDarkTheme, injectCSS, createCSSRule } from '../utils/styleGenerator.js'\r\n+import logger from '../utils/logger.js'\r\n \r\n const router = useRouter()\r\n \r\n // 功能配置 - 从配置文件获取\r\n"
+                },
+                {
+                    "date": 1752835967177,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -122,9 +122,9 @@\n     featureConfigs.value = await fetchFeaturesFromAPI()\r\n     // 生成动态样式\r\n     generateDynamicStyles()\r\n   } catch (error) {\r\n-    console.error('获取功能配置失败:', error)\r\n+    logger.error('获取功能配置失败:', error)\r\n     Toast.fail('加载功能列表失败')\r\n   }\r\n })\r\n \r\n"
+                },
+                {
+                    "date": 1752835985722,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -130,14 +130,14 @@\n \r\n // 检查登录状态并导航\r\n const navigateTo = (featureConfig) => {\r\n   const { route, requireLogin, title } = featureConfig\r\n-  console.log('🔥 点击事件触发，准备导航到:', route)\r\n+  logger.user(`点击功能: ${title}`)\r\n \r\n   if (requireLogin) {\r\n     // 检查登录状态\r\n     if (!authApi.isLoggedIn()) {\r\n-      console.log('❌ 未登录，显示登录提示')\r\n+      logger.debug('未登录，显示登录提示')\r\n       Toast.fail('请先登录后再使用此功能')\r\n \r\n       // 触发TopNavigation组件显示登录弹窗\r\n       if (topNavigationRef.value) {\r\n@@ -147,13 +147,12 @@\n     }\r\n   }\r\n \r\n   try {\r\n-    console.log('🚀 开始导航到:', route)\r\n     router.push(route)\r\n-    console.log('✅ 导航成功')\r\n+    logger.debug(`导航到: ${route}`)\r\n   } catch (error) {\r\n-    console.error('❌ 导航失败:', error)\r\n+    logger.error('导航失败:', error)\r\n     Toast.fail(`导航到 ${title} 失败，请刷新页面重试`)\r\n   }\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1752836000346,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -161,16 +161,16 @@\n \r\n \r\n // 用户登录成功回调\r\n const handleUserLogin = (data) => {\r\n-  console.log('用户登录成功:', data)\r\n+  logger.user('用户登录成功')\r\n   // 可以在这里触发一些需要登录状态的操作\r\n   // 比如刷新积分信息等\r\n }\r\n \r\n // 用户登出回调\r\n const handleUserLogout = () => {\r\n-  console.log('用户已登出')\r\n+  logger.user('用户已登出')\r\n   // 可以在这里清理一些用户相关的状态\r\n }\r\n \r\n \r\n"
                 }
             ],
             "date": 1752290191013,

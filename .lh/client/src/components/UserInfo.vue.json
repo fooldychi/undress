@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 24,
+            "activePatchIndex": 25,
             "patches": [
                 {
                     "date": 1752283852248,
@@ -104,6 +104,10 @@
                 {
                     "date": 1752376513533,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -108,16 +108,20 @@\n           userInfo.value = response.data.user\n         } else {\n           // 如果获取用户信息失败，可能是token过期\n           console.warn('获取用户信息失败:', response.message)\n-          handleLogout()\n+          // 只有在明确的认证错误时才退出登录\n+          if (response.message && (response.message.includes('令牌已过期') ||\n+                                   response.message.includes('无效的访问令牌'))) {\n+            handleLogout()\n+          }\n         }\n       } catch (error) {\n         console.error('刷新用户信息失败:', error)\n-        // 如果是认证错误，自动退出登录\n-        if (error.message.includes('401') || error.message.includes('token')) {\n+        // 只有在明确的认证错误时才自动退出登录\n+        if (error.message.includes('登录已过期')) {\n           handleLogout()\n-        } else {\n+        } else if (!error.message.includes('网络') && !error.message.includes('超时')) {\n           Toast.fail('获取用户信息失败')\n         }\n       } finally {\n         loading.value = false\n"
+                },
+                {
+                    "date": 1752834969868,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -166,37 +166,13 @@\n         userInfo.value = null\n       }\n     }\n \n-    // 监听localStorage变化\n-    const handleStorageChange = (event) => {\n-      console.log('localStorage变化:', event)\n-      if (event.key === 'auth_token' || event.key === 'user_info') {\n-        console.log('认证相关数据变化，重新初始化')\n-        initUserInfo()\n-      }\n-    }\n+    // 移除跨标签页同步和定时检查逻辑\n \n     // 组件挂载时初始化\n     onMounted(() => {\n       initUserInfo()\n-\n-      // 监听storage事件（跨标签页同步）\n-      window.addEventListener('storage', handleStorageChange)\n-\n-      // 定期检查登录状态（防止token过期等问题）\n-      const checkInterval = setInterval(() => {\n-        if (authApi.isLoggedIn() && !userInfo.value) {\n-          console.log('检测到登录状态不一致，重新初始化')\n-          initUserInfo()\n-        }\n-      }, 5000) // 每5秒检查一次\n-\n-      // 清理定时器\n-      onUnmounted(() => {\n-        window.removeEventListener('storage', handleStorageChange)\n-        clearInterval(checkInterval)\n-      })\n     })\n \n     return {\n       showAuthModal,\n"
                 }
             ],
             "date": 1752283852248,

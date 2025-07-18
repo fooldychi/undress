@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1752463749504,
@@ -28,6 +28,10 @@
                 {
                     "date": 1752467913491,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -117,11 +117,8 @@\n \n       // 监听ComfyUI状态事件\n       window.addEventListener('comfyui-status', handleComfyUIStatus)\n \n-      // 显示初始化通知\n-      addNotification('WebSocket状态监控已启动', 'info')\n-\n       // 监听 WebSocket 事件\n       if (wsConnection) {\n         wsConnection.addEventListener('open', () => {\n           updateStatus()\n"
+                },
+                {
+                    "date": 1752836210723,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -121,21 +121,25 @@\n       // 监听 WebSocket 事件\n       if (wsConnection) {\n         wsConnection.addEventListener('open', () => {\n           updateStatus()\n-          addNotification('WebSocket连接成功', 'success')\n+          // 只在调试模式下显示连接成功通知\n+          if (import.meta.env.DEV) {\n+            addNotification('WebSocket连接成功', 'success')\n+          }\n         })\n \n         wsConnection.addEventListener('close', () => {\n           updateStatus()\n-          addNotification('WebSocket连接已断开', 'warning')\n+          // 简化连接断开通知\n+          addNotification('连接已断开', 'warning')\n         })\n \n         wsConnection.addEventListener('error', () => {\n           statusClass.value = 'error'\n           statusText.value = 'ComfyUI 连接错误'\n           showStatus.value = true\n-          addNotification('WebSocket连接错误', 'error')\n+          addNotification('连接错误', 'error')\n         })\n       }\n     })\n \n"
                 }
             ],
             "date": 1752463749504,

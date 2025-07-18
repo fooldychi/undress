@@ -167,35 +167,11 @@ export default {
       }
     }
 
-    // 监听localStorage变化
-    const handleStorageChange = (event) => {
-      console.log('localStorage变化:', event)
-      if (event.key === 'auth_token' || event.key === 'user_info') {
-        console.log('认证相关数据变化，重新初始化')
-        initUserInfo()
-      }
-    }
+    // 移除跨标签页同步和定时检查逻辑
 
     // 组件挂载时初始化
     onMounted(() => {
       initUserInfo()
-
-      // 监听storage事件（跨标签页同步）
-      window.addEventListener('storage', handleStorageChange)
-
-      // 定期检查登录状态（防止token过期等问题）
-      const checkInterval = setInterval(() => {
-        if (authApi.isLoggedIn() && !userInfo.value) {
-          console.log('检测到登录状态不一致，重新初始化')
-          initUserInfo()
-        }
-      }, 5000) // 每5秒检查一次
-
-      // 清理定时器
-      onUnmounted(() => {
-        window.removeEventListener('storage', handleStorageChange)
-        clearInterval(checkInterval)
-      })
     })
 
     return {

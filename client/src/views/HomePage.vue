@@ -87,6 +87,7 @@ import { MobilePageContainer, MobileCard } from '../components/mobile'
 import { authApi } from '../services/api.js'
 import { fetchFeaturesFromAPI } from '../config/features.js'
 import { generateIconStyle, isDarkTheme, injectCSS, createCSSRule } from '../utils/styleGenerator.js'
+import logger from '../utils/logger.js'
 
 const router = useRouter()
 
@@ -122,7 +123,7 @@ onMounted(async () => {
     // 生成动态样式
     generateDynamicStyles()
   } catch (error) {
-    console.error('获取功能配置失败:', error)
+    logger.error('获取功能配置失败:', error)
     Toast.fail('加载功能列表失败')
   }
 })
@@ -130,12 +131,12 @@ onMounted(async () => {
 // 检查登录状态并导航
 const navigateTo = (featureConfig) => {
   const { route, requireLogin, title } = featureConfig
-  console.log('🔥 点击事件触发，准备导航到:', route)
+  logger.user(`点击功能: ${title}`)
 
   if (requireLogin) {
     // 检查登录状态
     if (!authApi.isLoggedIn()) {
-      console.log('❌ 未登录，显示登录提示')
+      logger.debug('未登录，显示登录提示')
       Toast.fail('请先登录后再使用此功能')
 
       // 触发TopNavigation组件显示登录弹窗
@@ -147,11 +148,10 @@ const navigateTo = (featureConfig) => {
   }
 
   try {
-    console.log('🚀 开始导航到:', route)
     router.push(route)
-    console.log('✅ 导航成功')
+    logger.debug(`导航到: ${route}`)
   } catch (error) {
-    console.error('❌ 导航失败:', error)
+    logger.error('导航失败:', error)
     Toast.fail(`导航到 ${title} 失败，请刷新页面重试`)
   }
 }
@@ -162,14 +162,14 @@ const navigateTo = (featureConfig) => {
 
 // 用户登录成功回调
 const handleUserLogin = (data) => {
-  console.log('用户登录成功:', data)
+  logger.user('用户登录成功')
   // 可以在这里触发一些需要登录状态的操作
   // 比如刷新积分信息等
 }
 
 // 用户登出回调
 const handleUserLogout = () => {
-  console.log('用户已登出')
+  logger.user('用户已登出')
   // 可以在这里清理一些用户相关的状态
 }
 

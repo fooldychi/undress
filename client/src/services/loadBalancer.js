@@ -1,4 +1,5 @@
 import comfyUIConfig from '../config/comfyui.config.js'
+import logger from '../utils/logger.js'
 
 /**
  * ComfyUI 负载均衡器
@@ -108,7 +109,7 @@ class LoadBalancer {
       servers.push(...backupServers)
     }
 
-    console.log(`📋 配置的服务器列表 (${servers.length}个):`, servers)
+    logger.debug(`配置的服务器列表 (${servers.length}个):`, servers)
     return servers
   }
 
@@ -117,7 +118,7 @@ class LoadBalancer {
    */
   setVerboseLogging(enabled) {
     this.verboseLogging = enabled
-    console.log(`📝 详细日志已${enabled ? '启用' : '禁用'}`)
+    logger.info(`详细日志已${enabled ? '启用' : '禁用'}`)
   }
 
   /**
@@ -194,9 +195,7 @@ class LoadBalancer {
         server.healthy = false
         server.lastCheck = Date.now()
         server.queueInfo = { running: 0, pending: 0, total: 0 }
-        if (this.verboseLogging) {
-          console.log(`❌ 服务器检查失败: ${server.url} - ${error.message}`)
-        }
+        logger.health(`服务器检查失败: ${server.url}`, error.message)
       }
     })
 
@@ -400,9 +399,7 @@ class LoadBalancer {
     for (const endpoint of endpoints) {
       try {
         const fullUrl = `${cleanUrl}${endpoint}`
-        if (this.verboseLogging) {
-          console.log(`   测试端点: ${endpoint}`)
-        }
+        logger.debug(`测试端点: ${endpoint}`)
 
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), this.connectionTimeout)
@@ -423,10 +420,7 @@ class LoadBalancer {
             const isValidResponse = comfyUIConfig.validateResponse(endpoint, data)
 
             if (isValidResponse) {
-              if (this.verboseLogging) {
-                console.log(`✅ ComfyUI端点可用: ${endpoint}`)
-                console.log(`   响应数据结构:`, Object.keys(data))
-              }
+              logger.debug(`ComfyUI端点可用: ${endpoint}`, Object.keys(data))
 
               return {
                 success: true,
@@ -439,44 +433,31 @@ class LoadBalancer {
                 validated: true
               }
             } else {
-              if (this.verboseLogging) {
-                console.log(`⚠️ 端点响应但验证失败: ${endpoint} - 不是有效的ComfyUI响应`)
-              }
+              logger.debug(`端点响应但验证失败: ${endpoint}`)
               continue
             }
           } catch (jsonError) {
-            if (this.verboseLogging) {
-              console.log(`⚠️ 端点响应但JSON解析失败: ${endpoint} - ${jsonError.message}`)
-            }
+            logger.debug(`端点响应但JSON解析失败: ${endpoint}`)
             continue
           }
         } else {
-          if (this.verboseLogging) {
-            console.log(`⚠️ 端点响应错误: ${endpoint} (状态: ${response.status})`)
-          }
+          logger.debug(`端点响应错误: ${endpoint} (状态: ${response.status})`)
         }
       } catch (error) {
-        if (this.verboseLogging) {
-          console.log(`❌ 端点测试失败: ${endpoint} - ${error.message}`)
-        }
+        // 静默处理CORS和网络错误
+        logger.cors(`端点测试失败: ${endpoint}`, error.message)
 
         // 如果是网络错误，尝试简化的请求
         if (error.message.includes('Failed to fetch') || error.message.includes('ERR_FAILED')) {
-          if (this.verboseLogging) {
-            console.log(`🔄 尝试简化请求: ${endpoint}`)
-          }
+          logger.debug(`尝试简化请求: ${endpoint}`)
           try {
             const simpleResponse = await this.testSimpleEndpoint(fullUrl)
             if (simpleResponse.success) {
-              if (this.verboseLogging) {
-                console.log(`✅ 简化请求成功: ${endpoint}`)
-              }
+              logger.debug(`简化请求成功: ${endpoint}`)
               return simpleResponse
             }
           } catch (simpleError) {
-            if (this.verboseLogging) {
-              console.log(`❌ 简化请求也失败: ${simpleError.message}`)
-            }
+            logger.debug(`简化请求也失败: ${simpleError.message}`)
           }
         }
 
@@ -494,8 +475,7 @@ class LoadBalancer {
    * 执行完整的服务器健康检查
    */
   async performHealthCheck(serverUrl) {
-    console.log(`\n🏥 开始健康检查: ${serverUrl}`)
-    console.log('=' .repeat(50))
+    logger.health(`开始健康检查: ${serverUrl}`)
 
     const healthResult = {
       url: serverUrl,
@@ -570,27 +550,15 @@ class LoadBalancer {
     const healthyServers = results.filter(r => r.overall)
     const unhealthyServers = results.filter(r => !r.overall)
 
-    console.log('\n📊 健康检查汇总:')
-    console.log(`✅ 健康服务器: ${healthyServers.length}`)
-    console.log(`❌ 不健康服务器: ${unhealthyServers.length}`)
+    // 简化的健康检查汇总
+    logger.status(`健康检查完成: ${healthyServers.length}个健康, ${unhealthyServers.length}个不健康`)
 
     if (healthyServers.length > 0) {
-      console.log('\n🟢 健康的服务器:')
-      healthyServers.forEach(server => {
-        console.log(`   ✅ ${server.url}`)
-        if (server.comfyuiEndpoints?.success) {
-          console.log(`      - ComfyUI端点: ${server.comfyuiEndpoints.endpoint}`)
-          console.log(`      - API前缀: ${server.comfyuiEndpoints.apiPrefix || '无'}`)
-        }
-      })
+      logger.debug('健康的服务器:', healthyServers.map(s => s.url))
     }
 
     if (unhealthyServers.length > 0) {
-      console.log('\n🔴 不健康的服务器:')
-      unhealthyServers.forEach(server => {
-        console.log(`   ❌ ${server.url}`)
-        console.log(`      - 问题: ${server.errors.join(', ')}`)
-      })
+      logger.warn('不健康的服务器:', unhealthyServers.map(s => s.url))
     }
 
     return results

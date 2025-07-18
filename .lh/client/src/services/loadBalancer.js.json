@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 143,
+            "activePatchIndex": 153,
             "patches": [
                 {
                     "date": 1752333548051,
@@ -580,6 +580,46 @@
                 {
                     "date": 1752563996212,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -161,9 +161,9 @@\n     })\n \n     const selectedServer = sortedServers[0]\n \n-    console.log(`🎯 为用户${userId}选择服务器: ${selectedServer.url} (队列: ${selectedServer.queueInfo.total})`)\n+    console.log(`🎯 选择服务器: ${selectedServer.url} (队列: ${selectedServer.queueInfo.total})`)\n \n     return selectedServer.url\n   }\n \n"
+                },
+                {
+                    "date": 1752835860834,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,6 @@\n import comfyUIConfig from '../config/comfyui.config.js'\n+import logger from '../utils/logger.js'\n \n /**\n  * ComfyUI 负载均衡器\n  * 使用统一的官方端点配置进行健康检测和服务器选择\n"
+                },
+                {
+                    "date": 1752835875370,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -108,9 +108,9 @@\n \n       servers.push(...backupServers)\n     }\n \n-    console.log(`📋 配置的服务器列表 (${servers.length}个):`, servers)\n+    logger.debug(`配置的服务器列表 (${servers.length}个):`, servers)\n     return servers\n   }\n \n   /**\n"
+                },
+                {
+                    "date": 1752835893230,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -117,9 +117,9 @@\n    * 启用/禁用详细日志\n    */\n   setVerboseLogging(enabled) {\n     this.verboseLogging = enabled\n-    console.log(`📝 详细日志已${enabled ? '启用' : '禁用'}`)\n+    logger.info(`详细日志已${enabled ? '启用' : '禁用'}`)\n   }\n \n   /**\n    * 初始化服务器连接（兼容旧接口）\n"
+                },
+                {
+                    "date": 1752835908195,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -194,11 +194,9 @@\n       } catch (error) {\n         server.healthy = false\n         server.lastCheck = Date.now()\n         server.queueInfo = { running: 0, pending: 0, total: 0 }\n-        if (this.verboseLogging) {\n-          console.log(`❌ 服务器检查失败: ${server.url} - ${error.message}`)\n-        }\n+        logger.health(`服务器检查失败: ${server.url}`, error.message)\n       }\n     })\n \n     await Promise.all(promises)\n"
+                },
+                {
+                    "date": 1752835926854,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -568,29 +568,17 @@\n     // 汇总结果\n     const healthyServers = results.filter(r => r.overall)\n     const unhealthyServers = results.filter(r => !r.overall)\n \n-    console.log('\\n📊 健康检查汇总:')\n-    console.log(`✅ 健康服务器: ${healthyServers.length}`)\n-    console.log(`❌ 不健康服务器: ${unhealthyServers.length}`)\n+    // 简化的健康检查汇总\n+    logger.status(`健康检查完成: ${healthyServers.length}个健康, ${unhealthyServers.length}个不健康`)\n \n     if (healthyServers.length > 0) {\n-      console.log('\\n🟢 健康的服务器:')\n-      healthyServers.forEach(server => {\n-        console.log(`   ✅ ${server.url}`)\n-        if (server.comfyuiEndpoints?.success) {\n-          console.log(`      - ComfyUI端点: ${server.comfyuiEndpoints.endpoint}`)\n-          console.log(`      - API前缀: ${server.comfyuiEndpoints.apiPrefix || '无'}`)\n-        }\n-      })\n+      logger.debug('健康的服务器:', healthyServers.map(s => s.url))\n     }\n \n     if (unhealthyServers.length > 0) {\n-      console.log('\\n🔴 不健康的服务器:')\n-      unhealthyServers.forEach(server => {\n-        console.log(`   ❌ ${server.url}`)\n-        console.log(`      - 问题: ${server.errors.join(', ')}`)\n-      })\n+      logger.warn('不健康的服务器:', unhealthyServers.map(s => s.url))\n     }\n \n     return results\n   }\n"
+                },
+                {
+                    "date": 1752836133419,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -398,11 +398,9 @@\n \n     for (const endpoint of endpoints) {\n       try {\n         const fullUrl = `${cleanUrl}${endpoint}`\n-        if (this.verboseLogging) {\n-          console.log(`   测试端点: ${endpoint}`)\n-        }\n+        logger.debug(`测试端点: ${endpoint}`)\n \n         const controller = new AbortController()\n         const timeoutId = setTimeout(() => controller.abort(), this.connectionTimeout)\n \n"
+                },
+                {
+                    "date": 1752836147786,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -419,12 +419,9 @@\n             // 使用统一的响应验证\n             const isValidResponse = comfyUIConfig.validateResponse(endpoint, data)\n \n             if (isValidResponse) {\n-              if (this.verboseLogging) {\n-                console.log(`✅ ComfyUI端点可用: ${endpoint}`)\n-                console.log(`   响应数据结构:`, Object.keys(data))\n-              }\n+              logger.debug(`ComfyUI端点可用: ${endpoint}`, Object.keys(data))\n \n               return {\n                 success: true,\n                 endpoint,\n"
+                },
+                {
+                    "date": 1752836163690,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -432,28 +432,21 @@\n                 data: data,\n                 validated: true\n               }\n             } else {\n-              if (this.verboseLogging) {\n-                console.log(`⚠️ 端点响应但验证失败: ${endpoint} - 不是有效的ComfyUI响应`)\n-              }\n+              logger.debug(`端点响应但验证失败: ${endpoint}`)\n               continue\n             }\n           } catch (jsonError) {\n-            if (this.verboseLogging) {\n-              console.log(`⚠️ 端点响应但JSON解析失败: ${endpoint} - ${jsonError.message}`)\n-            }\n+            logger.debug(`端点响应但JSON解析失败: ${endpoint}`)\n             continue\n           }\n         } else {\n-          if (this.verboseLogging) {\n-            console.log(`⚠️ 端点响应错误: ${endpoint} (状态: ${response.status})`)\n-          }\n+          logger.debug(`端点响应错误: ${endpoint} (状态: ${response.status})`)\n         }\n       } catch (error) {\n-        if (this.verboseLogging) {\n-          console.log(`❌ 端点测试失败: ${endpoint} - ${error.message}`)\n-        }\n+        // 静默处理CORS和网络错误\n+        logger.cors(`端点测试失败: ${endpoint}`, error.message)\n \n         // 如果是网络错误，尝试简化的请求\n         if (error.message.includes('Failed to fetch') || error.message.includes('ERR_FAILED')) {\n           if (this.verboseLogging) {\n"
+                },
+                {
+                    "date": 1752836180931,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -448,23 +448,17 @@\n         logger.cors(`端点测试失败: ${endpoint}`, error.message)\n \n         // 如果是网络错误，尝试简化的请求\n         if (error.message.includes('Failed to fetch') || error.message.includes('ERR_FAILED')) {\n-          if (this.verboseLogging) {\n-            console.log(`🔄 尝试简化请求: ${endpoint}`)\n-          }\n+          logger.debug(`尝试简化请求: ${endpoint}`)\n           try {\n             const simpleResponse = await this.testSimpleEndpoint(fullUrl)\n             if (simpleResponse.success) {\n-              if (this.verboseLogging) {\n-                console.log(`✅ 简化请求成功: ${endpoint}`)\n-              }\n+              logger.debug(`简化请求成功: ${endpoint}`)\n               return simpleResponse\n             }\n           } catch (simpleError) {\n-            if (this.verboseLogging) {\n-              console.log(`❌ 简化请求也失败: ${simpleError.message}`)\n-            }\n+            logger.debug(`简化请求也失败: ${simpleError.message}`)\n           }\n         }\n \n         continue\n"
+                },
+                {
+                    "date": 1752836194644,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -474,10 +474,9 @@\n   /**\n    * 执行完整的服务器健康检查\n    */\n   async performHealthCheck(serverUrl) {\n-    console.log(`\\n🏥 开始健康检查: ${serverUrl}`)\n-    console.log('=' .repeat(50))\n+    logger.health(`开始健康检查: ${serverUrl}`)\n \n     const healthResult = {\n       url: serverUrl,\n       timestamp: new Date().toISOString(),\n"
                 }
             ],
             "date": 1752333548051,

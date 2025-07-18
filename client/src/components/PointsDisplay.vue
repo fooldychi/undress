@@ -325,22 +325,16 @@ const checkingPayment = ref(false)
 const currentOrderId = ref('')
 const paymentStatusText = ref('等待支付...')
 
-// 定时器
-let statusUpdateTimer = null
+// 定时器（仅保留支付检查定时器）
 let paymentCheckTimer = null
 
-// 组件挂载时启动定时器
+// 组件挂载时初始化
 onMounted(() => {
   updatePointsStatus()
-  // 每30秒更新一次状态
-  statusUpdateTimer = setInterval(updatePointsStatus, 30000)
 })
 
 // 组件卸载时清理定时器
 onUnmounted(() => {
-  if (statusUpdateTimer) {
-    clearInterval(statusUpdateTimer)
-  }
   if (paymentCheckTimer) {
     clearInterval(paymentCheckTimer)
   }

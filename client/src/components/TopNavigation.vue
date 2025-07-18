@@ -164,8 +164,7 @@ const pointsStatus = reactive({
   isLoggedIn: false
 })
 
-// 定时器
-let statusUpdateTimer = null
+// 移除定时器相关变量
 
 // 更新积分状态
 const updatePointsStatus = async () => {
@@ -312,47 +311,12 @@ const validateTokenSilently = async () => {
   }
 }
 
-// 监听localStorage变化
-const handleStorageChange = (event) => {
-  console.log('localStorage变化:', event)
-  if (event.key === 'auth_token' || event.key === 'user_info') {
-    console.log('认证相关数据变化，重新初始化')
-    initUserInfo()
-    updatePointsStatus()
-  }
-}
+// 移除跨标签页同步逻辑
 
 // 组件挂载时初始化
 onMounted(() => {
   initUserInfo()
   updatePointsStatus()
-
-  // 监听storage事件（跨标签页同步）
-  window.addEventListener('storage', handleStorageChange)
-
-  // 每30秒更新一次状态
-  statusUpdateTimer = setInterval(updatePointsStatus, 30000)
-
-  // 定期检查登录状态（防止token过期等问题）
-  const checkInterval = setInterval(() => {
-    const token = authApi.getToken()
-    const localUserInfo = authApi.getLocalUserInfo()
-
-    // 状态不一致时重新初始化
-    if ((token && !userInfo.value) || (!token && userInfo.value)) {
-      console.log('检测到登录状态不一致，重新初始化')
-      initUserInfo()
-    }
-  }, 5000) // 每5秒检查一次
-
-  // 清理定时器
-  onUnmounted(() => {
-    window.removeEventListener('storage', handleStorageChange)
-    if (statusUpdateTimer) {
-      clearInterval(statusUpdateTimer)
-    }
-    clearInterval(checkInterval)
-  })
 })
 
 // 暴露给父组件的方法

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 41,
+            "activePatchIndex": 44,
             "patches": [
                 {
                     "date": 1752290874113,
@@ -172,6 +172,18 @@
                 {
                     "date": 1752389075007,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -559,9 +559,9 @@\n   display: flex;\n   align-items: center;\n   justify-content: center;\n   min-width: 44px;\n-  min-height: 44px;\n+  min-height: 64px; /* 匹配导航栏高度 */\n   cursor: pointer;\n }\n </style>\n \n"
+                },
+                {
+                    "date": 1752834855418,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -163,10 +163,9 @@\n   generationCost: 20,\n   isLoggedIn: false\n })\n \n-// 定时器\n-let statusUpdateTimer = null\n+// 移除定时器相关变量\n \n // 更新积分状态\n const updatePointsStatus = async () => {\n   console.log('🔄 更新积分状态，当前登录状态:', levelCardPointsManager.isLoggedIn(), isLoggedIn.value)\n"
+                },
+                {
+                    "date": 1752834870464,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -310,17 +310,9 @@\n     // 不立即清除token，等待下一次API调用时再处理\n   }\n }\n \n-// 监听localStorage变化\n-const handleStorageChange = (event) => {\n-  console.log('localStorage变化:', event)\n-  if (event.key === 'auth_token' || event.key === 'user_info') {\n-    console.log('认证相关数据变化，重新初始化')\n-    initUserInfo()\n-    updatePointsStatus()\n-  }\n-}\n+// 移除跨标签页同步逻辑\n \n // 组件挂载时初始化\n onMounted(() => {\n   initUserInfo()\n"
+                },
+                {
+                    "date": 1752834885801,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -316,35 +316,8 @@\n // 组件挂载时初始化\n onMounted(() => {\n   initUserInfo()\n   updatePointsStatus()\n-\n-  // 监听storage事件（跨标签页同步）\n-  window.addEventListener('storage', handleStorageChange)\n-\n-  // 每30秒更新一次状态\n-  statusUpdateTimer = setInterval(updatePointsStatus, 30000)\n-\n-  // 定期检查登录状态（防止token过期等问题）\n-  const checkInterval = setInterval(() => {\n-    const token = authApi.getToken()\n-    const localUserInfo = authApi.getLocalUserInfo()\n-\n-    // 状态不一致时重新初始化\n-    if ((token && !userInfo.value) || (!token && userInfo.value)) {\n-      console.log('检测到登录状态不一致，重新初始化')\n-      initUserInfo()\n-    }\n-  }, 5000) // 每5秒检查一次\n-\n-  // 清理定时器\n-  onUnmounted(() => {\n-    window.removeEventListener('storage', handleStorageChange)\n-    if (statusUpdateTimer) {\n-      clearInterval(statusUpdateTimer)\n-    }\n-    clearInterval(checkInterval)\n-  })\n })\n \n // 暴露给父组件的方法\n defineExpose({\n"
                 }
             ],
             "date": 1752290874113,

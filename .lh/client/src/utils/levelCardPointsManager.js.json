@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 9,
+            "activePatchIndex": 11,
             "patches": [
                 {
                     "date": 1752288021271,
@@ -44,6 +44,14 @@
                 {
                     "date": 1752424930335,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -161,22 +161,9 @@\n         throw new Error(response.message || '积分不足')\n       }\n     } catch (error) {\n       console.error('消耗积分失败:', error)\n-\n-      // 提供更详细的错误信息\n-      let errorMessage = error.message\n-      if (errorMessage.includes('服务器返回非JSON响应')) {\n-        errorMessage = '后端服务连接异常，积分扣除失败'\n-      } else if (errorMessage.includes('API接口不存在')) {\n-        errorMessage = '积分系统接口异常，请联系管理员'\n-      } else if (errorMessage.includes('网络连接异常')) {\n-        errorMessage = '网络连接异常，积分扣除失败'\n-      } else if (errorMessage.includes('登录已过期')) {\n-        errorMessage = '登录已过期，请重新登录后重试'\n-      }\n-\n-      throw new Error(errorMessage)\n+      throw error\n     }\n   }\n \n   // 刷新积分信息\n"
+                },
+                {
+                    "date": 1752834919573,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,9 +9,9 @@\n class LevelCardPointsManager {\n   constructor() {\n     this.pointsInfo = null\n     this.lastUpdateTime = 0\n-    this.updateInterval = 30000 // 30秒更新一次\n+    this.cacheTimeout = 60000 // 缓存有效期1分钟（仅用于减少重复请求）\n     this.retryCount = 0\n     this.maxRetries = 3\n     this.retryDelay = 1000 // 初始重试延迟1秒\n   }\n"
+                },
+                {
+                    "date": 1752834936734,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,11 +28,11 @@\n       return this.getDefaultStatus()\n     }\n \n     try {\n-      // 如果缓存还有效，直接返回缓存数据\n+      // 如果缓存还有效，直接返回缓存数据（减少重复请求）\n       const now = Date.now()\n-      if (this.pointsInfo && (now - this.lastUpdateTime) < this.updateInterval) {\n+      if (this.pointsInfo && (now - this.lastUpdateTime) < this.cacheTimeout) {\n         return this.formatPointsStatus(this.pointsInfo)\n       }\n \n       // 从API获取最新积分信息\n"
                 }
             ],
             "date": 1752288021271,

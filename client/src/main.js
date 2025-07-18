@@ -40,34 +40,33 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('未处理的Promise拒绝:', event.reason)
 })
 
+import logger from './utils/logger.js'
+
 // 确保DOM加载完成
 async function initApp() {
   try {
-    console.log('🚀 初始化配置服务...')
+    logger.info('🚀 正在初始化应用...')
+
     // 初始化配置服务
     try {
       await configService.initialize()
+      logger.info('✅ 配置服务初始化完成')
     } catch (error) {
-      console.warn('⚠️ 配置服务初始化失败，使用默认配置:', error)
+      logger.warn('⚠️ 配置服务初始化失败，使用默认配置')
       // 使用默认配置
     }
 
     // 初始化负载均衡器
     await loadBalancer.initialize()
 
-    // 初始化服务器连接测试，提供详细的服务器状态反馈
-    console.log('🔍 开始服务器连接测试...')
+    // 初始化服务器连接测试（静默模式）
     try {
       await loadBalancer.initializeServerConnection()
-      
-      // 显示负载均衡状态
-      console.log('🎯 显示负载均衡状态...')
       await loadBalancer.showLoadBalancingStatus()
+      logger.info('✅ 服务器连接测试完成')
     } catch (error) {
-      console.warn('⚠️ 服务器连接测试失败，将在需要时重试:', error.message)
+      logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')
     }
-
-    // WebSocket 连接将在用户发起生图请求时自动初始化
 
     const app = createApp(App)
     app.use(router)
@@ -75,9 +74,7 @@ async function initApp() {
 
     // 全局错误处理
     app.config.errorHandler = (err, vm, info) => {
-      console.error('Vue应用错误:', err, info)
-      
-      // 显示用户友好的错误提示
+      logger.error('Vue应用错误:', err, info)
       Toast.fail('应用发生错误，请刷新页面重试')
     }
 

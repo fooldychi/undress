@@ -3,6 +3,10 @@
     <div class="page-header">
       <h1 class="page-title">工作流节点配置</h1>
       <div class="header-actions">
+        <el-button @click="loadConfig" :loading="loading">
+          <el-icon><Refresh /></el-icon>
+          刷新配置
+        </el-button>
         <el-button type="primary" @click="saveConfig" :loading="saving">
           <el-icon><Check /></el-icon>
           保存配置
@@ -186,9 +190,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Check } from '@element-plus/icons-vue'
+import { Check, Refresh } from '@element-plus/icons-vue'
 import { getWorkflowConfig, getPublicWorkflowConfig, batchUpdateWorkflowConfig } from '@/api/workflow'
 
 const loading = ref(false)
@@ -197,7 +201,7 @@ const saving = ref(false)
 // 配置数据
 const config = reactive({
   faceswap: {
-    enabled: true,
+    enabled: false, // 初始状态设为false，等待从服务器加载
     name: '',
     description: '',
     input_nodes: {
@@ -213,7 +217,7 @@ const config = reactive({
     }
   },
   undress: {
-    enabled: true,
+    enabled: false, // 初始状态设为false，等待从服务器加载
     name: '',
     description: '',
     input_nodes: {
@@ -246,6 +250,17 @@ const ensureStringNodeId = (nodeId) => {
   return String(nodeId || '')
 }
 
+// 调试函数：检查当前状态
+const debugCurrentState = () => {
+  console.log('🔍 当前配置状态调试:')
+  console.log('  换脸工作流 enabled:', config.faceswap.enabled, typeof config.faceswap.enabled)
+  console.log('  一键褪衣工作流 enabled:', config.undress.enabled, typeof config.undress.enabled)
+  console.log('  完整配置对象:', JSON.stringify({
+    faceswap: { enabled: config.faceswap.enabled },
+    undress: { enabled: config.undress.enabled }
+  }, null, 2))
+}
+
 // 加载配置
 const loadConfig = async () => {
   loading.value = true
@@ -265,9 +280,10 @@ const loadConfig = async () => {
       // 映射换脸工作流配置
       if (workflowData.faceswap) {
         const faceswap = workflowData.faceswap
-        config.faceswap.enabled = faceswap.enabled
-        config.faceswap.name = faceswap.name
-        config.faceswap.description = faceswap.description
+        // 确保enabled状态正确设置
+        config.faceswap.enabled = Boolean(faceswap.enabled)
+        config.faceswap.name = faceswap.name || ''
+        config.faceswap.description = faceswap.description || ''
 
         // 处理输入节点 - 确保节点ID是纯字符串格式
         config.faceswap.input_nodes.face_photo_1 = ensureStringNodeId(faceswap.inputNodes.face_photo_1) || '670'
@@ -285,14 +301,17 @@ const loadConfig = async () => {
           .sort((a, b) => a.order - b.order)
           .map(node => ensureStringNodeId(node.nodeId))
         config.faceswap.output_nodes.secondary = secondaryOutputs.join(',')
+
+        console.log('🔄 换脸工作流状态已设置为:', config.faceswap.enabled)
       }
 
       // 映射一键褪衣工作流配置
       if (workflowData.undress) {
         const undress = workflowData.undress
-        config.undress.enabled = undress.enabled
-        config.undress.name = undress.name
-        config.undress.description = undress.description
+        // 确保enabled状态正确设置
+        config.undress.enabled = Boolean(undress.enabled)
+        config.undress.name = undress.name || ''
+        config.undress.description = undress.description || ''
 
         // 处理输入节点 - 确保节点ID是纯字符串格式
         config.undress.input_nodes.main_image = ensureStringNodeId(undress.inputNodes.main_image) || '49'
@@ -307,9 +326,13 @@ const loadConfig = async () => {
           .sort((a, b) => a.order - b.order)
           .map(node => ensureStringNodeId(node.nodeId))
         config.undress.output_nodes.secondary = secondaryOutputs.join(',')
+
+        console.log('👗 一键褪衣工作流状态已设置为:', config.undress.enabled)
       }
 
       ElMessage.success('配置加载成功')
+      // 调试当前状态
+      debugCurrentState()
     }
   } catch (error) {
     console.error('加载配置失败:', error)
@@ -377,8 +400,11 @@ const saveConfig = async () => {
     const response = await batchUpdateWorkflowConfig({ workflows })
     if (response.success) {
       ElMessage.success('配置保存成功')
+      console.log('💾 配置保存成功，重新加载配置以确保状态同步')
       // 保存成功后重新加载配置，确保显示最新数据
       await loadConfig()
+      // 调试保存后的状态
+      debugCurrentState()
     } else {
       throw new Error(response.message || '保存失败')
     }
@@ -389,6 +415,19 @@ const saveConfig = async () => {
     saving.value = false
   }
 }
+
+// 监听状态变化，确保UI同步
+watch(
+  () => [config.faceswap.enabled, config.undress.enabled],
+  ([faceswapEnabled, undressEnabled]) => {
+    console.log('👀 状态变化监听 - 换脸:', faceswapEnabled, '一键褪衣:', undressEnabled)
+    // 强制触发DOM更新
+    nextTick(() => {
+      console.log('🔄 DOM已更新，当前状态 - 换脸:', config.faceswap.enabled, '一键褪衣:', config.undress.enabled)
+    })
+  },
+  { deep: true }
+)
 
 onMounted(() => {
   loadConfig()

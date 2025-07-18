@@ -138,47 +138,29 @@ npm install
 
 ## 🔧 开发模式启动
 
-### 同时启动所有服务 (推荐)
+### 前后端分离部署
 
-创建一个批处理文件 `start-all.bat` (Windows):
-```batch
-@echo off
-echo 启动 AIMagic 项目所有服务...
+本项目采用前后端分离架构，各服务应独立启动和部署：
 
-start "后端服务" cmd /k "cd server && npm start"
-timeout /t 3
-start "客户端" cmd /k "cd client && npm run dev"
-timeout /t 3
-start "后台管理" cmd /k "cd admin && npm run dev"
-
-echo 所有服务启动完成！
-echo 客户端: http://localhost:3001
-echo 后台管理: http://localhost:3003
-echo API服务: http://localhost:3007
-pause
-```
-
-或创建 `start-all.sh` (Linux/Mac):
+#### 开发环境
 ```bash
-#!/bin/bash
-echo "启动 AIMagic 项目所有服务..."
+# 在不同的终端窗口中分别启动各服务
 
-# 启动后端服务
-cd server && npm start &
-sleep 3
+# 终端1: 启动后端服务
+cd server
+npm start
 
-# 启动客户端
-cd ../client && npm run dev &
-sleep 3
+# 终端2: 启动客户端
+cd client
+npm run dev
 
-# 启动后台管理
-cd ../admin && npm run dev &
-
-echo "所有服务启动完成！"
-echo "客户端: http://localhost:3001"
-echo "后台管理: http://localhost:3003"
-echo "API服务: http://localhost:3007"
+# 终端3: 启动后台管理
+cd admin
+npm run dev
 ```
+
+#### 生产环境
+各服务应部署在不同的服务器或容器中，通过API接口进行通信。
 
 ## 📊 服务状态检查
 

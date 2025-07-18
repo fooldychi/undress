@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 27,
+            "activePatchIndex": 38,
             "patches": [
                 {
                     "date": 1752812189560,
@@ -116,6 +116,50 @@
                 {
                     "date": 1752831409566,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -318,10 +318,8 @@\n     loading.value = false\n   }\n }\n \n-// 删除不需要的辅助函数\n-\n // 保存配置\n const saveConfig = async () => {\n   saving.value = true\n   try {\n"
+                },
+                {
+                    "date": 1752834012221,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -196,9 +196,9 @@\n \n // 配置数据\n const config = reactive({\n   faceswap: {\n-    enabled: true,\n+    enabled: false, // 初始状态设为false，等待从服务器加载\n     name: '',\n     description: '',\n     input_nodes: {\n       face_photo_1: '',\n@@ -212,9 +212,9 @@\n       secondary: ''\n     }\n   },\n   undress: {\n-    enabled: true,\n+    enabled: false, // 初始状态设为false，等待从服务器加载\n     name: '',\n     description: '',\n     input_nodes: {\n       main_image: '',\n"
+                },
+                {
+                    "date": 1752834042818,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -264,11 +264,12 @@\n \n       // 映射换脸工作流配置\n       if (workflowData.faceswap) {\n         const faceswap = workflowData.faceswap\n-        config.faceswap.enabled = faceswap.enabled\n-        config.faceswap.name = faceswap.name\n-        config.faceswap.description = faceswap.description\n+        // 确保enabled状态正确设置\n+        config.faceswap.enabled = Boolean(faceswap.enabled)\n+        config.faceswap.name = faceswap.name || ''\n+        config.faceswap.description = faceswap.description || ''\n \n         // 处理输入节点 - 确保节点ID是纯字符串格式\n         config.faceswap.input_nodes.face_photo_1 = ensureStringNodeId(faceswap.inputNodes.face_photo_1) || '670'\n         config.faceswap.input_nodes.face_photo_2 = ensureStringNodeId(faceswap.inputNodes.face_photo_2) || '662'\n@@ -284,8 +285,10 @@\n           .filter(node => node.key.startsWith('secondary'))\n           .sort((a, b) => a.order - b.order)\n           .map(node => ensureStringNodeId(node.nodeId))\n         config.faceswap.output_nodes.secondary = secondaryOutputs.join(',')\n+\n+        console.log('🔄 换脸工作流状态已设置为:', config.faceswap.enabled)\n       }\n \n       // 映射一键褪衣工作流配置\n       if (workflowData.undress) {\n"
+                },
+                {
+                    "date": 1752834062143,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -292,11 +292,12 @@\n \n       // 映射一键褪衣工作流配置\n       if (workflowData.undress) {\n         const undress = workflowData.undress\n-        config.undress.enabled = undress.enabled\n-        config.undress.name = undress.name\n-        config.undress.description = undress.description\n+        // 确保enabled状态正确设置\n+        config.undress.enabled = Boolean(undress.enabled)\n+        config.undress.name = undress.name || ''\n+        config.undress.description = undress.description || ''\n \n         // 处理输入节点 - 确保节点ID是纯字符串格式\n         config.undress.input_nodes.main_image = ensureStringNodeId(undress.inputNodes.main_image) || '49'\n         config.undress.input_nodes.seed_node = ensureStringNodeId(undress.inputNodes.seed_node) || '174'\n@@ -309,8 +310,10 @@\n           .filter(node => node.key.startsWith('secondary'))\n           .sort((a, b) => a.order - b.order)\n           .map(node => ensureStringNodeId(node.nodeId))\n         config.undress.output_nodes.secondary = secondaryOutputs.join(',')\n+\n+        console.log('👗 一键褪衣工作流状态已设置为:', config.undress.enabled)\n       }\n \n       ElMessage.success('配置加载成功')\n     }\n"
+                },
+                {
+                    "date": 1752834086051,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -382,10 +382,13 @@\n \n     const response = await batchUpdateWorkflowConfig({ workflows })\n     if (response.success) {\n       ElMessage.success('配置保存成功')\n+      console.log('💾 配置保存成功，重新加载配置以确保状态同步')\n       // 保存成功后重新加载配置，确保显示最新数据\n       await loadConfig()\n+      // 强制触发响应式更新\n+      console.log('🔄 当前状态 - 换脸:', config.faceswap.enabled, '一键褪衣:', config.undress.enabled)\n     } else {\n       throw new Error(response.message || '保存失败')\n     }\n   } catch (error) {\n"
+                },
+                {
+                    "date": 1752834104121,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -185,9 +185,9 @@\n   </div>\n </template>\n \n <script setup>\n-import { ref, reactive, onMounted } from 'vue'\n+import { ref, reactive, onMounted, watch, nextTick } from 'vue'\n import { ElMessage } from 'element-plus'\n import { Check } from '@element-plus/icons-vue'\n import { getWorkflowConfig, getPublicWorkflowConfig, batchUpdateWorkflowConfig } from '@/api/workflow'\n \n"
+                },
+                {
+                    "date": 1752834118273,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -398,8 +398,21 @@\n     saving.value = false\n   }\n }\n \n+// 监听状态变化，确保UI同步\n+watch(\n+  () => [config.faceswap.enabled, config.undress.enabled],\n+  ([faceswapEnabled, undressEnabled]) => {\n+    console.log('👀 状态变化监听 - 换脸:', faceswapEnabled, '一键褪衣:', undressEnabled)\n+    // 强制触发DOM更新\n+    nextTick(() => {\n+      console.log('🔄 DOM已更新，当前状态 - 换脸:', config.faceswap.enabled, '一键褪衣:', config.undress.enabled)\n+    })\n+  },\n+  { deep: true }\n+)\n+\n onMounted(() => {\n   loadConfig()\n })\n </script>\n"
+                },
+                {
+                    "date": 1752834138518,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -245,8 +245,19 @@\n   }\n   return String(nodeId || '')\n }\n \n+// 调试函数：检查当前状态\n+const debugCurrentState = () => {\n+  console.log('🔍 当前配置状态调试:')\n+  console.log('  换脸工作流 enabled:', config.faceswap.enabled, typeof config.faceswap.enabled)\n+  console.log('  一键褪衣工作流 enabled:', config.undress.enabled, typeof config.undress.enabled)\n+  console.log('  完整配置对象:', JSON.stringify({\n+    faceswap: { enabled: config.faceswap.enabled },\n+    undress: { enabled: config.undress.enabled }\n+  }, null, 2))\n+}\n+\n // 加载配置\n const loadConfig = async () => {\n   loading.value = true\n   try {\n"
+                },
+                {
+                    "date": 1752834162425,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -326,8 +326,10 @@\n         console.log('👗 一键褪衣工作流状态已设置为:', config.undress.enabled)\n       }\n \n       ElMessage.success('配置加载成功')\n+      // 调试当前状态\n+      debugCurrentState()\n     }\n   } catch (error) {\n     console.error('加载配置失败:', error)\n     ElMessage.error('加载配置失败: ' + (error.message || '未知错误'))\n"
+                },
+                {
+                    "date": 1752834178301,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -398,10 +398,10 @@\n       ElMessage.success('配置保存成功')\n       console.log('💾 配置保存成功，重新加载配置以确保状态同步')\n       // 保存成功后重新加载配置，确保显示最新数据\n       await loadConfig()\n-      // 强制触发响应式更新\n-      console.log('🔄 当前状态 - 换脸:', config.faceswap.enabled, '一键褪衣:', config.undress.enabled)\n+      // 调试保存后的状态\n+      debugCurrentState()\n     } else {\n       throw new Error(response.message || '保存失败')\n     }\n   } catch (error) {\n"
+                },
+                {
+                    "date": 1752834190848,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,8 +2,12 @@\n   <div class=\"workflow-config-page\">\n     <div class=\"page-header\">\n       <h1 class=\"page-title\">工作流节点配置</h1>\n       <div class=\"header-actions\">\n+        <el-button @click=\"loadConfig\" :loading=\"loading\">\n+          <el-icon><Refresh /></el-icon>\n+          刷新配置\n+        </el-button>\n         <el-button type=\"primary\" @click=\"saveConfig\" :loading=\"saving\">\n           <el-icon><Check /></el-icon>\n           保存配置\n         </el-button>\n"
+                },
+                {
+                    "date": 1752834204580,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -191,9 +191,9 @@\n \n <script setup>\n import { ref, reactive, onMounted, watch, nextTick } from 'vue'\n import { ElMessage } from 'element-plus'\n-import { Check } from '@element-plus/icons-vue'\n+import { Check, Refresh } from '@element-plus/icons-vue'\n import { getWorkflowConfig, getPublicWorkflowConfig, batchUpdateWorkflowConfig } from '@/api/workflow'\n \n const loading = ref(false)\n const saving = ref(false)\n"
                 }
             ],
             "date": 1752812189560,

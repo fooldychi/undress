@@ -364,7 +364,10 @@ router.post('/batch-update', adminAuth, async (req, res) => {
 // 获取启用的功能列表（用于首页显示）
 router.get('/features', async (req, res) => {
   try {
-    console.log('📥 获取启用的功能列表...');
+    // 简化日志输出
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📥 获取启用的功能列表...');
+    }
 
     // 获取启用的工作流
     const enabledWorkflows = await query(`
