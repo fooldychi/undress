@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752809434449,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752858206848,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -38,9 +38,9 @@\n     }\r\n   },\r\n   \"504\": {\r\n     \"inputs\": {\r\n-      \"seed\": 532500849472973,\r\n+      \"seed\": 283960555178098,\r\n       \"steps\": 40,\r\n       \"cfg\": 1,\r\n       \"sampler_name\": \"euler_ancestral\",\r\n       \"scheduler\": \"sgm_uniform\",\r\n@@ -358,9 +358,9 @@\n     }\r\n   },\r\n   \"655\": {\r\n     \"inputs\": {\r\n-      \"image\": \"下载 (1).jpg\"\r\n+      \"image\": \"下载.jpg\"\r\n     },\r\n     \"class_type\": \"LoadImage\",\r\n     \"_meta\": {\r\n       \"title\": \"加载图像\"\r\n@@ -383,9 +383,9 @@\n     }\r\n   },\r\n   \"658\": {\r\n     \"inputs\": {\r\n-      \"image\": \"下载.jpg\"\r\n+      \"image\": \"u=1560949653,1000058177&fm=253&fmt=auto&app=138&f=JPEG.jpg\"\r\n     },\r\n     \"class_type\": \"LoadImage\",\r\n     \"_meta\": {\r\n       \"title\": \"加载图像\"\r\n@@ -541,9 +541,9 @@\n     }\r\n   },\r\n   \"670\": {\r\n     \"inputs\": {\r\n-      \"image\": \"8b6e66e6304be7dff6191f8cbe4fa9c4_1734074846.4603_854.jpeg\"\r\n+      \"image\": \"d44f5c235a47419290ac1bf1cd585304.jpg\"\r\n     },\r\n     \"class_type\": \"LoadImage\",\r\n     \"_meta\": {\r\n       \"title\": \"加载图像\"\r\n@@ -572,9 +572,9 @@\n     }\r\n   },\r\n   \"737\": {\r\n     \"inputs\": {\r\n-      \"image\": \"ComfyUI_00001_.png\"\r\n+      \"image\": \"ComfyUI_temp_rygla_00012_.png\"\r\n     },\r\n     \"class_type\": \"LoadImage\",\r\n     \"_meta\": {\r\n       \"title\": \"加载图像\"\r\n"
                 }
             ],
             "date": 1752809434449,

@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752408289136,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752852026619,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,13 +13,9 @@\n   constructor() {\n     this.projectRoot = path.join(__dirname, '..');\n     this.protectedFiles = [\n       'port-config.json',\n-      'scripts/port-manager.js',\n-      'scripts/start-with-port-management.js',\n-      'start-managed.js',\n-      'start-managed.bat',\n-      'start-managed.sh'\n+      'scripts/port-manager.js'\n     ];\n     this.checksumFile = path.join(__dirname, '.port-config-checksums.json');\n   }\n \n@@ -333,4 +329,5 @@\n   main().catch(console.error);\n }\n \n module.exports = PortConfigProtector;\n+\n"
                 }
             ],
             "date": 1752408289136,

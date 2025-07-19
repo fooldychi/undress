@@ -526,69 +526,47 @@ async function getGeneratedImage(taskResult, workflowType = 'undress') {
   }
 }
 
-// WebSocket 连接管理
+// WebSocket 连接管理 - 简化版本
 let wsConnection = null
-let wsReconnectTimer = null
 let isWsConnected = false
-let wsMessageHandlers = new Map()
 let pendingTasks = new Map()
-let wsHealthCheckTimer = null
-let lastMessageTime = Date.now()
-let connectionAttempts = 0
-let maxConnectionAttempts = 5
 
+// 简化的通知函数
+function showNotification(message, type = 'info') {
+  const timestamp = new Date().toLocaleTimeString()
+  const typeEmoji = {
+    'success': '✅',
+    'error': '❌',
+    'warning': '⚠️',
+    'info': 'ℹ️'
+  }
 
-// 前端通知函数
-function showWebSocketStatusNotification(message, type = 'info') {
-  try {
-    // 在控制台显示明显标记
-    const timestamp = new Date().toLocaleTimeString()
-    const typeEmoji = {
-      'success': '✅',
-      'error': '❌',
-      'warning': '⚠️',
-      'info': 'ℹ️'
-    }
+  console.log(`${typeEmoji[type] || 'ℹ️'} [${timestamp}] ${message}`)
 
-    console.log(`${typeEmoji[type] || 'ℹ️'} [${timestamp}] ${message}`)
-
-    // 尝试显示浏览器通知（如果用户允许）
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('ComfyUI 处理状态', {
-        body: message,
-        icon: '/favicon.ico'
-      })
-    }
-
-    // 尝试触发自定义事件，供Vue组件监听
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('comfyui-status', {
-        detail: { message, type, timestamp }
-      }))
-    }
-  } catch (error) {
-    console.warn('显示通知失败:', error)
+  // 触发自定义事件供Vue组件监听
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('comfyui-status', {
+      detail: { message, type, timestamp }
+    }))
   }
 }
 
 
 
-// 初始化 WebSocket 连接
-async function initializeWebSocket(forceNewConnection = false) {
+// 初始化 WebSocket 连接 - 简化版本
+async function initializeWebSocket() {
   try {
-    // 检查是否需要重新连接
-    if (!forceNewConnection && wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-      console.log('🎯 WebSocket 已连接，无需重新初始化')
+    // 检查现有连接
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+      console.log('🎯 WebSocket 已连接')
       return true
     }
 
     const config = getComfyUIConfig()
-
-    // 获取最优服务器
     const baseUrl = await loadBalancer.getOptimalServer()
-    console.log(`🔌 准备连接WebSocket服务器: ${baseUrl}`)
+    console.log(`🔌 连接WebSocket: ${baseUrl}`)
 
-    // 确保使用正确的WebSocket URL格式
+    // 构建WebSocket URL
     let wsUrl
     if (baseUrl.startsWith('https://')) {
       wsUrl = baseUrl.replace('https://', 'wss://') + '/ws?clientId=' + config.CLIENT_ID
@@ -596,43 +574,14 @@ async function initializeWebSocket(forceNewConnection = false) {
       wsUrl = baseUrl.replace('http://', 'ws://') + '/ws?clientId=' + config.CLIENT_ID
     }
 
-    // 先测试HTTP连接是否正常 - 使用统一的官方端点配置
+    // 简单的HTTP连接测试
     try {
-      const testEndpoints = comfyUIConfig.getHealthCheckEndpoints()
-      let connectionOk = false
-
-      for (const endpoint of testEndpoints) {
-        try {
-          const testResponse = await fetch(`${baseUrl}${endpoint}`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(comfyUIConfig.HEALTH_CHECK.TIMEOUT / 2) // 使用一半超时时间
-          })
-
-          if (testResponse.ok) {
-            // 验证响应是否为有效的ComfyUI响应
-            try {
-              const data = await testResponse.json()
-              const isValid = comfyUIConfig.validateResponse(endpoint, data)
-              if (isValid) {
-                console.log(`✅ HTTP连接测试成功: ${endpoint} (已验证ComfyUI响应)`)
-                connectionOk = true
-                break
-              } else {
-                console.log(`⚠️ 端点 ${endpoint} 响应但验证失败`)
-              }
-            } catch (jsonError) {
-              console.log(`✅ HTTP连接测试成功: ${endpoint} (非JSON响应但连接正常)`)
-              connectionOk = true
-              break
-            }
-          }
-        } catch (endpointError) {
-          console.log(`⚠️ 端点 ${endpoint} 测试失败: ${endpointError.message}`)
-        }
-      }
-
-      if (!connectionOk) {
-        throw new Error('所有HTTP端点测试失败')
+      const testResponse = await fetch(`${baseUrl}/api/queue`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      })
+      if (!testResponse.ok) {
+        throw new Error(`服务器响应错误: ${testResponse.status}`)
       }
     } catch (httpError) {
       throw new Error(`ComfyUI服务器不可达: ${httpError.message}`)
@@ -647,317 +596,97 @@ async function initializeWebSocket(forceNewConnection = false) {
 
       wsConnection.onopen = () => {
         isWsConnected = true
-        connectionAttempts = 0 // 重置连接尝试次数
-        lastMessageTime = Date.now() // 重置最后消息时间
         clearTimeout(timeout)
-        clearTimeout(wsReconnectTimer)
-
-        // 启动健康检查
-        startWebSocketHealthCheck()
-
-        // 显示前端通知
-        showWebSocketStatusNotification('WebSocket连接成功', 'success')
-
+        showNotification('WebSocket连接成功', 'success')
         resolve(true)
       }
 
       wsConnection.onclose = (event) => {
-        console.log(`🔌 ComfyUI WebSocket 连接关闭: 代码=${event.code}, 原因=${event.reason}`)
+        console.log(`🔌 WebSocket 连接关闭: 代码=${event.code}`)
         isWsConnected = false
         clearTimeout(timeout)
+        showNotification('WebSocket连接已断开', 'warning')
 
-        // 停止健康检查
-        stopWebSocketHealthCheck()
-
-        // 显示前端通知
-        showWebSocketStatusNotification('WebSocket连接已断开', 'warning')
-
-        // 分析关闭原因
-        let closeReason = '未知原因'
-        switch (event.code) {
-          case 1000:
-            closeReason = '正常关闭'
-            break
-          case 1001:
-            closeReason = '端点离开'
-            break
-          case 1002:
-            closeReason = '协议错误'
-            break
-          case 1003:
-            closeReason = '不支持的数据类型'
-            break
-          case 1006:
-            closeReason = '连接异常关闭（可能是网络问题或服务器切换）'
-            break
-          case 1011:
-            closeReason = '服务器错误'
-            break
-          default:
-            closeReason = `错误代码 ${event.code}`
-        }
-        console.log(`📋 WebSocket关闭原因: ${closeReason}`)
-
-        // 检查是否有待处理的任务
-        const hasPendingTasks = pendingTasks.size > 0
-        if (hasPendingTasks) {
-          console.warn(`⚠️ WebSocket断开时有 ${pendingTasks.size} 个待处理任务`)
-          showWebSocketStatusNotification(`连接断开，有 ${pendingTasks.size} 个任务待处理`, 'warning')
-        }
-
-        // 智能重连策略
-        if (!wsReconnectTimer) {
-          connectionAttempts++
-
-          // 指数退避策略：基础延迟 * 2^尝试次数，最大30秒
-          const baseDelay = hasPendingTasks ? 1000 : 5000
-          const exponentialDelay = Math.min(baseDelay * Math.pow(2, connectionAttempts - 1), 30000)
-
-          console.log(`🔄 计划重连 (尝试 ${connectionAttempts}/${maxConnectionAttempts})，延迟 ${exponentialDelay/1000}秒`)
-
-          wsReconnectTimer = setTimeout(async () => {
-            wsReconnectTimer = null
-
-            // 如果超过最大重连次数，停止自动重连
-            if (connectionAttempts > maxConnectionAttempts) {
-              console.error(`❌ 已达到最大重连次数 (${maxConnectionAttempts})，停止自动重连`)
-              showWebSocketStatusNotification('WebSocket重连失败，任务可能无法完成', 'error')
-
-              // 标记所有待处理任务为失败
-              if (hasPendingTasks) {
-                console.log('❌ 标记所有待处理任务为失败')
-                const taskIds = Array.from(pendingTasks.keys())
-                for (const promptId of taskIds) {
-                  const task = pendingTasks.get(promptId)
-                  if (task && task.onError) {
-                    task.onError('WebSocket连接失败，无法监听任务完成')
-                  }
-                  pendingTasks.delete(promptId)
+        // 简单重连策略 - 如果有待处理任务则重连
+        if (pendingTasks.size > 0) {
+          console.log('🔄 检测到待处理任务，5秒后重连...')
+          setTimeout(() => {
+            initializeWebSocket().catch(error => {
+              console.error('❌ 重连失败:', error)
+              // 标记所有任务失败
+              const taskIds = Array.from(pendingTasks.keys())
+              for (const promptId of taskIds) {
+                const task = pendingTasks.get(promptId)
+                if (task && task.onError) {
+                  task.onError('WebSocket连接失败')
                 }
+                pendingTasks.delete(promptId)
               }
-              return
-            }
-
-            try {
-              await initializeWebSocket()
-
-              // 重连成功后，检查待处理任务的状态
-              if (hasPendingTasks) {
-                await checkPendingTasksStatus()
-              }
-            } catch (error) {
-              // 重连失败，继续等待下次重试
-            }
-          }, exponentialDelay)
+            })
+          }, 5000)
         }
       }
 
       wsConnection.onerror = (error) => {
         clearTimeout(timeout)
-
-        // 显示前端通知
-        showWebSocketStatusNotification('WebSocket连接错误', 'error')
-
+        showNotification('WebSocket连接错误', 'error')
         reject(error)
       }
 
       wsConnection.onmessage = (event) => {
         try {
-          // 更新最后消息时间
-          lastMessageTime = Date.now()
-
-          // 简化消息验证
+          // 基本消息验证
           if (!event.data || typeof event.data !== 'string') {
             return
           }
 
           const rawData = event.data.trim()
-          if (!rawData || rawData === 'ping' || rawData === 'pong' || rawData === 'heartbeat') {
+          if (!rawData) {
             return
           }
 
-          // 记录原始消息以便调试
-          console.log(`📨 收到WebSocket消息:`, rawData.substring(0, 100) + (rawData.length > 100 ? '...' : ''))
-
-          // 简化JSON解析 - 只处理标准格式
+          // 解析JSON消息
           let message
           try {
             message = JSON.parse(rawData)
           } catch (parseError) {
-            console.warn('WebSocket消息解析失败，跳过:', parseError.message)
+            console.warn('WebSocket消息解析失败:', parseError.message)
             return
           }
 
-          // 验证消息基本结构
+          // 验证消息结构
           if (!message || typeof message !== 'object') {
-            console.warn('WebSocket消息不是有效对象')
             return
           }
 
-          // 标准化消息格式 - 简化为ComfyUI官方协议
-          let normalizedMessage = message;
+          console.log(`📨 收到消息类型:`, message.type || 'unknown')
 
-          // 如果消息没有type字段，尝试根据ComfyUI官方协议推断
-          if (!message.type) {
-            if (message.prompt_id && message.outputs) {
-              normalizedMessage = {
-                type: 'executed',
-                data: message
-              }
-            } else if (message.prompt_id && message.node !== undefined) {
-              normalizedMessage = {
-                type: 'executing',
-                data: message
-              }
-            } else if (message.prompt_id && message.value !== undefined && message.max !== undefined) {
-              normalizedMessage = {
-                type: 'progress',
-                data: message
-              }
-            } else if (message.prompt_id && message.status === 'success') {
-              normalizedMessage = {
-                type: 'execution_success',
-                data: message
-              }
-            } else if (message.prompt_id && message.status === 'error') {
-              normalizedMessage = {
-                type: 'execution_error',
-                data: message
-              }
-            }
+          // 如果是executed消息，记录更多详细信息
+          if (message.type === 'executed') {
+            console.log('🎯 executed消息原始数据:', JSON.stringify(message, null, 2))
           }
-
-          // 记录标准化后的消息
-          console.log(`📨 处理WebSocket消息类型:`, normalizedMessage.type || 'unknown')
 
           // 处理消息
-          handleWebSocketMessage(normalizedMessage)
+          handleWebSocketMessage(message)
         } catch (error) {
           console.error('❌ 处理WebSocket消息失败:', error)
         }
       }
     })
   } catch (error) {
-    console.error('❌❌❌ 初始化 WebSocket 失败 ❌❌❌', error)
+    console.error('❌ 初始化 WebSocket 失败:', error)
     throw error
   }
 }
 
-// WebSocket健康检查
-function startWebSocketHealthCheck() {
-  // 清除现有的健康检查
-  stopWebSocketHealthCheck()
+// 移除复杂的健康检查系统
 
-  wsHealthCheckTimer = setInterval(() => {
-    const now = Date.now()
-    const timeSinceLastMessage = now - lastMessageTime
-
-    // 检查连接状态
-    const isConnectionHealthy = wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected
-
-    // 如果连接不健康，立即尝试重连
-    if (!isConnectionHealthy) {
-      console.warn('⚠️ WebSocket连接状态异常，立即重连')
-      isWsConnected = false
-
-      // 如果有待处理任务，优先重连
-      if (pendingTasks.size > 0) {
-        console.log('🔄 检测到待处理任务，立即重连WebSocket')
-        ensureWebSocketConnection().catch(error => {
-          console.error('❌ 健康检查重连失败:', error)
-        })
-      }
-      return
-    }
-
-    // 如果超过30秒没有收到消息，发送心跳检测
-    if (timeSinceLastMessage > 30000) {
-      console.warn(`⚠️ WebSocket健康检查：${timeSinceLastMessage/1000}秒未收到消息`)
-
-      // 尝试发送心跳
-      try {
-        if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-          wsConnection.send(JSON.stringify({ type: 'ping', timestamp: now }))
-          console.log('📡 发送心跳检测')
-        }
-      } catch (error) {
-        console.error('❌ 发送心跳失败:', error)
-        isWsConnected = false
-      }
-    }
-
-    // 如果超过90秒没有收到消息且有待处理任务，尝试重连
-    if (timeSinceLastMessage > 90000 && pendingTasks.size > 0) {
-      console.warn('⚠️ 长时间无消息且有待处理任务，尝试重连')
-      ensureWebSocketConnection().catch(error => {
-        console.error('❌ 长时间无响应重连失败:', error)
-      })
-    }
-
-    // 如果超过180秒没有收到消息且有待处理任务，标记任务失败
-    if (timeSinceLastMessage > 180000 && pendingTasks.size > 0) {
-      console.error('❌ WebSocket连接长时间无响应，标记所有任务失败')
-      const taskIds = Array.from(pendingTasks.keys())
-      for (const promptId of taskIds) {
-        const task = pendingTasks.get(promptId)
-        if (task && task.onError) {
-          task.onError('WebSocket连接长时间无响应')
-        }
-        pendingTasks.delete(promptId)
-      }
-      showWebSocketStatusNotification('WebSocket连接异常，任务已取消', 'error')
-    }
-  }, 5000) // 每5秒检查一次，提高检查频率
-}
-
-function stopWebSocketHealthCheck() {
-  if (wsHealthCheckTimer) {
-    clearInterval(wsHealthCheckTimer)
-    wsHealthCheckTimer = null
-  }
-}
-
-// 检查待处理任务状态
-async function checkPendingTasksStatus() {
-  const taskIds = Array.from(pendingTasks.keys())
-
-  for (const promptId of taskIds) {
-    try {
-      const result = await checkTaskStatus(promptId)
-
-      if (result && result.status && result.status.completed) {
-        console.log(`✅ 发现任务 ${promptId} 已完成，触发回调`)
-
-        const task = pendingTasks.get(promptId)
-        if (task && task.onComplete) {
-          task.onComplete(result)
-          pendingTasks.delete(promptId)
-          showWebSocketStatusNotification(`任务 ${promptId.substring(0, 8)} 已完成`, 'success')
-        }
-      } else if (result && result.status && result.status.status_str === 'error') {
-        console.error(`❌ 发现任务 ${promptId} 执行失败`)
-
-        const task = pendingTasks.get(promptId)
-        if (task && task.onError) {
-          task.onError('任务执行失败')
-          pendingTasks.delete(promptId)
-          showWebSocketStatusNotification(`任务 ${promptId.substring(0, 8)} 执行失败`, 'error')
-        }
-      }
-    } catch (error) {
-      console.error(`❌ 检查任务 ${promptId} 状态失败:`, error)
-    }
-  }
-}
-
-// 已移除HTTP轮询备用机制，完全依赖WebSocket进行任务状态监控
-// 如果需要手动检查任务状态，请使用 checkTaskStatus(promptId) 函数
-
-// 处理 WebSocket 消息 - 根据ComfyUI官方文档规范
+// 处理 WebSocket 消息 - 基于ComfyUI官方标准
 function handleWebSocketMessage(message) {
   try {
     const { type, data } = message
 
+    // 只处理官方标准消息类型
     switch (type) {
       case 'status':
         handleStatusMessage(data)
@@ -974,385 +703,291 @@ function handleWebSocketMessage(message) {
       case 'execution_start':
         handleExecutionStartMessage(data)
         break
-      case 'execution_success':
-        console.log('🎉 任务执行成功!')
-        handleExecutionSuccessMessage(data)
-        break
-      case 'execution_error':
-        handleExecutionErrorMessage(data)
-        break
-      case 'execution_interrupted':
-        handleExecutionInterruptedMessage(data)
-        break
       case 'execution_cached':
         handleExecutionCachedMessage(data)
         break
       default:
-        console.log(`收到未处理的消息类型: ${type}`)
-    }
-
-    // 触发注册的消息处理器
-    if (wsMessageHandlers.has(type)) {
-      wsMessageHandlers.get(type).forEach(handler => {
-        try {
-          handler(data)
-        } catch (error) {
-          console.error(`❌ 处理 ${type} 消息时出错:`, error)
-        }
-      })
+        // 忽略非官方消息类型
+        console.debug(`忽略消息类型: ${type}`)
     }
   } catch (error) {
     console.error('❌ 处理 WebSocket 消息失败:', error)
-    console.error('错误详情:', error)
-    console.log('问题消息:', JSON.stringify(message, null, 2))
   }
 }
 
-// 处理状态消息 - 队列状态变化
-function handleStatusMessage() {
-  // 队列状态消息，通常用于监控队列状态
-  // 这里可以根据需要添加队列状态处理逻辑
-}
-
-
-
-// 处理执行成功消息 - 这是关键的完成消息！
-function handleExecutionSuccessMessage(data) {
-  console.log('🎉 ComfyUI 执行成功! 所有节点已完成!')
-
-  if (data && data.prompt_id) {
-    const promptId = data.prompt_id
-    const task = pendingTasks.get(promptId)
-
-    if (task) {
-      console.log(`✅ 任务 ${promptId} 执行完成，准备获取结果`)
-
-      // 立即更新进度到99%
-      if (task.onProgress) {
-        task.onProgress('处理完成，正在加载结果...', 99)
-      }
-
-      // 显示前端通知
-      showWebSocketStatusNotification(`任务执行成功!`, 'success')
-
-      // 增加重试机制，确保获取到结果
-      let retryCount = 0;
-      const maxRetries = 3;
-
-      const fetchResult = () => {
-        console.log(`🔄 尝试获取任务结果 (尝试 ${retryCount + 1}/${maxRetries + 1})`)
-
-        // 获取完整的历史记录来获取输出结果
-        checkTaskStatus(promptId).then(result => {
-          if (result) {
-            console.log('🚀 成功获取处理结果，返回到前端')
-
-            // 显示成功通知
-            showWebSocketStatusNotification('图片处理成功，正在加载结果...', 'success')
-
-            if (task.onComplete) {
-              task.onComplete(result)
-            }
-
-            pendingTasks.delete(promptId)
-            console.log('✅ ComfyUI 处理流程完成!')
-          } else if (retryCount < maxRetries) {
-            // 结果为空，但还有重试次数
-            retryCount++;
-            console.log(`⚠️ 结果为空，${500 * retryCount}ms后重试...`)
-            setTimeout(fetchResult, 500 * retryCount);
-          } else {
-            // 已达到最大重试次数，仍然没有结果
-            console.error('❌ 多次尝试后仍未获取到有效结果')
-
-            if (task.onError) {
-              task.onError('获取处理结果失败')
-            }
-            pendingTasks.delete(promptId)
-          }
-        }).catch(error => {
-          console.error('❌ 获取任务结果失败:', error)
-
-          if (retryCount < maxRetries) {
-            // 还有重试次数
-            retryCount++;
-            console.log(`⚠️ 获取失败，${500 * retryCount}ms后重试...`)
-            setTimeout(fetchResult, 500 * retryCount);
-          } else {
-            // 显示错误通知
-            showWebSocketStatusNotification('获取处理结果失败', 'error')
-
-            if (task.onError) {
-              task.onError(error.message)
-            }
-            pendingTasks.delete(promptId)
-          }
-        })
-      }
-
-      // 开始获取结果
-      fetchResult();
-    } else {
-      console.warn(`⚠️ 收到未知任务的执行成功消息: ${promptId}`)
-    }
-  } else {
-    console.warn('⚠️ 收到无效的执行成功消息')
-  }
-}
-
-// 处理执行中断消息
-function handleExecutionInterruptedMessage(data) {
-  if (data && data.prompt_id) {
-    const promptId = data.prompt_id
-    const task = pendingTasks.get(promptId)
-    if (task && task.onError) {
-      task.onError('任务执行被中断')
-    }
-    pendingTasks.delete(promptId)
-  }
+// 处理状态消息 - 队列状态
+function handleStatusMessage(data) {
+  // 简单记录队列状态
+  console.debug('📊 队列状态更新')
 }
 
 // 处理执行缓存消息
 function handleExecutionCachedMessage(data) {
   if (data && data.prompt_id) {
     const promptId = data.prompt_id
-    const cachedNodes = data.nodes || []
     const task = pendingTasks.get(promptId)
     if (task && task.onProgress) {
-      task.onProgress(`使用缓存 (${cachedNodes.length}个节点)`, 30)
+      task.onProgress('使用缓存节点', 20)
     }
   }
 }
 
-// 处理进度消息 - 根据官方文档规范
+// 处理进度消息 - 官方标准
 function handleProgressMessage(data) {
   if (data && data.prompt_id && data.value !== undefined && data.max !== undefined) {
     const promptId = data.prompt_id
-    const nodeId = data.node
     const progress = Math.round((data.value / data.max) * 100)
 
     const task = pendingTasks.get(promptId)
     if (task && task.onProgress) {
-      task.onProgress(progress, `处理节点 ${nodeId || ''}`)
+      task.onProgress(`处理中 ${data.value}/${data.max}`, progress)
     }
   }
 }
 
-// 处理节点执行完成消息 - 当节点返回UI元素时
+// 处理节点执行完成消息 - 精确检测输出节点
 function handleExecutedMessage(data) {
-  console.log('📊 处理节点执行完成消息:', data ? data.node : 'unknown')
+  console.log('🎯 收到executed消息:', data)
+  console.log('📊 executed消息详细结构:', JSON.stringify(data, null, 2))
 
   if (!data || !data.prompt_id) {
-    console.warn('⚠️ 收到无效的节点执行完成消息')
+    console.warn('⚠️ executed消息缺少prompt_id')
     return
   }
 
   const promptId = data.prompt_id
-  const nodeId = data.node
   const task = pendingTasks.get(promptId)
 
-  // 如果没有找到对应的任务，记录并返回
   if (!task) {
-    console.warn(`⚠️ 收到未知任务的节点执行完成消息: ${promptId}`)
+    console.warn(`⚠️ 任务 ${promptId} 已被处理或不存在`)
+    console.log('📋 当前待处理任务:', Array.from(pendingTasks.keys()))
     return
   }
 
-  // 更新进度
-  if (task.onProgress) {
-    // 更新进度，但不超过95%，为最终完成留出空间
-    const currentProgress = Math.min(95, 60 + Math.random() * 30)
-    task.onProgress(`节点 ${nodeId || '未知'} 完成`, currentProgress)
+  // 获取执行完成的节点ID
+  const executedNodeId = data.node_id || Object.keys(data.outputs || {})[0]
+
+  console.log('🔍 executed消息分析:', {
+    node_id: data.node_id,
+    outputs: data.outputs ? Object.keys(data.outputs) : '无outputs',
+    executedNodeId: executedNodeId
+  })
+
+  if (!executedNodeId) {
+    console.log('📊 executed消息未包含节点ID，跳过处理')
+    return
   }
 
-  // 检查是否包含完整输出 - 有些ComfyUI版本可能在executed消息中包含完整输出
-  if (data.outputs && Object.keys(data.outputs).length > 0) {
-    console.log('🔍 检测到executed消息中包含完整输出，可能是任务完成信号')
+  console.log(`🔍 检查节点 ${executedNodeId} 是否为输出节点`)
 
-    // 延迟处理，避免与execution_success消息冲突
-    setTimeout(() => {
-      // 再次检查任务是否仍在等待中（可能已被其他消息处理）
-      if (pendingTasks.has(promptId)) {
-        console.log('✅ 通过executed消息完成任务')
+  // 获取工作流配置，检查是否是输出节点
+  const workflowType = task.workflowType || 'undress'
 
+  getWorkflowNodeConfig(workflowType).then(nodeConfig => {
+    console.log(`📋 获取到${workflowType}工作流节点配置:`, nodeConfig)
+
+    const isOutputNode = executedNodeId === nodeConfig.outputNodes.primary ||
+                        nodeConfig.outputNodes.secondary.includes(executedNodeId)
+
+    if (isOutputNode) {
+      console.log(`✅ 输出节点 ${executedNodeId} 执行完成，任务结束`)
+      console.log(`📊 输出节点数据结构:`, data.outputs ? Object.keys(data.outputs) : '无outputs字段')
+
+      // 验证数据结构完整性
+      if (!data.outputs || Object.keys(data.outputs).length === 0) {
+        console.warn('⚠️ executed消息缺少outputs数据，延迟获取结果')
+        // 延迟获取完整结果
+        setTimeout(async () => {
+          try {
+            const taskResult = await checkTaskStatus(promptId)
+            if (taskResult && taskResult.outputs && Object.keys(taskResult.outputs).length > 0) {
+              console.log(`✅ 通过API获取到完整任务结果`)
+              if (task.onProgress) {
+                task.onProgress('处理完成', 100)
+              }
+              if (task.onComplete) {
+                task.onComplete(taskResult)
+              }
+            } else {
+              console.error('❌ API获取任务结果失败')
+              if (task.onError) {
+                task.onError('任务完成但无法获取结果')
+              }
+            }
+            pendingTasks.delete(promptId)
+          } catch (error) {
+            console.error('❌ 获取任务结果失败:', error)
+            if (task.onError) {
+              task.onError(error.message)
+            }
+            pendingTasks.delete(promptId)
+          }
+        }, 1000)
+      } else {
+        // 数据完整，立即处理
+        console.log(`✅ executed消息包含完整数据，立即处理`)
         if (task.onProgress) {
-          task.onProgress('处理完成，正在加载结果...', 99)
+          task.onProgress('处理完成', 100)
         }
-
         if (task.onComplete) {
           task.onComplete(data)
         }
-
         pendingTasks.delete(promptId)
       }
-    }, 1000); // 延迟1秒处理
-  }
-}
 
-// 处理执行错误消息
-function handleExecutionErrorMessage(data) {
-  if (data && data.prompt_id) {
-    const task = pendingTasks.get(data.prompt_id)
-    if (task) {
-      console.error(`❌ 任务 ${data.prompt_id} 执行失败:`, data)
-      if (task.onError) {
-        task.onError(data.exception_message || data.traceback || '任务执行失败')
-      }
-      pendingTasks.delete(data.prompt_id)
+      console.log(`🧹 输出节点任务 ${promptId} 处理完成，剩余任务: ${pendingTasks.size}`)
+    } else {
+      console.log(`📝 节点 ${executedNodeId} 不是输出节点，继续等待`)
+      console.log(`📋 输出节点配置: 主要=${nodeConfig.outputNodes.primary}, 备用=[${nodeConfig.outputNodes.secondary.join(',')}]`)
     }
-  }
+  }).catch(error => {
+    console.warn('⚠️ 获取节点配置失败，使用备用逻辑:', error)
+    // 备用逻辑：检查是否是已知的输出节点
+    const knownOutputNodes = ['732', '730', '812', '813', '746', '710']
+    if (knownOutputNodes.includes(executedNodeId)) {
+      console.log(`✅ 检测到已知输出节点 ${executedNodeId} 完成`)
+      if (task.onProgress) {
+        task.onProgress('处理完成', 100)
+      }
+      if (task.onComplete) {
+        task.onComplete(data)
+      }
+      pendingTasks.delete(promptId)
+    } else {
+      console.log(`📝 节点 ${executedNodeId} 不在已知输出节点列表中，继续等待`)
+    }
+  })
 }
 
-// 处理正在执行消息 - 根据官方文档规范
+// 处理正在执行消息 - 简化版本，只处理进度更新
 function handleExecutingMessage(data) {
   if (data && data.prompt_id) {
     const promptId = data.prompt_id
     const nodeId = data.node
 
+    console.log('🔄 收到executing消息:', {
+      promptId: promptId,
+      nodeId: nodeId,
+      当前待处理任务数: pendingTasks.size
+    })
+
     const task = pendingTasks.get(promptId)
-    if (task && task.onProgress) {
-      if (nodeId === null || nodeId === undefined) {
-        // node为null表示执行完成，但不是最终完成
-        task.onProgress('所有节点执行完成，等待结果...', 95)
-      } else {
-        // 开始执行新节点，动态计算进度
-        const currentProgress = Math.min(90, 30 + Math.random() * 50)
-        task.onProgress(`执行节点 ${nodeId}`, currentProgress)
+
+    if (!task) {
+      console.log(`� 未找到任务: ${promptId} (节点: ${nodeId})`)
+      return
+    }
+
+    if (nodeId === null) {
+      // 所有节点执行完成信号 - 作为备用完成检测机制
+      console.log('📊 检测到所有节点执行完成信号 (executing with node=null)')
+      console.log('⏳ 等待输出节点的executed消息，同时启动备用检测...')
+
+      // 更新进度
+      if (task.onProgress) {
+        task.onProgress('等待输出节点完成...', 95)
+      }
+
+      // 备用机制：延迟2秒后检查任务结果，防止executed消息丢失
+      setTimeout(async () => {
+        // 检查任务是否还在等待（没有被executed消息处理）
+        const stillPending = pendingTasks.get(promptId)
+        if (stillPending) {
+          console.log('⚠️ 2秒后任务仍在等待，启动备用完成检测')
+          try {
+            const taskResult = await checkTaskStatus(promptId)
+            if (taskResult && taskResult.outputs && Object.keys(taskResult.outputs).length > 0) {
+              console.log('✅ 备用检测获取到完整任务结果')
+              if (task.onProgress) {
+                task.onProgress('处理完成', 100)
+              }
+              if (task.onComplete) {
+                task.onComplete(taskResult)
+              }
+              pendingTasks.delete(promptId)
+              console.log(`🧹 备用机制完成任务 ${promptId}`)
+            } else {
+              console.warn('⚠️ 备用检测未获取到有效结果')
+            }
+          } catch (error) {
+            console.error('❌ 备用检测失败:', error)
+          }
+        } else {
+          console.log('✅ 任务已被executed消息正常处理')
+        }
+      }, 2000)
+    } else {
+      // 单个节点开始执行 - 更新进度
+      console.log(`🔄 节点 ${nodeId} 开始执行`)
+      if (task.onProgress) {
+        task.onProgress(`正在执行节点 ${nodeId}`, 60)
       }
     }
   }
 }
 
-// 确保WebSocket连接稳定
+// 确保WebSocket连接
 async function ensureWebSocketConnection() {
-  console.log('🔌 确保WebSocket连接稳定...')
-
-  // 检查当前连接状态
   if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
-    console.log('✅ WebSocket连接正常')
     return true
   }
 
-  // 如果连接不正常，重新建立连接
-  console.log('🔄 WebSocket连接异常，重新建立连接...')
-
-  try {
-    await initializeWebSocket(true) // 强制重新连接
-
-    // 等待连接稳定
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (attempts < maxAttempts) {
-      if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
-        console.log('✅ WebSocket连接已稳定')
-        return true
-      }
-
-      console.log(`⏳ 等待WebSocket连接稳定... (${attempts + 1}/${maxAttempts})`)
-      await new Promise(resolve => setTimeout(resolve, 500))
-      attempts++
-    }
-
-    throw new Error('WebSocket连接无法稳定')
-  } catch (error) {
-    console.error('❌ 确保WebSocket连接失败:', error)
-    throw error
-  }
+  console.log('🔄 建立WebSocket连接...')
+  await initializeWebSocket()
+  return true
 }
 
-// 等待任务完成 - 完全依赖WebSocket机制
-async function waitForTaskCompletion(promptId, maxWaitTime = 300000, onProgress = null) {
-  console.log(`⏳ 等待任务完成: ${promptId}`)
+// 等待任务完成 - 添加工作流类型参数
+async function waitForTaskCompletion(promptId, maxWaitTime = 300000, onProgress = null, workflowType = 'undress') {
+  console.log(`⏳ 开始等待任务完成: ${promptId} (${workflowType})`)
+  console.log(`📊 当前待处理任务数: ${pendingTasks.size}`)
 
-  // 确保WebSocket连接稳定
-  try {
-    await ensureWebSocketConnection()
-  } catch (error) {
-    console.error('❌ WebSocket连接失败:', error)
-    throw new Error(`WebSocket连接失败: ${error.message}`)
-  }
+  await ensureWebSocketConnection()
 
   return new Promise((resolve, reject) => {
-    let isResolved = false
-
     // 设置超时
     const timeout = setTimeout(() => {
-      if (isResolved) return
-
-      console.warn(`⏰ 任务 ${promptId} 等待超时`)
-      isResolved = true
-
-      // 清理任务
+      console.log(`⏰ 任务超时: ${promptId}`)
       pendingTasks.delete(promptId)
-      showWebSocketStatusNotification('任务处理超时', 'error')
-      reject(new Error(`任务 ${promptId} 执行超时`))
+      showNotification('任务处理超时', 'error')
+      reject(new Error('任务执行超时'))
     }, maxWaitTime)
 
-    // 创建任务跟踪对象
+    // 创建任务对象，包含工作流类型
     const task = {
-      promptId,
-      startTime: Date.now(),
+      workflowType: workflowType, // 记录工作流类型
+      创建时间: new Date().toISOString(),
       onProgress: (status, progress) => {
-        // 调用外部进度回调
-        if (onProgress && !isResolved) {
+        console.log(`📈 任务进度更新: ${promptId} - ${status} (${progress}%)`)
+        if (onProgress) {
           onProgress(status, progress)
         }
       },
       onComplete: (result) => {
-        if (isResolved) return
-        isResolved = true
-
         clearTimeout(timeout)
-        console.log(`✅ 任务 ${promptId} 完成`)
-
-        if (onProgress) {
-          onProgress('处理完成', 100)
-        }
-
+        console.log(`✅ 任务完成回调触发: ${promptId}`)
         resolve(result)
       },
       onError: (error) => {
-        if (isResolved) return
-        isResolved = true
-
         clearTimeout(timeout)
-        console.error(`❌ 任务 ${promptId} 失败:`, error)
-
-        if (onProgress) {
-          onProgress('处理失败', 0)
-        }
-
-        // 显示错误通知
-        showWebSocketStatusNotification('任务处理失败', 'error')
-
+        console.error(`❌ 任务失败回调触发: ${promptId} - ${error}`)
+        showNotification('任务处理失败', 'error')
         reject(new Error(error))
       }
     }
 
-    // 注册任务到待处理列表
+    // 注册任务
     pendingTasks.set(promptId, task)
+    console.log(`📝 任务已注册: ${promptId} (${workflowType})`)
+    console.log(`📊 注册后待处理任务数: ${pendingTasks.size}`)
+    console.log(`📋 当前所有待处理任务: ${Array.from(pendingTasks.keys()).join(', ')}`)
 
-    // 最终确认WebSocket连接状态
-    if (isWsConnected && wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-      console.log('📡 WebSocket已连接，开始监听任务完成')
-
-      // 初始进度
-      if (onProgress) {
-        onProgress('任务已提交，等待处理...', 10)
-      }
-    } else {
-      console.error('❌ WebSocket连接状态仍然异常')
-      // 清理任务并拒绝
-      isResolved = true
-      pendingTasks.delete(promptId)
-      clearTimeout(timeout)
-      reject(new Error('WebSocket连接状态异常，无法监听任务完成'))
+    // 初始进度
+    if (onProgress) {
+      onProgress('任务已提交，等待处理...', 10)
     }
   })
 }
-
-// HTTP轮询备份机制已移除，完全依赖WebSocket实时通信
-// 如果需要手动检查任务状态，请使用 checkTaskStatus(promptId) 函数
 
 // 处理执行开始消息
 function handleExecutionStartMessage(data) {
@@ -1420,7 +1055,7 @@ async function processUndressImage(base64Image, onProgress = null) {
         const adjustedProgress = Math.min(95, Math.max(50, 50 + (progress * 0.45)))
         onProgress(status, adjustedProgress)
       }
-    })
+    }, 'undress')
     console.log('✅ 任务处理完成')
 
     // 获取生成的图片
@@ -1614,7 +1249,7 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
     // 等待任务完成 - 换脸需要更长时间，设置10分钟超时
     const maxWaitTime = 600000 // 10分钟
 
-    const taskResult = await waitForTaskCompletion(promptId, maxWaitTime, onProgress)
+    const taskResult = await waitForTaskCompletion(promptId, maxWaitTime, onProgress, 'faceswap')
     console.log('✅ 换脸任务处理完成')
 
     if (onProgress) onProgress('正在获取处理结果...', 95)

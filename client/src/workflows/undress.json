@@ -19,7 +19,7 @@
   },
   "49": {
     "inputs": {
-      "image": "ComfyUI_00007_.png"
+      "image": "ComfyUI_00002_.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -1119,12 +1119,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_bufqz_00003_.png&type=temp&subfolder=&rand=0.67353493680926"
+            "url": "/api/view?filename=rgthree.compare._temp_ojrie_00001_.png&type=temp&subfolder=&rand=0.07707155776808061"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_bufqz_00004_.png&type=temp&subfolder=&rand=0.07298686568870916"
+            "url": "/api/view?filename=rgthree.compare._temp_ojrie_00002_.png&type=temp&subfolder=&rand=0.3170867548584497"
           }
         ]
       },

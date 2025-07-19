@@ -14,11 +14,7 @@ class PortConfigProtector {
     this.projectRoot = path.join(__dirname, '..');
     this.protectedFiles = [
       'port-config.json',
-      'scripts/port-manager.js',
-      'scripts/start-with-port-management.js',
-      'start-managed.js',
-      'start-managed.bat',
-      'start-managed.sh'
+      'scripts/port-manager.js'
     ];
     this.checksumFile = path.join(__dirname, '.port-config-checksums.json');
   }
@@ -334,3 +330,4 @@ if (require.main === module) {
 }
 
 module.exports = PortConfigProtector;
+

@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752809332945,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752858230287,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,9 @@\n     }\r\n   },\r\n   \"49\": {\r\n     \"inputs\": {\r\n-      \"image\": \"ComfyUI_00007_.png\"\r\n+      \"image\": \"ComfyUI_00002_.png\"\r\n     },\r\n     \"class_type\": \"LoadImage\",\r\n     \"_meta\": {\r\n       \"title\": \"加载图像\"\r\n@@ -1118,14 +1118,14 @@\n         \"images\": [\r\n           {\r\n             \"name\": \"A\",\r\n             \"selected\": true,\r\n-            \"url\": \"/api/view?filename=rgthree.compare._temp_bufqz_00003_.png&type=temp&subfolder=&rand=0.67353493680926\"\r\n+            \"url\": \"/api/view?filename=rgthree.compare._temp_ojrie_00001_.png&type=temp&subfolder=&rand=0.07707155776808061\"\r\n           },\r\n           {\r\n             \"name\": \"B\",\r\n             \"selected\": true,\r\n-            \"url\": \"/api/view?filename=rgthree.compare._temp_bufqz_00004_.png&type=temp&subfolder=&rand=0.07298686568870916\"\r\n+            \"url\": \"/api/view?filename=rgthree.compare._temp_ojrie_00002_.png&type=temp&subfolder=&rand=0.3170867548584497\"\r\n           }\r\n         ]\r\n       },\r\n       \"image_a\": [\r\n"
                 }
             ],
             "date": 1752809332945,
