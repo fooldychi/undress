@@ -1,0 +1,22 @@
+{
+    "sourceFile": "enable-websocket-service.bat",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1752945226195,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752945237228,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -78,9 +78,9 @@\n         echo # ComfyUI服务器地址\n         echo COMFYUI_SERVER_URL=http://localhost:8188\n         echo.\n         echo # 服务器端口\n-        echo PORT=3007\n+        echo PORT=3008\n         echo.\n         echo # 环境\n         echo NODE_ENV=development\n     ) > .env\n"
+                }
+            ],
+            "date": 1752945226195,
+            "name": "Commit-0",
+            "content": "@echo off\nchcp 65001 >nul\nsetlocal enabledelayedexpansion\n\necho.\necho ========================================\necho 🚀 启用WebSocket服务\necho ========================================\necho.\n\nREM 检查当前目录\nif not exist \"server\" (\n    echo ❌ 错误：请在项目根目录运行此脚本\n    echo 当前目录应包含 server 和 client 文件夹\n    pause\n    exit /b 1\n)\n\necho 📍 当前目录: %CD%\necho.\n\nREM 进入服务器目录\ncd server\n\nREM 检查package.json\nif not exist \"package.json\" (\n    echo ❌ 错误：server/package.json 不存在\n    pause\n    exit /b 1\n)\n\nREM 检查WebSocket依赖\necho 📦 检查WebSocket依赖...\nnpm list ws >nul 2>&1\nif errorlevel 1 (\n    echo ⚠️ WebSocket依赖未安装，正在安装...\n\n    if exist \"install-websocket-deps.js\" (\n        node install-websocket-deps.js\n    ) else (\n        echo 📦 手动安装WebSocket依赖...\n        npm install ws@8.14.2 uuid@9.0.1\n    )\n\n    if errorlevel 1 (\n        echo ❌ WebSocket依赖安装失败\n        pause\n        exit /b 1\n    ) else (\n        echo ✅ WebSocket依赖安装成功\n    )\n) else (\n    echo ✅ WebSocket依赖已安装\n)\n\nREM 检查其他依赖\necho 📦 检查项目依赖...\nif not exist \"node_modules\" (\n    echo ⚠️ 正在安装项目依赖...\n    npm install\n\n    if errorlevel 1 (\n        echo ❌ 项目依赖安装失败\n        pause\n        exit /b 1\n    ) else (\n        echo ✅ 项目依赖安装成功\n    )\n) else (\n    echo ✅ 项目依赖已安装\n)\n\nREM 检查环境变量\necho 🔧 检查环境配置...\nif not exist \".env\" (\n    echo ⚠️ 创建默认 .env 文件...\n    (\n        echo # ComfyUI服务器地址\n        echo COMFYUI_SERVER_URL=http://localhost:8188\n        echo.\n        echo # 服务器端口\n        echo PORT=3007\n        echo.\n        echo # 环境\n        echo NODE_ENV=development\n    ) > .env\n    echo ✅ 默认 .env 文件已创建\n) else (\n    echo ✅ .env 文件已存在\n)\n\necho.\necho ========================================\necho 🚀 启动WebSocket服务器\necho ========================================\necho.\n\nREM 启动服务器\necho 🔥 启动服务器（包含WebSocket服务）...\necho.\necho 📍 HTTP服务地址: http://localhost:3008\necho 🔗 WebSocket地址: ws://localhost:3008/ws\necho.\necho 按 Ctrl+C 停止服务器\necho.\n\nnpm start\n\necho.\necho 👋 服务器已停止\npause\n"
+        }
+    ]
+}

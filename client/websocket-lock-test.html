@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket服务器锁定机制测试</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background-color: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            color: #569cd6;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background-color: #0e5132;
+            border: 1px solid #14a085;
+        }
+        .status.error {
+            background-color: #5a1d1d;
+            border: 1px solid #f14c4c;
+        }
+        .status.warning {
+            background-color: #5d4e00;
+            border: 1px solid #ffcc02;
+        }
+        .button {
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #1177bb;
+        }
+        .button.danger {
+            background-color: #a1260d;
+        }
+        .button.danger:hover {
+            background-color: #c42b1c;
+        }
+        .log {
+            background-color: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+        .info-label {
+            color: #9cdcfe;
+        }
+        .info-value {
+            color: #ce9178;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 WebSocket服务器锁定机制测试</h1>
+        
+        <div class="section">
+            <h2>📊 当前状态</h2>
+            <div class="info-grid">
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">WebSocket连接状态:</span>
+                        <span class="info-value" id="wsConnected">检查中...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">WebSocket就绪状态:</span>
+                        <span class="info-value" id="wsReadyState">检查中...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">锁定的服务器:</span>
+                        <span class="info-value" id="lockedServer">检查中...</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">锁定时间:</span>
+                        <span class="info-value" id="lockTimestamp">检查中...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">锁定持续时间:</span>
+                        <span class="info-value" id="lockDuration">检查中...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">待处理任务数:</span>
+                        <span class="info-value" id="pendingTasks">检查中...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="lockStatus" class="status">检查锁定状态中...</div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 操作控制</h2>
+            <button class="button" onclick="checkStatus()">🔍 检查状态</button>
+            <button class="button" onclick="debugLock()">🐛 调试锁定机制</button>
+            <button class="button" onclick="testApiCall()">📡 测试API调用</button>
+            <button class="button danger" onclick="resetServer()">🔄 重置服务器锁定</button>
+        </div>
+
+        <div class="section">
+            <h2>📝 测试日志</h2>
+            <div id="testLog" class="log">等待测试操作...\n</div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 自动测试</h2>
+            <button class="button" onclick="runAutoTest()">🚀 运行自动测试</button>
+            <div id="autoTestStatus" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('testLog');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const emoji = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️'
+            };
+            
+            const logMessage = `${emoji[type] || 'ℹ️'} [${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(logMessage.trim());
+        }
+
+        function updateStatus() {
+            try {
+                if (typeof window.getWebSocketServerStatus === 'function') {
+                    const status = window.getWebSocketServerStatus();
+                    
+                    document.getElementById('wsConnected').textContent = status.isConnected ? '已连接' : '未连接';
+                    document.getElementById('wsReadyState').textContent = getReadyStateText(status.connectionState);
+                    document.getElementById('lockedServer').textContent = status.lockedServer || '无';
+                    document.getElementById('lockTimestamp').textContent = status.lockTimestamp ? 
+                        new Date(status.lockTimestamp).toLocaleString() : '无';
+                    document.getElementById('lockDuration').textContent = status.lockDuration ? 
+                        Math.round(status.lockDuration / 1000) + '秒' : '无';
+                    document.getElementById('pendingTasks').textContent = status.pendingTasksCount || '0';
+                    
+                    // 更新锁定状态
+                    const lockStatusElement = document.getElementById('lockStatus');
+                    const lockCondition = status.lockedServer && status.connectionState === 1;
+                    
+                    if (lockCondition) {
+                        lockStatusElement.textContent = '🔒 服务器锁定机制正常工作';
+                        lockStatusElement.className = 'status success';
+                    } else {
+                        lockStatusElement.textContent = '⚠️ 服务器锁定机制未激活';
+                        lockStatusElement.className = 'status warning';
+                    }
+                } else {
+                    log('WebSocket状态函数不可用', 'error');
+                }
+            } catch (error) {
+                log(`更新状态失败: ${error.message}`, 'error');
+            }
+        }
+
+        function getReadyStateText(state) {
+            const states = {
+                0: 'CONNECTING',
+                1: 'OPEN',
+                2: 'CLOSING',
+                3: 'CLOSED'
+            };
+            return states[state] || `未知(${state})`;
+        }
+
+        function checkStatus() {
+            log('开始检查WebSocket服务器锁定状态...', 'info');
+            updateStatus();
+            log('状态检查完成', 'success');
+        }
+
+        function debugLock() {
+            log('开始调试WebSocket锁定机制...', 'info');
+            try {
+                if (typeof window.debugWebSocketLock === 'function') {
+                    const result = window.debugWebSocketLock();
+                    log(`调试完成，锁定条件满足: ${result.lockConditionMet}`, 'success');
+                } else {
+                    log('调试函数不可用', 'error');
+                }
+            } catch (error) {
+                log(`调试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testApiCall() {
+            log('测试API调用是否使用锁定的服务器...', 'info');
+            try {
+                // 这里需要导入getApiBaseUrl函数
+                log('注意: 需要在浏览器控制台中手动测试getApiBaseUrl()函数', 'warning');
+                log('请在控制台执行: await window.comfyui?.getApiBaseUrl?.()', 'info');
+            } catch (error) {
+                log(`API测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function resetServer() {
+            log('重置WebSocket服务器锁定...', 'warning');
+            try {
+                if (typeof window.resetWebSocketServer === 'function') {
+                    window.resetWebSocketServer();
+                    log('服务器锁定已重置', 'success');
+                    setTimeout(updateStatus, 1000);
+                } else {
+                    log('重置函数不可用', 'error');
+                }
+            } catch (error) {
+                log(`重置失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAutoTest() {
+            const statusElement = document.getElementById('autoTestStatus');
+            statusElement.style.display = 'block';
+            statusElement.textContent = '🧪 正在运行自动测试...';
+            statusElement.className = 'status warning';
+            
+            log('开始自动测试序列...', 'info');
+            
+            try {
+                // 测试1: 检查初始状态
+                log('测试1: 检查初始状态', 'info');
+                updateStatus();
+                await sleep(1000);
+                
+                // 测试2: 调试锁定机制
+                log('测试2: 调试锁定机制', 'info');
+                debugLock();
+                await sleep(1000);
+                
+                // 测试3: 检查状态变化
+                log('测试3: 再次检查状态', 'info');
+                updateStatus();
+                
+                statusElement.textContent = '✅ 自动测试完成';
+                statusElement.className = 'status success';
+                log('自动测试序列完成', 'success');
+                
+            } catch (error) {
+                statusElement.textContent = '❌ 自动测试失败';
+                statusElement.className = 'status error';
+                log(`自动测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('WebSocket服务器锁定机制测试页面已加载', 'success');
+            log('正在检查可用的调试函数...', 'info');
+            
+            const functions = ['getWebSocketServerStatus', 'debugWebSocketLock', 'resetWebSocketServer'];
+            functions.forEach(func => {
+                if (typeof window[func] === 'function') {
+                    log(`✅ ${func} 函数可用`, 'success');
+                } else {
+                    log(`❌ ${func} 函数不可用`, 'error');
+                }
+            });
+            
+            // 初始状态检查
+            setTimeout(updateStatus, 1000);
+            
+            // 定期更新状态
+            setInterval(updateStatus, 5000);
+        });
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const http = require('http');
 require('dotenv').config();
 
 const { testConnection } = require('./config/database');
@@ -10,6 +11,8 @@ const errorHandler = require('./middleware/errorHandler');
 // const { healthMonitor } = require('./utils/healthMonitor');
 // const { memoryManager } = require('./utils/memoryManager');
 const rateLimiter = require('./middleware/rateLimiter');
+
+
 
 // 导入路由
 const authRoutes = require('./routes/auth');
@@ -23,10 +26,18 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3007;
 
+// 创建HTTP服务器
+const server = http.createServer(app);
+
+
+
 // 中间件配置
 app.use(helmet()); // 安全头
 app.use(compression()); // 压缩响应
 app.use(morgan('combined')); // 日志记录
+
+// 静态文件服务
+app.use(express.static('public'));
 
 // CORS配置 - 支持动态端口
 app.use(cors({
@@ -103,6 +114,8 @@ app.get('/health', async (req, res) => {
     const memoryUsage = process.memoryUsage();
     const formatBytes = (bytes) => Math.round(bytes / 1024 / 1024); // MB
 
+
+
     const healthData = {
       status: 'OK',
       timestamp: new Date().toISOString(),
@@ -113,6 +126,7 @@ app.get('/health', async (req, res) => {
         connected: dbStatus,
         error: dbError
       },
+
       memory: {
         rss: formatBytes(memoryUsage.rss),
         heapUsed: formatBytes(memoryUsage.heapUsed),
@@ -174,15 +188,18 @@ async function startServer() {
     // }
 
     // 启动HTTP服务器
-    global.httpServer = app.listen(PORT, () => {
+    global.httpServer = server.listen(PORT, async () => {
       console.log('🚀 Imagic服务器启动成功!');
-      console.log(`📍 服务地址: http://localhost:${PORT}`);
+      console.log(`📍 HTTP服务地址: http://localhost:${PORT}`);
+
       console.log(`🌍 环境: ${process.env.NODE_ENV}`);
       console.log(`⏰ 启动时间: ${new Date().toLocaleString()}`);
       console.log(`🆔 进程ID: ${process.pid}`);
       if (!dbConnected) {
         console.log('⚠️ 注意：数据库未连接，某些功能可能不可用');
       }
+
+
 
       // 启动内存监控
       console.log('📊 内存监控已启动，每5分钟报告一次');
@@ -259,11 +276,13 @@ const gracefulShutdown = async (signal) => {
     clearInterval(memoryMonitorInterval);
   }
 
+
+
   // 停止健康监控
-  healthMonitor.stop();
+  // healthMonitor.stop();
 
   // 停止内存管理
-  memoryManager.stop();
+  // memoryManager.stop();
 
   // 关闭数据库连接池
   try {

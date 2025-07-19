@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 33,
+            "activePatchIndex": 38,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -140,6 +140,26 @@
                 {
                     "date": 1752898774935,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -31,17 +31,11 @@\n     window.history.replaceState({}, '', redirectPath)\n   }\n }\n \n-// 全局错误处理\n-window.addEventListener('error', (event) => {\n-  console.error('全局错误:', event.error)\n-})\n+// 设置全局错误处理器\n+setupGlobalErrorHandler()\n \n-window.addEventListener('unhandledrejection', (event) => {\n-  console.error('未处理的Promise拒绝:', event.reason)\n-})\n-\n import logger from './utils/logger.js'\n \n // 确保DOM加载完成\n async function initApp() {\n"
+                },
+                {
+                    "date": 1752920799192,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -62,8 +62,17 @@\n     } catch (error) {\n       logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')\n     }\n \n+    // 🔧 关键修复：初始化WebSocket连接\n+    try {\n+      logger.info('🔌 正在初始化WebSocket连接...')\n+      await initializeWebSocket()\n+      logger.info('✅ WebSocket连接初始化完成')\n+    } catch (error) {\n+      logger.warn('⚠️ WebSocket连接初始化失败，将在需要时重试:', error.message)\n+    }\n+\n     const app = createApp(App)\n     app.use(router)\n     app.use(Vant)\n \n"
+                },
+                {
+                    "date": 1752944726240,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,9 +4,10 @@\n \n // 引入配置服务和负载均衡器\n import configService from './services/configService.js'\n import loadBalancer from './services/loadBalancer.js'\n-import { initializeWebSocket } from './services/comfyui.js'\n+// 切换到WebSocket重构版本\n+import { initializeWebSocketClient } from './services/comfyui-refactored.js'\n import { setupGlobalErrorHandler } from './services/globalErrorHandler.js'\n \n // 开发环境下引入测试工具\n if (import.meta.env.DEV) {\n"
+                },
+                {
+                    "date": 1752944739162,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -63,15 +63,15 @@\n     } catch (error) {\n       logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')\n     }\n \n-    // 🔧 关键修复：初始化WebSocket连接\n+    // 🔧 关键修复：初始化WebSocket连接（重构版本）\n     try {\n-      logger.info('🔌 正在初始化WebSocket连接...')\n-      await initializeWebSocket()\n-      logger.info('✅ WebSocket连接初始化完成')\n+      logger.info('🔌 正在初始化WebSocket客户端（重构版本）...')\n+      await initializeWebSocketClient()\n+      logger.info('✅ WebSocket客户端初始化完成')\n     } catch (error) {\n-      logger.warn('⚠️ WebSocket连接初始化失败，将在需要时重试:', error.message)\n+      logger.warn('⚠️ WebSocket客户端初始化失败，将在需要时重试:', error.message)\n     }\n \n     const app = createApp(App)\n     app.use(router)\n"
+                },
+                {
+                    "date": 1752946590174,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,10 +4,10 @@\n \n // 引入配置服务和负载均衡器\n import configService from './services/configService.js'\n import loadBalancer from './services/loadBalancer.js'\n-// 切换到WebSocket重构版本\n-import { initializeWebSocketClient } from './services/comfyui-refactored.js'\n+// 恢复使用直连模式\n+import { initializeComfyUIConnection } from './services/comfyui.js'\n import { setupGlobalErrorHandler } from './services/globalErrorHandler.js'\n \n // 开发环境下引入测试工具\n if (import.meta.env.DEV) {\n"
+                },
+                {
+                    "date": 1752946602160,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -63,15 +63,15 @@\n     } catch (error) {\n       logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')\n     }\n \n-    // 🔧 关键修复：初始化WebSocket连接（重构版本）\n+    // 🔧 恢复直连模式：初始化ComfyUI直连\n     try {\n-      logger.info('🔌 正在初始化WebSocket客户端（重构版本）...')\n-      await initializeWebSocketClient()\n-      logger.info('✅ WebSocket客户端初始化完成')\n+      logger.info('🔌 正在初始化ComfyUI直连...')\n+      await initializeComfyUIConnection()\n+      logger.info('✅ ComfyUI直连初始化完成')\n     } catch (error) {\n-      logger.warn('⚠️ WebSocket客户端初始化失败，将在需要时重试:', error.message)\n+      logger.warn('⚠️ ComfyUI直连初始化失败，将在需要时重试:', error.message)\n     }\n \n     const app = createApp(App)\n     app.use(router)\n"
                 }
             ],
             "date": 1752330016769,

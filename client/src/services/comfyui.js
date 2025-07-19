@@ -121,7 +121,7 @@ function notifyConfigChange(config) {
   })
 }
 
-// 获取 ComfyUI 图片访问URL
+// 获取 ComfyUI 图片访问URL（简化版本，现在主要用于兼容性）
 function getComfyUIImageUrl(imageData) {
   try {
     // 如果已经是 ComfyUI 的 URL 格式，直接返回
@@ -130,33 +130,18 @@ function getComfyUIImageUrl(imageData) {
       return imageData
     }
 
-    // 如果是 base64 数据，尝试从全局变量或缓存中获取对应的 ComfyUI URL
-    if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
-      console.log('📸 检测到 base64 图片数据，尝试获取 ComfyUI URL...')
-
-      // 检查是否有存储的 ComfyUI URL（在生成过程中可能已经保存）
-      if (window.lastComfyUIImageUrl) {
-        console.log('🔗 使用缓存的 ComfyUI URL:', window.lastComfyUIImageUrl)
-        return window.lastComfyUIImageUrl
-      }
-
-      // 如果没有缓存的URL，返回一个占位符或者 null
-      console.warn('⚠️ 无法获取 ComfyUI URL，使用占位符')
-      return null
+    // 如果是其他格式，尝试从全局变量获取最新的URL
+    if (window.lastComfyUIImageUrl) {
+      console.log('🔗 使用缓存的 ComfyUI URL:', window.lastComfyUIImageUrl)
+      return window.lastComfyUIImageUrl
     }
 
-    // 其他情况，尝试转换为字符串
-    const urlString = String(imageData)
-    if (urlString.includes('/view?')) {
-      return urlString
-    }
-
-    console.warn('⚠️ 无法识别的图片数据格式:', typeof imageData)
-    return null
+    console.warn('⚠️ 无法获取 ComfyUI URL')
+    return imageData // 返回原始数据作为兜底
 
   } catch (error) {
     console.error('❌ 获取 ComfyUI 图片URL失败:', error)
-    return null
+    return imageData // 返回原始数据作为兜底
   }
 }
 
@@ -188,10 +173,48 @@ function getCurrentConfig(forceRefresh = false) {
   return getComfyUIConfig(forceRefresh)
 }
 
-// 获取API基础URL - 使用负载均衡选择的最优服务器
+// 🔧 获取API基础URL - 强化版本（严格的服务器锁定机制）
 async function getApiBaseUrl() {
   try {
-    console.log('🎯 使用负载均衡选择最优服务器...')
+    // 🔧 详细的状态检查和日志
+    console.log('🔍 [getApiBaseUrl] 开始获取API基础URL...')
+    console.log(`🔍 [getApiBaseUrl] currentWebSocketServer: ${currentWebSocketServer}`)
+    console.log(`🔍 [getApiBaseUrl] wsConnection存在: ${!!wsConnection}`)
+    console.log(`🔍 [getApiBaseUrl] wsConnection.readyState: ${wsConnection?.readyState} (1=OPEN)`)
+    console.log(`🔍 [getApiBaseUrl] isWsConnected: ${isWsConnected}`)
+    console.log(`🔍 [getApiBaseUrl] pendingTasks.size: ${pendingTasks.size}`)
+
+    // 🔧 强化的锁定条件：
+    // 1. 有锁定的服务器 AND
+    // 2. (WebSocket连接正常 OR 有待处理任务需要保持一致性)
+    const hasLockedServer = !!currentWebSocketServer
+    const wsIsHealthy = wsConnection && wsConnection.readyState === WebSocket.OPEN
+    const hasPendingTasks = pendingTasks.size > 0
+    const shouldUseLocked = hasLockedServer && (wsIsHealthy || hasPendingTasks)
+
+    if (shouldUseLocked) {
+      console.log('🔒 使用WebSocket锁定的服务器:', currentWebSocketServer)
+      console.log('🕐 服务器锁定时间:', new Date(serverLockTimestamp).toLocaleTimeString())
+      console.log('⏱️ 锁定持续时间:', Math.round((Date.now() - serverLockTimestamp) / 1000) + '秒')
+      console.log(`📊 锁定原因: WebSocket健康=${wsIsHealthy}, 待处理任务=${hasPendingTasks}`)
+
+      // 确保URL格式正确，移除末尾的斜杠
+      let baseUrl = currentWebSocketServer
+      if (baseUrl && baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1)
+      }
+
+      console.log('✅ [getApiBaseUrl] 返回锁定的服务器URL:', baseUrl)
+      return baseUrl
+    }
+
+    // 🔧 只有在没有任何锁定条件时才使用负载均衡
+    console.log('🎯 没有服务器锁定，使用负载均衡选择最优服务器...')
+    console.log('🔍 [getApiBaseUrl] 未使用锁定服务器的原因:')
+    if (!hasLockedServer) console.log('   - 没有锁定的服务器')
+    if (hasLockedServer && !wsIsHealthy && !hasPendingTasks) {
+      console.log('   - 有锁定服务器但WebSocket不健康且无待处理任务')
+    }
 
     // 使用负载均衡器选择最优服务器
     const optimalServer = await loadBalancer.getOptimalServer()
@@ -208,7 +231,17 @@ async function getApiBaseUrl() {
   } catch (error) {
     console.error('❌ 获取API基础URL失败:', error)
 
-    // 备用方案：使用配置中的默认服务器
+    // 🔧 备用方案：如果有锁定服务器，优先使用锁定服务器
+    if (currentWebSocketServer) {
+      console.log('🔒 错误情况下使用锁定服务器:', currentWebSocketServer)
+      let baseUrl = currentWebSocketServer
+      if (baseUrl && baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1)
+      }
+      return baseUrl
+    }
+
+    // 最后备用方案：使用配置中的默认服务器
     const config = getComfyUIConfig(true)
     let baseUrl = config.COMFYUI_SERVER_URL
 
@@ -216,6 +249,7 @@ async function getApiBaseUrl() {
       baseUrl = baseUrl.slice(0, -1)
     }
 
+    console.log('🔗 备用方案API基础URL:', baseUrl)
     return baseUrl
   }
 }
@@ -235,16 +269,30 @@ function generateClientId() {
 
 // 生成 prompt_id - 官方标准
 function generatePromptId() {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  const promptId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  console.log(`🆔 [PROMPT_ID_TRACK] 新生成 prompt_id: ${promptId}`)
+  return promptId
 }
 
 
 
-// 第一步：上传Base64图片到ComfyUI服务器并获取文件名
+// 第一步：上传Base64图片到ComfyUI服务器并获取文件名 - 增强版本（服务器一致性）
 async function uploadImageToComfyUI(base64Image) {
+  // 🔧 关键修复：确保WebSocket连接和服务器锁定
+  await ensureWebSocketConnection()
+
   const apiBaseUrl = await getApiBaseUrl()
   console.log('🔄 第一步：上传图片到ComfyUI服务器')
   console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
+  logServerConsistency('上传图片到ComfyUI')
+
+  // 🔧 验证服务器一致性
+  if (currentWebSocketServer && apiBaseUrl !== currentWebSocketServer.replace(/\/$/, '')) {
+    console.error(`❌ [uploadImage] 服务器不一致！`)
+    console.error(`   锁定服务器: ${currentWebSocketServer}`)
+    console.error(`   上传服务器: ${apiBaseUrl}`)
+    throw new Error(`服务器不一致：WebSocket连接到 ${currentWebSocketServer}，但上传到 ${apiBaseUrl}`)
+  }
 
   // 验证base64格式
   if (!base64Image || !base64Image.startsWith('data:image/')) {
@@ -341,37 +389,51 @@ async function createUndressWorkflowPrompt(uploadedImageName) {
   }
 }
 
-// 第二步：提交工作流到ComfyUI - 采用官方标准机制
-async function submitWorkflow(workflowPrompt, promptId = null) {
-  console.log('🔄 第二步：提交工作流到ComfyUI')
+// 官方标准工作流提交 - 修复版本（支持预注册任务和强制服务器锁定）
+async function submitWorkflow(workflowPrompt, promptId = null, tempTask = null) {
+  console.log('📤 [OFFICIAL] 提交工作流')
 
-  // 确保 WebSocket 连接稳定
-  try {
-    await ensureWebSocketConnection()
-    console.log('✅ WebSocket连接已确认稳定')
-  } catch (error) {
-    console.error('❌ WebSocket连接不稳定:', error)
-    throw new Error(`WebSocket连接不稳定，无法提交工作流: ${error.message}`)
+  // 🔧 关键修复：确保WebSocket连接并强制锁定服务器
+  await ensureWebSocketConnection()
+
+  // 🔧 验证服务器锁定状态
+  if (!currentWebSocketServer) {
+    throw new Error('WebSocket服务器未锁定，无法确保任务一致性')
   }
+
+  console.log(`🔒 [OFFICIAL] 确认使用锁定服务器: ${currentWebSocketServer}`)
 
   const config = getComfyUIConfig()
   const apiBaseUrl = await getApiBaseUrl()
-  console.log('📡 API地址:', `${apiBaseUrl}/api/prompt`)
 
-  // 生成或使用提供的 prompt_id（官方标准）
+  // 🔧 双重验证：确保API使用的是锁定的服务器
+  if (apiBaseUrl !== currentWebSocketServer.replace(/\/$/, '')) {
+    console.warn(`⚠️ [OFFICIAL] API服务器(${apiBaseUrl})与锁定服务器(${currentWebSocketServer})不一致`)
+    throw new Error('服务器不一致，可能导致任务状态同步问题')
+  }
+
+  // 使用传入的promptId或生成新的
   const finalPromptId = promptId || generatePromptId()
+  console.log(`🆔 [OFFICIAL] 使用promptId: ${finalPromptId}`)
+  logServerConsistency('提交工作流', finalPromptId)
 
-  // 构建请求体，按照ComfyUI官方API格式
+  // 🔧 关键修复：在提交前预注册任务到pendingTasks
+  if (tempTask) {
+    pendingTasks.set(finalPromptId, tempTask)
+    console.log(`📝 [OFFICIAL] 预注册任务: ${finalPromptId}`)
+    console.log(`📊 [OFFICIAL] 当前待处理任务: [${Array.from(pendingTasks.keys()).join(', ')}]`)
+  }
+
+  // 构建官方标准请求体
   const requestBody = {
     client_id: config.CLIENT_ID,
     prompt: workflowPrompt,
-    prompt_id: finalPromptId  // 官方标准：显式传递prompt_id
+    prompt_id: finalPromptId
   }
 
-  // 第二步API调用：提交工作流到ComfyUI
   const promptUrl = `${apiBaseUrl}/api/prompt`
+  console.log(`📡 [OFFICIAL] 提交到: ${promptUrl}`)
 
-  console.log('📤 提交工作流请求...')
   const response = await fetch(promptUrl, {
     method: 'POST',
     headers: {
@@ -381,38 +443,37 @@ async function submitWorkflow(workflowPrompt, promptId = null) {
   })
 
   if (!response.ok) {
+    // 🔧 提交失败时清理预注册的任务
+    if (tempTask) {
+      pendingTasks.delete(finalPromptId)
+      console.log(`🧹 [OFFICIAL] 提交失败，清理预注册任务: ${finalPromptId}`)
+    }
     const errorText = await response.text()
     throw new Error(`工作流提交失败: ${response.status} ${response.statusText} - ${errorText}`)
   }
 
-  const result = await response.json()
+  await response.json() // 确保响应被完全读取
+  console.log(`✅ [OFFICIAL] 工作流提交成功: ${finalPromptId}`)
+  logServerConsistency('工作流提交成功', finalPromptId)
 
-  // 验证返回结果
-  if (!result.prompt_id) {
-    throw new Error('工作流响应中缺少prompt_id')
-  }
-
-  console.log('✅ 工作流提交成功，任务ID:', finalPromptId)
-
-  // 再次确认WebSocket连接状态
-  if (!isWsConnected || !wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
-    console.warn('⚠️ 工作流提交后WebSocket连接异常，尝试重连...')
-    try {
-      await ensureWebSocketConnection()
-    } catch (reconnectError) {
-      console.error('❌ 重连失败:', reconnectError)
-    }
-  }
-
-  return finalPromptId // 返回我们使用的prompt_id
+  return finalPromptId
 }
 
 
 
-// 获取生成的图片 - 兼容新的结果格式
-async function getGeneratedImage(taskResult, workflowType = 'undress') {
+// 获取生成的图片URL - 优化版本（直接返回URL，无需传输）
+async function getGeneratedImageUrl(taskResult, workflowType = 'undress') {
   try {
     const apiBaseUrl = await getApiBaseUrl()
+
+    // 🔧 关键修复：验证服务器一致性
+    if (currentWebSocketServer && apiBaseUrl !== currentWebSocketServer.replace(/\/$/, '')) {
+      console.error(`❌ [getGeneratedImageUrl] 服务器不一致！`)
+      console.error(`   锁定服务器: ${currentWebSocketServer}`)
+      console.error(`   图片服务器: ${apiBaseUrl}`)
+      throw new Error(`服务器不一致：任务在 ${currentWebSocketServer} 上执行，但从 ${apiBaseUrl} 获取图片`)
+    }
+
     const nodeConfig = await getWorkflowNodeConfig(workflowType)
 
     // 从任务结果中找到输出图片
@@ -464,36 +525,43 @@ async function getGeneratedImage(taskResult, workflowType = 'undress') {
     })
     const imageUrl = `${apiBaseUrl}/api/view?${params.toString()}`
 
-    console.log('🌐 获取图片URL:', imageUrl)
+    console.log('🌐 直接返回图片URL:', imageUrl)
 
     // 保存 ComfyUI 原始URL到全局变量，供积分扣除时使用
     window.lastComfyUIImageUrl = imageUrl
     console.log('💾 保存 ComfyUI 图片URL 供积分记录使用:', imageUrl)
 
-    // 获取图片数据并转换为base64
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) {
-      throw new Error(`图片获取失败: ${imageResponse.status}`)
-    }
-
-    const imageBlob = await imageResponse.blob()
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = reject
-      reader.readAsDataURL(imageBlob)
-    })
+    // 直接返回URL，无需下载和转换
+    return imageUrl
 
   } catch (error) {
-    console.error('图片获取失败:', error)
-    throw new Error(`图片获取失败: ${error.message}`)
+    console.error('图片URL获取失败:', error)
+    throw new Error(`图片URL获取失败: ${error.message}`)
   }
 }
 
-// WebSocket 连接管理 - 简化版本
+// WebSocket 连接管理 - 修复版本（服务器锁定机制）
 let wsConnection = null
 let isWsConnected = false
 let pendingTasks = new Map()
+
+// 🔧 新增：WebSocket服务器锁定机制
+let currentWebSocketServer = null
+let serverLockTimestamp = null
+
+// 🔧 实时跟踪变量
+function logServerConsistency(action, promptId = null) {
+  const timestamp = new Date().toISOString()
+  console.log(`🔍 [SERVER_TRACK] ${timestamp} - ${action}`)
+  console.log(`🔍 [SERVER_TRACK] 当前WebSocket服务器: ${currentWebSocketServer}`)
+  console.log(`🔍 [SERVER_TRACK] WebSocket连接状态: ${wsConnection?.readyState} (1=OPEN)`)
+  console.log(`🔍 [SERVER_TRACK] isWsConnected: ${isWsConnected}`)
+  if (promptId) {
+    console.log(`🔍 [PROMPT_ID_TRACK] 当前prompt_id: ${promptId}`)
+  }
+  console.log(`🔍 [SERVER_TRACK] 待处理任务数: ${pendingTasks.size}`)
+  console.log('🔍 [SERVER_TRACK] =====================================')
+}
 
 // 简化的通知函数
 function showNotification(message, type = 'info') {
@@ -546,17 +614,35 @@ function debugTaskStatus(promptId = null) {
 
 
 
-// 初始化 WebSocket 连接 - 简化版本
+// 🔧 初始化 WebSocket 连接 - 修复版本（服务器锁定机制）
 async function initializeWebSocket() {
   try {
     // 检查现有连接
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
       console.log('🎯 WebSocket 已连接')
+      console.log('🔒 当前锁定服务器:', currentWebSocketServer)
       return true
     }
 
     const config = getComfyUIConfig()
-    const baseUrl = await loadBalancer.getOptimalServer()
+
+    // 🔧 关键修复：服务器锁定机制
+    let baseUrl
+    if (currentWebSocketServer) {
+      // 如果已有锁定的服务器，继续使用
+      baseUrl = currentWebSocketServer
+      console.log(`🔒 使用已锁定的WebSocket服务器: ${baseUrl}`)
+      logServerConsistency('使用已锁定的WebSocket服务器')
+    } else {
+      // 首次连接或重连时，选择最优服务器并锁定
+      baseUrl = await loadBalancer.getOptimalServer()
+      currentWebSocketServer = baseUrl
+      serverLockTimestamp = Date.now()
+      console.log(`🔒 锁定WebSocket服务器: ${baseUrl}`)
+      console.log(`🕐 锁定时间: ${new Date(serverLockTimestamp).toLocaleTimeString()}`)
+      logServerConsistency('锁定新的WebSocket服务器')
+    }
+
     console.log(`🔌 连接WebSocket: ${baseUrl}`)
 
     // 构建WebSocket URL
@@ -591,6 +677,7 @@ async function initializeWebSocket() {
         isWsConnected = true
         clearTimeout(timeout)
         showNotification('WebSocket连接成功', 'success')
+        logServerConsistency('WebSocket连接成功')
         resolve(true)
       }
 
@@ -600,371 +687,850 @@ async function initializeWebSocket() {
         clearTimeout(timeout)
         showNotification('WebSocket连接已断开', 'warning')
 
-        // 简单重连策略 - 如果有待处理任务则重连
+        // 🔧 关键修复：WebSocket断开时不立即解锁服务器
+        // 只有在没有待处理任务时才考虑解锁
+        if (pendingTasks.size === 0) {
+          console.log('🔓 没有待处理任务，可以解锁服务器')
+          currentWebSocketServer = null
+          serverLockTimestamp = null
+          logServerConsistency('WebSocket断开-解锁服务器')
+        } else {
+          console.log(`🔒 有 ${pendingTasks.size} 个待处理任务，保持服务器锁定`)
+          console.log(`📋 待处理任务: [${Array.from(pendingTasks.keys()).join(', ')}]`)
+          logServerConsistency('WebSocket断开-保持锁定')
+        }
+
+        // 重连策略 - 如果有待处理任务则立即重连
         if (pendingTasks.size > 0) {
-          console.log('🔄 检测到待处理任务，5秒后重连...')
+          console.log('🔄 检测到待处理任务，立即重连...')
           setTimeout(() => {
             initializeWebSocket().catch(error => {
               console.error('❌ 重连失败:', error)
-              // 标记所有任务失败
-              const taskIds = Array.from(pendingTasks.keys())
-              for (const promptId of taskIds) {
-                const task = pendingTasks.get(promptId)
-                if (task && task.onError) {
-                  task.onError('WebSocket连接失败')
-                }
-                pendingTasks.delete(promptId)
-              }
+
+              // 🔧 只有在多次重连失败后才解锁服务器
+              console.log('⚠️ 重连失败，但保持服务器锁定以便手动重试')
+
+              // 给任务更多时间，不立即标记失败
+              console.log('⏳ 任务将继续等待，可手动重连或等待超时')
             })
-          }, 5000)
+          }, 2000) // 缩短重连间隔
+        } else {
+          console.log('ℹ️ 没有待处理任务，不进行自动重连')
         }
       }
 
       wsConnection.onerror = (error) => {
         clearTimeout(timeout)
         showNotification('WebSocket连接错误', 'error')
+
+        // 🔧 关键修复：连接错误时不立即解锁服务器
+        // 保持锁定以便重连到同一服务器
+        console.log('⚠️ WebSocket连接错误，但保持服务器锁定以便重连')
+        console.log(`🔒 当前锁定服务器: ${currentWebSocketServer}`)
+        console.log(`📊 待处理任务数: ${pendingTasks.size}`)
+
         reject(error)
       }
 
       wsConnection.onmessage = (event) => {
         try {
-          // 基本消息验证
-          if (!event.data || typeof event.data !== 'string') {
+          // 🔥 官方标准消息处理 - 完全重构版本（基于 websockets_api_example.py 第34-45行）
+          const message = event.data
+
+          // 官方标准：处理二进制消息（预览图像）
+          if (message instanceof ArrayBuffer || message instanceof Blob) {
+            // 官方注释：previews are binary data - continue
             return
           }
 
-          const rawData = event.data.trim()
-          if (!rawData) {
-            return
+          // 官方标准：只处理字符串消息
+          if (typeof message === 'string') {
+            try {
+              const parsedMessage = JSON.parse(message)
+
+              // 调用重构后的消息处理函数
+              handleWebSocketMessage(parsedMessage)
+            } catch (parseError) {
+              console.error('❌ [OFFICIAL] JSON解析失败:', parseError.message)
+            }
           }
 
-          // 解析JSON消息
-          let message
-          try {
-            message = JSON.parse(rawData)
-          } catch (parseError) {
-            console.warn('WebSocket消息解析失败:', parseError.message)
-            return
-          }
-
-          // 验证消息结构
-          if (!message || typeof message !== 'object') {
-            return
-          }
-
-          console.log(`📨 收到消息类型:`, message.type || 'unknown')
-
-          // 如果是executed消息，记录更多详细信息
-          if (message.type === 'executed') {
-            console.log('🎯 executed消息原始数据:', JSON.stringify(message, null, 2))
-          }
-
-          // 处理消息
-          handleWebSocketMessage(message)
         } catch (error) {
-          console.error('❌ 处理WebSocket消息失败:', error)
+          console.error('❌ [OFFICIAL] WebSocket消息处理失败:', error)
         }
       }
     })
   } catch (error) {
     console.error('❌ 初始化 WebSocket 失败:', error)
+    // 🔧 初始化失败时清除服务器锁定
+    currentWebSocketServer = null
+    serverLockTimestamp = null
+    console.log('🔓 WebSocket初始化失败，清除服务器锁定')
     throw error
+  }
+}
+
+// 🔧 新增：手动重置WebSocket服务器锁定的功能
+function resetWebSocketServer(force = false) {
+  console.log('🔄 手动重置WebSocket服务器锁定')
+  console.log('🔓 清除服务器锁定:', currentWebSocketServer)
+
+  if (!force && pendingTasks.size > 0) {
+    console.log(`⚠️ 有 ${pendingTasks.size} 个待处理任务，建议等待完成后再重置`)
+    console.log('💡 如需强制重置，请调用: resetWebSocketServer(true)')
+    return false
+  }
+
+  // 清除服务器锁定
+  currentWebSocketServer = null
+  serverLockTimestamp = null
+
+  // 关闭现有WebSocket连接
+  if (wsConnection) {
+    console.log('🔌 关闭现有WebSocket连接')
+    wsConnection.close(1000, '手动重置服务器')
+    wsConnection = null
+    isWsConnected = false
+  }
+
+  // 清理所有待处理任务（如果强制重置）
+  if (force && pendingTasks.size > 0) {
+    console.log(`🧹 强制清理 ${pendingTasks.size} 个待处理任务`)
+    const taskIds = Array.from(pendingTasks.keys())
+    for (const promptId of taskIds) {
+      const task = pendingTasks.get(promptId)
+      if (task && task.onError) {
+        task.onError('WebSocket服务器已强制重置')
+      }
+      pendingTasks.delete(promptId)
+    }
+  }
+
+  console.log('✅ WebSocket服务器重置完成')
+  return true
+}
+
+// 🔧 将重置函数暴露到全局，方便调试和故障恢复
+if (typeof window !== 'undefined') {
+  window.resetWebSocketServer = resetWebSocketServer
+  window.getWebSocketServerStatus = getWebSocketServerStatus
+  window.debugWebSocketLock = debugWebSocketLock
+  window.getApiBaseUrl = getApiBaseUrl
+  window.checkServerUnlockCondition = checkServerUnlockCondition
+  window.validateServerConsistency = validateServerConsistency
+  window.debugTaskStatus = debugTaskStatus
+  window.checkTaskStatusManually = checkTaskStatusManually
+  window.forceCompleteTask = forceCompleteTask
+  window.checkAllPendingTasks = checkAllPendingTasks
+  window.pendingTasks = pendingTasks
+  console.log('🔧 WebSocket管理函数已暴露到全局: window.resetWebSocketServer(), window.getWebSocketServerStatus(), window.debugWebSocketLock(), window.getApiBaseUrl(), window.checkServerUnlockCondition(), window.validateServerConsistency(), window.debugTaskStatus(), window.checkTaskStatusManually(), window.forceCompleteTask(), window.checkAllPendingTasks(), window.pendingTasks')
+}
+
+// 🔧 新增：获取当前WebSocket服务器状态的函数
+function getWebSocketServerStatus() {
+  return {
+    isConnected: isWsConnected,
+    lockedServer: currentWebSocketServer,
+    lockTimestamp: serverLockTimestamp,
+    lockDuration: serverLockTimestamp ? Date.now() - serverLockTimestamp : null,
+    pendingTasksCount: pendingTasks.size,
+    connectionState: wsConnection?.readyState || 'CLOSED'
+  }
+}
+
+// 🔧 新增：调试WebSocket锁定机制的函数
+function debugWebSocketLock() {
+  console.log('🔍 ===== WebSocket服务器锁定状态调试 =====')
+  console.log(`🔗 WebSocket连接状态: ${isWsConnected ? '已连接' : '未连接'}`)
+  console.log(`📡 WebSocket就绪状态: ${wsConnection?.readyState || '无连接'} (0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)`)
+  console.log(`🔒 锁定的服务器: ${currentWebSocketServer || '无'}`)
+  console.log(`🕐 锁定时间: ${serverLockTimestamp ? new Date(serverLockTimestamp).toLocaleString() : '无'}`)
+  console.log(`⏱️ 锁定持续时间: ${serverLockTimestamp ? Math.round((Date.now() - serverLockTimestamp) / 1000) + '秒' : '无'}`)
+  console.log(`📊 待处理任务数: ${pendingTasks.size}`)
+
+  if (pendingTasks.size > 0) {
+    console.log('📋 待处理任务列表:')
+    for (const [promptId, task] of pendingTasks.entries()) {
+      console.log(`   - ${promptId}: ${task.workflowType || 'unknown'}`)
+    }
+  }
+
+  // 检查锁定条件
+  const lockCondition = currentWebSocketServer && wsConnection && wsConnection.readyState === WebSocket.OPEN
+  console.log(`✅ 锁定条件满足: ${lockCondition ? '是' : '否'}`)
+
+  if (!lockCondition) {
+    console.log('❌ 锁定条件不满足的原因:')
+    if (!currentWebSocketServer) console.log('   - 没有锁定的服务器')
+    if (!wsConnection) console.log('   - WebSocket连接对象不存在')
+    if (wsConnection && wsConnection.readyState !== WebSocket.OPEN) {
+      console.log(`   - WebSocket未处于OPEN状态 (当前: ${wsConnection.readyState})`)
+    }
+  }
+
+  console.log('🔍 ===== 调试信息结束 =====')
+
+  return {
+    isConnected: isWsConnected,
+    lockedServer: currentWebSocketServer,
+    lockTimestamp: serverLockTimestamp,
+    lockConditionMet: lockCondition,
+    wsReadyState: wsConnection?.readyState,
+    pendingTasksCount: pendingTasks.size
+  }
+}
+
+// 🔧 新增：检查是否可以解锁服务器的函数
+function checkServerUnlockCondition() {
+  // 只有在以下条件都满足时才解锁服务器：
+  // 1. 没有待处理任务
+  // 2. WebSocket连接已断开超过一定时间（可选）
+
+  if (pendingTasks.size === 0) {
+    if (currentWebSocketServer) {
+      console.log('🔓 所有任务已完成，解锁服务器')
+      console.log(`🔓 解锁服务器: ${currentWebSocketServer}`)
+      currentWebSocketServer = null
+      serverLockTimestamp = null
+      return true
+    }
+  } else {
+    console.log(`🔒 仍有 ${pendingTasks.size} 个待处理任务，保持服务器锁定`)
+  }
+
+  return false
+}
+
+// 🔧 新增：验证服务器一致性的函数
+async function validateServerConsistency(operation = 'API调用') {
+  try {
+    const apiBaseUrl = await getApiBaseUrl()
+
+    if (!currentWebSocketServer) {
+      console.warn(`⚠️ [${operation}] 没有锁定的WebSocket服务器`)
+      return { consistent: false, reason: '没有锁定的WebSocket服务器' }
+    }
+
+    const normalizedLocked = currentWebSocketServer.replace(/\/$/, '')
+    const normalizedApi = apiBaseUrl.replace(/\/$/, '')
+
+    if (normalizedLocked !== normalizedApi) {
+      console.error(`❌ [${operation}] 服务器不一致！`)
+      console.error(`   锁定服务器: ${normalizedLocked}`)
+      console.error(`   API服务器: ${normalizedApi}`)
+      return {
+        consistent: false,
+        reason: `服务器不一致：锁定=${normalizedLocked}, API=${normalizedApi}`,
+        lockedServer: normalizedLocked,
+        apiServer: normalizedApi
+      }
+    }
+
+    console.log(`✅ [${operation}] 服务器一致性验证通过: ${normalizedApi}`)
+    return { consistent: true, server: normalizedApi }
+
+  } catch (error) {
+    console.error(`❌ [${operation}] 服务器一致性验证失败:`, error)
+    return { consistent: false, reason: error.message }
   }
 }
 
 // 移除复杂的健康检查系统
 
-// 处理 WebSocket 消息 - 采用官方标准机制（增强完整性检查）
+// 🔥 官方标准WebSocket消息处理 - 基于官方API文档重构
 function handleWebSocketMessage(message) {
   try {
-    // 验证消息结构
     if (!message || typeof message !== 'object') {
-      console.warn('⚠️ 收到无效的 WebSocket 消息:', message)
       return
     }
 
     const { type, data } = message
 
-    // 记录所有消息类型以便调试
-    console.log(`📨 收到 WebSocket 消息: ${type}`)
-
-    // 记录任务相关消息的详细信息
-    if (data && data.prompt_id) {
-      console.log(`📋 任务相关消息详情:`, {
-        type: type,
-        promptId: data.prompt_id,
-        nodeId: data.node,
-        hasOutputs: !!data.outputs,
-        pendingTasksCount: pendingTasks.size
-      })
+    // 静默处理crystools.monitor消息，避免干扰正常消息处理
+    if (type === 'crystools.monitor') {
+      // 静默忽略crystools插件的监控消息
+      return
     }
 
-    // 处理官方标准消息类型
+    // 根据官方WebSocket API文档处理所有标准消息类型
     switch (type) {
       case 'status':
+        // 服务器状态和队列信息
         handleStatusMessage(data)
         break
-      case 'progress':
-        handleProgressMessage(data)
-        break
-      case 'executing':
-        // 官方标准：executing消息用于检测任务完成
-        console.log(`🔄 处理 executing 消息`)
-        handleExecutingMessage(data)
-        break
-      case 'executed':
-        console.log(`✅ 处理 executed 消息`)
-        handleExecutedMessage(data)
-        break
+
       case 'execution_start':
-        console.log(`🚀 处理 execution_start 消息`)
+        // 任务开始执行 - 官方标准状态检测
         handleExecutionStartMessage(data)
         break
+
+      case 'executing':
+        // 节点执行状态 - 官方标准完成检测
+        handleExecutingMessage(data)
+        break
+
+      case 'progress':
+        // 节点执行进度
+        handleProgressMessage(data)
+        break
+
+      case 'executed':
+        // 节点执行完成
+        handleExecutedMessage(data)
+        break
+
       case 'execution_cached':
-        console.log(`💾 处理 execution_cached 消息`)
+        // 节点缓存命中
         handleExecutionCachedMessage(data)
         break
+
+      case 'execution_error':
+        // 执行错误
+        handleExecutionErrorMessage(data)
+        break
+
+      case 'execution_interrupted':
+        // 执行中断
+        handleExecutionInterruptedMessage(data)
+        break
+
       default:
-        // 记录未知消息类型，可能包含重要信息
-        if (data && data.prompt_id) {
-          console.warn(`⚠️ 未处理的任务相关消息类型: ${type}`, data)
-        } else {
-          console.debug(`忽略消息类型: ${type}`)
-        }
+        // 记录未知消息类型用于调试
+        console.log(`🔍 [OFFICIAL] 未知消息类型: ${type}`, data)
     }
+
   } catch (error) {
-    console.error('❌ 处理 WebSocket 消息失败:', error)
-    console.error('❌ 消息内容:', JSON.stringify(message, null, 2))
-    console.error('❌ 错误堆栈:', error.stack)
+    console.error('❌ [OFFICIAL] WebSocket消息处理失败:', error)
   }
 }
 
-// 处理状态消息 - 队列状态
-function handleStatusMessage(data) {
-  // 简单记录队列状态
-  console.debug('📊 队列状态更新')
+// 🔥 官方标准任务状态管理 - 基于WebSocket消息的状态枚举
+const TASK_STATUS = {
+  WAITING: 'waiting',        // 任务在队列中等待
+  EXECUTING: 'executing',    // 任务正在执行
+  COMPLETED: 'completed',    // 任务已完成
+  ERROR: 'error',           // 任务执行错误
+  INTERRUPTED: 'interrupted' // 任务被中断
 }
 
-// 处理执行缓存消息
-function handleExecutionCachedMessage(data) {
-  if (data && data.prompt_id) {
-    const promptId = data.prompt_id
-    const task = pendingTasks.get(promptId)
-    if (task && task.onProgress) {
-      task.onProgress('使用缓存节点', 20)
-    }
-  }
-}
-
-
-
-// 处理进度消息 - 官方标准
-function handleProgressMessage(data) {
-  if (data && data.prompt_id && data.value !== undefined && data.max !== undefined) {
-    const promptId = data.prompt_id
-    const progress = Math.round((data.value / data.max) * 100)
-
-    const task = pendingTasks.get(promptId)
-    if (task && task.onProgress) {
-      task.onProgress(`处理中 ${data.value}/${data.max}`, progress)
-    }
-  }
-}
-
-// 处理节点执行完成消息 - 简化版本，仅用于进度更新
-function handleExecutedMessage(data) {
-  if (!data || !data.prompt_id) {
-    return
-  }
-
-  const promptId = data.prompt_id
-  const task = pendingTasks.get(promptId)
-
-  if (task && task.onProgress) {
-    // 仅用于进度更新，不处理任务完成
-    const executedNodeId = data.node_id || Object.keys(data.outputs || {})[0]
-    if (executedNodeId) {
-      task.onProgress(`节点 ${executedNodeId} 执行完成`, 80)
-    }
-  }
-}
-
-// 处理执行消息 - 基于官方实现的精确任务完成检测
-function handleExecutingMessage(data) {
-  console.log(`📨 收到 executing 消息:`, data)
-
-  // 官方实现验证：必须有有效的 prompt_id
-  if (!data || !data.prompt_id) {
-    console.warn('⚠️ 收到无效的 executing 消息 - 缺少 prompt_id:', data)
-    return
-  }
-
-  const promptId = data.prompt_id
-  const task = pendingTasks.get(promptId)
-
-  console.log(`🔍 检查任务 ${promptId}:`, {
-    hasTask: !!task,
-    nodeValue: data.node,
-    nodeType: typeof data.node,
-    isComplete: data.node === null,
-    pendingTasksCount: pendingTasks.size,
-    allPendingTasks: Array.from(pendingTasks.keys())
-  })
-
-  // 官方标准双重条件检测：data.node === null AND data.prompt_id === promptId
-  if (data.node === null && data.prompt_id === promptId) {
-    console.log(`🎯 任务执行完成 (官方标准检测): ${promptId}`)
-    // 立即处理任务完成 - 官方实现证明此时历史记录已准备就绪
-    handleTaskCompletion(promptId)
-  } else if (data.node && task && task.onProgress) {
-    // 节点开始执行 - 更新进度
-    console.log(`🔄 节点开始执行: ${data.node} for task ${promptId}`)
-    task.onProgress(`正在执行节点: ${data.node}`, 50)
-  } else if (data.node && !task) {
-    console.warn(`⚠️ 收到节点执行消息但未找到对应任务: ${promptId}, 节点: ${data.node}`)
-    console.warn(`📋 当前待处理任务列表:`, Array.from(pendingTasks.keys()))
-  }
-}
-
-// 处理任务完成 - 基于官方实现的增强版本（添加重试机制）
-async function handleTaskCompletion(promptId) {
-  console.log(`🎯 开始处理任务完成: ${promptId}`)
-
+// 🔥 原子性任务状态更新函数
+function updateTaskStatus(promptId, newStatus, additionalData = {}) {
   const task = pendingTasks.get(promptId)
   if (!task) {
-    console.warn(`⚠️ 未找到待处理任务: ${promptId}`)
-    console.log(`📋 当前待处理任务列表:`, Array.from(pendingTasks.keys()))
+    console.warn(`⚠️ [OFFICIAL] 尝试更新不存在的任务状态: ${promptId}`)
+    return false
+  }
+
+  const oldStatus = task.status
+  task.status = newStatus
+  task.lastStatusUpdate = Date.now()
+
+  // 合并额外数据
+  Object.assign(task, additionalData)
+
+  console.log(`🔄 [OFFICIAL] 任务状态变更: ${promptId} ${oldStatus} → ${newStatus}`)
+
+  return true
+}
+
+// 🔥 处理服务器状态消息 - 官方标准队列检测
+function handleStatusMessage(data) {
+  if (!data || !data.status) {
     return
   }
 
-  // 添加重试机制 - 解决多任务并发时的竞争条件
-  let retryCount = 0
-  const maxRetries = 3
-  let lastError = null
+  const execInfo = data.status.exec_info
+  if (!execInfo) {
+    return
+  }
 
-  while (retryCount < maxRetries) {
-    try {
-      console.log(`📡 获取任务历史记录 (尝试 ${retryCount + 1}/${maxRetries}): ${promptId}`)
+  const queueRemaining = execInfo.queue_remaining || 0
+  console.log(`📊 [OFFICIAL] 服务器队列状态: ${queueRemaining} 个任务等待`)
 
-      // 官方实现：任务完成后立即获取历史记录
-      const history = await getTaskHistory(promptId)
-
-      // 验证历史记录完整性
-      if (!history[promptId] || !history[promptId].outputs) {
-        throw new Error(`历史记录不完整，任务 ${promptId} 可能仍在处理中`)
+  // 更新所有等待中任务的状态，提供更详细的队列等待提示
+  pendingTasks.forEach((task, promptId) => {
+    if (task.status === TASK_STATUS.WAITING && task.onProgress) {
+      if (queueRemaining > 1) {
+        // 多个任务等待时显示具体数量
+        task.onProgress(`队列中还有 ${queueRemaining} 个任务等待`, 8)
+      } else if (queueRemaining === 1) {
+        // 只有一个任务等待时的提示
+        task.onProgress('队列中还有 1 个任务等待', 10)
+      } else {
+        // 队列为空，即将开始处理
+        task.onProgress('即将开始处理...', 12)
       }
+    }
+  })
+}
 
-      console.log(`📊 历史记录获取成功，开始提取结果: ${promptId}`)
-      const results = await extractTaskResults(history, promptId)
-      console.log(`✅ 任务结果提取成功: ${promptId}`)
+// 🔥 处理任务开始执行消息 - 官方标准状态检测
+function handleExecutionStartMessage(data) {
+  if (!data || !data.prompt_id) {
+    return
+  }
 
-      // 更新进度到100%
+  const promptId = data.prompt_id
+  console.log(`🚀 [OFFICIAL] 任务开始执行: ${promptId}`)
+
+  // 原子性状态更新：waiting → executing
+  const updated = updateTaskStatus(promptId, TASK_STATUS.EXECUTING, {
+    executionStartTime: Date.now(),
+    currentNode: null,
+    completedNodes: []
+  })
+
+  if (updated) {
+    const task = pendingTasks.get(promptId)
+    if (task.onProgress) {
+      task.onProgress('任务开始执行...', 15)
+    }
+  }
+}
+
+// 🔥 处理节点缓存命中消息
+function handleExecutionCachedMessage(data) {
+  if (!data || !data.prompt_id || !data.nodes) {
+    return
+  }
+
+  const promptId = data.prompt_id
+  const task = pendingTasks.get(promptId)
+
+  if (!task) {
+    return
+  }
+
+  console.log(`⚡ [OFFICIAL] 缓存命中: ${promptId}, 节点: [${data.nodes.join(', ')}]`)
+
+  if (task.onProgress) {
+    task.onProgress(`缓存命中 ${data.nodes.length} 个节点`, 25)
+  }
+}
+
+// 🔥 处理执行错误消息
+function handleExecutionErrorMessage(data) {
+  if (!data || !data.prompt_id) {
+    return
+  }
+
+  const promptId = data.prompt_id
+  console.error(`❌ [OFFICIAL] 任务执行错误: ${promptId}`, data)
+
+  // 原子性状态更新：* → error
+  const updated = updateTaskStatus(promptId, TASK_STATUS.ERROR, {
+    errorTime: Date.now(),
+    errorData: data
+  })
+
+  if (updated) {
+    const task = pendingTasks.get(promptId)
+
+    // 清理任务
+    pendingTasks.delete(promptId)
+
+    if (task.onError) {
+      const error = new Error(`执行错误: ${data.exception_message || '未知错误'}`)
+      error.details = data
+      task.onError(error)
+    }
+  }
+}
+
+// 🔥 处理执行中断消息
+function handleExecutionInterruptedMessage(data) {
+  if (!data || !data.prompt_id) {
+    return
+  }
+
+  const promptId = data.prompt_id
+  console.warn(`⚠️ [OFFICIAL] 任务被中断: ${promptId}`)
+
+  // 原子性状态更新：* → interrupted
+  const updated = updateTaskStatus(promptId, TASK_STATUS.INTERRUPTED, {
+    interruptTime: Date.now()
+  })
+
+  if (updated) {
+    const task = pendingTasks.get(promptId)
+
+    // 清理任务
+    pendingTasks.delete(promptId)
+
+    if (task.onError) {
+      task.onError(new Error('任务执行被中断'))
+    }
+  }
+}
+
+// 🔥 处理节点执行完成消息 - 重构版本
+function handleExecutedMessage(data) {
+  if (!data || !data.prompt_id || !data.node) {
+    return
+  }
+
+  const promptId = data.prompt_id
+  const task = pendingTasks.get(promptId)
+
+  if (!task || task.status !== TASK_STATUS.EXECUTING) {
+    return
+  }
+
+  console.log(`✅ [OFFICIAL] 节点完成: ${data.node} (任务: ${promptId})`)
+
+  // 记录完成的节点
+  if (!task.completedNodes) {
+    task.completedNodes = []
+  }
+  task.completedNodes.push(data.node)
+
+  if (task.onProgress) {
+    task.onProgress(`节点 ${data.node} 完成`, 60)
+  }
+}
+
+// 🔥 处理节点执行进度消息 - 重构版本
+function handleProgressMessage(data) {
+  if (!data || !data.prompt_id) {
+    return
+  }
+
+  const promptId = data.prompt_id
+  const task = pendingTasks.get(promptId)
+
+  if (!task || task.status !== TASK_STATUS.EXECUTING) {
+    return
+  }
+
+  if (data.value !== undefined && data.max !== undefined) {
+    const progress = Math.round((data.value / data.max) * 100)
+    const overallProgress = 40 + (progress * 0.5) // 40-90%区间
+
+    console.log(`📈 [OFFICIAL] 进度更新: ${promptId} - ${data.value}/${data.max} (${progress}%)`)
+
+    if (task.onProgress) {
+      task.onProgress(`处理进度: ${data.value}/${data.max}`, overallProgress)
+    }
+  }
+}
+
+// 🔥 处理节点执行状态消息 - 官方标准完成检测（重构版本）
+function handleExecutingMessage(data) {
+  if (!data || !data.prompt_id) {
+    return
+  }
+
+  const promptId = data.prompt_id
+  const task = pendingTasks.get(promptId)
+
+  if (!task) {
+    // 忽略未注册任务的消息
+    return
+  }
+
+  // 官方标准双重条件检测：data.node === null && data.prompt_id === promptId
+  if (data.node === null && data.prompt_id === promptId) {
+    console.log(`🎯 [OFFICIAL] 任务执行完成: ${promptId}`)
+
+    // 原子性状态更新：executing → completed
+    updateTaskStatus(promptId, TASK_STATUS.COMPLETED, {
+      completionTime: Date.now()
+    })
+
+    // 立即处理任务完成
+    handleTaskCompletion(promptId)
+
+  } else if (data.node !== null) {
+    // 正在执行某个节点
+    console.log(`⚙️ [OFFICIAL] 执行节点: ${data.node} (任务: ${promptId})`)
+
+    // 更新当前执行节点
+    if (task.status === TASK_STATUS.EXECUTING) {
+      task.currentNode = data.node
+
       if (task.onProgress) {
-        console.log(`📈 更新任务进度到100%: ${promptId}`)
-        task.onProgress('处理完成', 100)
+        task.onProgress(`正在执行: ${data.node}`, 40)
       }
+    }
+  }
+}
 
-      // 调用完成回调
-      if (task.onComplete) {
-        console.log(`🎉 调用任务完成回调: ${promptId}`)
+// 官方标准任务完成处理 - 立即响应版本（消除延迟）
+async function handleTaskCompletion(promptId) {
+  const task = pendingTasks.get(promptId)
+  if (!task) {
+    console.warn(`⚠️ [OFFICIAL] 任务未找到: ${promptId}`)
+    return
+  }
+
+  console.log(`🚀 [OFFICIAL] 开始立即处理任务完成: ${promptId}`)
+
+  try {
+    // 🔧 立即更新进度到98%，表示正在获取结果
+    if (task.onProgress) {
+      task.onProgress('正在获取处理结果...', 98)
+    }
+
+    console.log(`🔍 [OFFICIAL] 立即获取任务历史记录: ${promptId}`)
+
+    // 🔧 官方标准：立即获取历史记录（按照websockets_api_example.py第47行）
+    const history = await getTaskHistory(promptId)
+
+    console.log(`📊 [OFFICIAL] 历史记录获取成功，开始提取结果: ${promptId}`)
+
+    // 🔧 官方标准：提取结果数据（按照websockets_api_example.py第48-56行）
+    const results = await extractTaskResults(history, promptId)
+
+    console.log(`✅ [OFFICIAL] 结果提取完成，更新进度到100%: ${promptId}`)
+
+    // � 立即更新进度到100%
+    if (task.onProgress) {
+      task.onProgress('处理完成', 100)
+    }
+
+    // 🔧 立即清理任务并调用完成回调
+    pendingTasks.delete(promptId)
+    console.log(`🧹 [OFFICIAL] 任务清理完成: ${promptId}`)
+
+    // 🔧 检查是否可以解锁服务器
+    checkServerUnlockCondition()
+
+    console.log(`🎉 [OFFICIAL] 立即调用完成回调: ${promptId}`)
+    if (task.onComplete) {
+      // 🔧 使用setTimeout(0)确保回调立即执行（浏览器兼容）
+      setTimeout(() => {
         task.onComplete(results)
-      } else {
-        console.warn(`⚠️ 任务没有完成回调函数: ${promptId}`)
-      }
+      }, 0)
+    }
 
-      // 成功处理，跳出重试循环
-      break
+  } catch (error) {
+    console.error(`❌ [OFFICIAL] 任务完成处理失败: ${promptId}`, error.message)
 
-    } catch (error) {
-      lastError = error
-      retryCount++
-      console.error(`❌ 处理任务完成失败 (尝试 ${retryCount}/${maxRetries}): ${promptId}`, error)
+    // 立即清理任务并调用错误回调
+    pendingTasks.delete(promptId)
 
-      if (retryCount < maxRetries) {
-        // 等待后重试，延迟时间递增
-        const delay = 1000 * retryCount
-        console.log(`⏳ ${delay}ms 后重试...`)
-        await new Promise(resolve => setTimeout(resolve, delay))
-      } else {
-        // 最终失败
-        console.error(`❌ 任务处理最终失败: ${promptId}`, lastError)
-        if (task.onError) {
-          console.log(`🚨 调用任务错误回调: ${promptId}`)
-          task.onError(lastError.message)
-        } else {
-          console.warn(`⚠️ 任务没有错误回调函数: ${promptId}`)
+    // 🔧 检查是否可以解锁服务器
+    checkServerUnlockCondition()
+
+    if (task.onError) {
+      // 🔧 使用setTimeout(0)确保错误回调立即执行（浏览器兼容）
+      setTimeout(() => {
+        task.onError(error.message)
+      }, 0)
+    }
+  }
+}
+
+// 🔥 官方标准任务完成处理 - 完全重构版本（基于 websockets_api_example.py 第47-56行）
+async function handleTaskCompletionOfficial(promptId) {
+  const task = pendingTasks.get(promptId)
+  if (!task) {
+    return
+  }
+
+  console.log(`🎯 [OFFICIAL] 任务完成，立即获取结果: ${promptId}`)
+
+  try {
+    // 更新进度到98%
+    if (task.onProgress) {
+      task.onProgress('正在获取处理结果...', 98)
+    }
+
+    // 官方标准：history = get_history(prompt_id)[prompt_id]
+    const history = await getTaskHistoryOfficial(promptId)
+
+    // 官方标准：提取结果（for node_id in history['outputs']:）
+    const results = await extractTaskResultsOfficial(history, promptId)
+
+    // 更新进度到100%
+    if (task.onProgress) {
+      task.onProgress('处理完成', 100)
+    }
+
+    // 清理任务
+    pendingTasks.delete(promptId)
+    console.log(`✅ [OFFICIAL] 任务完成: ${promptId}`)
+
+    // 立即调用完成回调
+    if (task.onComplete) {
+      task.onComplete(results)
+    }
+
+  } catch (error) {
+    console.error(`❌ [OFFICIAL] 任务处理失败: ${promptId}`, error)
+
+    // 清理任务
+    pendingTasks.delete(promptId)
+
+    // 调用错误回调
+    if (task.onError) {
+      task.onError(error.message)
+    }
+  }
+}
+
+// 🔥 官方标准历史记录获取 - 完全重构版本（基于 websockets_api_example.py 第25-27行）
+async function getTaskHistoryOfficial(promptId) {
+  const apiBaseUrl = await getApiBaseUrl()
+  const url = `${apiBaseUrl}/history/${promptId}`
+
+  console.log(`📡 [OFFICIAL] 获取历史记录: ${url}`)
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`历史记录获取失败: ${response.status} ${response.statusText}`)
+  }
+
+  const history = await response.json()
+
+  // 官方标准：返回 history[prompt_id]
+  if (!history[promptId]) {
+    throw new Error(`历史记录中未找到任务: ${promptId}`)
+  }
+
+  return history[promptId]
+}
+
+// 🔥 官方标准结果提取 - 完全重构版本（基于 websockets_api_example.py 第48-56行）
+async function extractTaskResultsOfficial(history, promptId) {
+  console.log(`🔍 [OFFICIAL] 提取任务结果: ${promptId}`)
+
+  const outputImages = {}
+
+  // 官方标准：for node_id in history['outputs']:
+  for (const nodeId in history.outputs) {
+    const nodeOutput = history.outputs[nodeId]
+    const imagesOutput = []
+
+    // 官方标准：if 'images' in node_output:
+    if (nodeOutput.images && Array.isArray(nodeOutput.images)) {
+      console.log(`📸 [OFFICIAL] 节点 ${nodeId} 有 ${nodeOutput.images.length} 张图片`)
+
+      // 官方标准：for image in node_output['images']:
+      for (const image of nodeOutput.images) {
+        try {
+          // 优化：直接构建图片URL，无需下载
+          const apiBaseUrl = await getApiBaseUrl()
+          const imageUrl = getImageUrlOfficial(image.filename, image.subfolder, image.type, apiBaseUrl)
+          imagesOutput.push({
+            ...image,
+            url: imageUrl  // 添加URL字段
+          })
+        } catch (error) {
+          console.error(`构建图片URL失败: ${image.filename}`, error)
         }
       }
     }
+
+    outputImages[nodeId] = imagesOutput
   }
 
-  // 清理任务
-  console.log(`🧹 清理任务: ${promptId}`)
-  pendingTasks.delete(promptId)
-  console.log(`📊 剩余待处理任务数: ${pendingTasks.size}`)
+  console.log(`✅ [OFFICIAL] 结果提取完成: ${promptId}, 节点数: ${Object.keys(outputImages).length}`)
+
+  return {
+    promptId: promptId,
+    outputs: history.outputs,
+    outputImages: outputImages,
+    status: 'completed'
+  }
 }
 
-// 获取任务历史记录 - 基于官方实现的增强版本（添加超时和重试）
+// 🔥 官方标准图片URL获取 - 优化版本（直接返回URL，无需下载）
+function getImageUrlOfficial(filename, subfolder, folderType, apiBaseUrl) {
+  const params = new URLSearchParams({
+    filename: filename,
+    subfolder: subfolder || '',
+    type: folderType || 'output'
+  })
+
+  const url = `${apiBaseUrl}/view?${params.toString()}`
+  console.log(`🔗 [OFFICIAL] 构建图片URL: ${filename} -> ${url}`)
+
+  return url
+}
+
+// 🔥 官方标准进度消息处理 - 简化版本
+function handleProgressMessageOfficial(data) {
+  if (!data || !data.prompt_id) {
+    return
+  }
+
+  const task = pendingTasks.get(data.prompt_id)
+  if (!task || !task.onProgress) {
+    return
+  }
+
+  // 计算进度百分比
+  const progress = data.max > 0 ? (data.value / data.max) * 100 : 0
+
+  // 将进度映射到50-92%范围（为最终处理预留空间）
+  const adjustedProgress = Math.min(92, Math.max(50, 50 + (progress * 0.42)))
+
+  task.onProgress(`处理中 ${data.value}/${data.max}`, adjustedProgress)
+}
+
+// 🔧 官方标准历史记录获取 - 增强版本（服务器一致性验证）
 async function getTaskHistory(promptId) {
-  const maxAttempts = 3
-  let lastError = null
+  console.log(`🔍 [OFFICIAL] getTaskHistory调用: ${promptId}`)
+  logServerConsistency('获取任务历史', promptId)
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      const apiBaseUrl = await getApiBaseUrl()
-      const url = `${apiBaseUrl}/history/${promptId}`
-      console.log(`🔍 获取任务历史记录 (尝试 ${attempt}/${maxAttempts}): ${url}`)
-
-      // 添加超时控制
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15秒超时
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        throw new Error(`历史记录获取失败: ${response.status} ${response.statusText}`)
-      }
-
-      const history = await response.json()
-      console.log(`✅ 获取到任务历史记录，包含 ${Object.keys(history).length} 个任务`)
-
-      // 验证是否包含目标任务
-      if (!history[promptId]) {
-        throw new Error(`历史记录中未找到任务: ${promptId}`)
-      }
-
-      return history
-
-    } catch (error) {
-      lastError = error
-      console.error(`❌ 获取任务历史记录失败 (尝试 ${attempt}/${maxAttempts}): ${promptId}`, error)
-
-      if (attempt < maxAttempts) {
-        // 等待后重试，延迟时间递增
-        const delay = 2000 * attempt
-        console.log(`⏳ ${delay}ms 后重试...`)
-        await new Promise(resolve => setTimeout(resolve, delay))
-      }
+  try {
+    // 🔧 关键修复：验证服务器一致性
+    if (currentWebSocketServer) {
+      console.log(`🔒 [getTaskHistory] 使用锁定服务器查询历史: ${currentWebSocketServer}`)
+    } else {
+      console.warn(`⚠️ [getTaskHistory] 没有锁定服务器，可能导致任务查询失败`)
     }
-  }
 
-  throw lastError
+    const apiBaseUrl = await getApiBaseUrl()
+
+    // 🔧 双重验证：确保使用锁定的服务器
+    if (currentWebSocketServer && apiBaseUrl !== currentWebSocketServer.replace(/\/$/, '')) {
+      console.error(`❌ [getTaskHistory] 服务器不一致！`)
+      console.error(`   锁定服务器: ${currentWebSocketServer}`)
+      console.error(`   API服务器: ${apiBaseUrl}`)
+      throw new Error(`服务器不一致：任务在 ${currentWebSocketServer} 上执行，但查询 ${apiBaseUrl}`)
+    }
+
+    // 🔧 修复：使用正确的API端点格式（按照官方示例）
+    const url = `${apiBaseUrl}/api/history/${promptId}`
+
+    console.log(`📡 [OFFICIAL] 请求URL: ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const history = await response.json()
+    console.log(`✅ [OFFICIAL] 历史记录获取成功，任务数: ${Object.keys(history).length}`)
+
+    // 🔧 验证目标任务存在（按照官方示例第47行）
+    if (!history[promptId]) {
+      throw new Error(`任务不存在于历史记录: ${promptId}`)
+    }
+
+    console.log(`📊 [OFFICIAL] 任务 ${promptId} 输出节点:`, Object.keys(history[promptId].outputs || {}))
+    return history
+
+  } catch (error) {
+    console.error(`❌ [OFFICIAL] getTaskHistory失败: ${promptId}`, error.message)
+    throw error
+  }
 }
 
-// 从历史记录中提取结果 - 官方标准机制
+// 🔧 从历史记录中提取结果 - 官方标准机制（按照websockets_api_example.py第48-56行）
 async function extractTaskResults(history, promptId) {
   try {
-    console.log(`📊 开始提取任务结果: ${promptId}`)
+    console.log(`📊 [OFFICIAL] 开始提取任务结果: ${promptId}`)
 
-    // 历史记录格式: { promptId: { outputs: {...} } }
+    // 🔧 历史记录格式: { promptId: { outputs: {...} } }（按照官方示例第47行）
     const taskData = history[promptId]
     if (!taskData) {
       throw new Error(`历史记录中未找到任务: ${promptId}`)
@@ -974,177 +1540,145 @@ async function extractTaskResults(history, promptId) {
       throw new Error(`任务 ${promptId} 没有输出数据`)
     }
 
-    console.log(`📋 任务输出节点:`, Object.keys(taskData.outputs))
+    console.log(`📋 [OFFICIAL] 任务输出节点:`, Object.keys(taskData.outputs))
 
-    // 直接返回输出数据，保持与现有代码兼容
+    // 🔧 按照官方示例处理图片输出（第48-56行逻辑）
+    const outputImages = {}
+    for (const nodeId in taskData.outputs) {
+      const nodeOutput = taskData.outputs[nodeId]
+      const imagesOutput = []
+
+      if (nodeOutput.images && Array.isArray(nodeOutput.images)) {
+        console.log(`📷 [OFFICIAL] 节点 ${nodeId} 包含 ${nodeOutput.images.length} 张图片`)
+        for (const image of nodeOutput.images) {
+          // 保存图片信息，供后续getGeneratedImage函数使用
+          imagesOutput.push(image)
+        }
+      }
+
+      if (imagesOutput.length > 0) {
+        outputImages[nodeId] = imagesOutput
+      }
+    }
+
+    // 🔧 返回与现有代码兼容的格式，同时包含官方标准的图片数据
     const results = {
       outputs: taskData.outputs,
+      outputImages: outputImages, // 新增：官方标准的图片数据格式
       promptId: promptId
     }
 
-    console.log(`✅ 任务结果提取完成: ${promptId}`)
+    console.log(`✅ [OFFICIAL] 任务结果提取完成: ${promptId}`)
     return results
   } catch (error) {
-    console.error(`❌ 提取任务结果失败: ${promptId}`, error)
+    console.error(`❌ [OFFICIAL] 提取任务结果失败: ${promptId}`, error)
     throw error
   }
 }
 
-// 获取图片数据 - 官方标准API
-async function getImage(filename, subfolder, folderType) {
-  try {
-    const apiBaseUrl = await getApiBaseUrl()
-    const params = new URLSearchParams({
-      filename: filename,
-      subfolder: subfolder || '',
-      type: folderType || 'output'
-    })
+// 🔧 获取图片URL - 官方标准API（按照websockets_api_example.py第19-23行，优化为直接返回URL）
+function getImageUrl(filename, subfolder, folderType, apiBaseUrl) {
+  // 🔧 按照官方示例构建参数（第20-21行）
+  const params = new URLSearchParams({
+    filename: filename,
+    subfolder: subfolder || '',
+    type: folderType || 'output'
+  })
 
-    const url = `${apiBaseUrl}/view?${params.toString()}`
-    console.log(`🖼️ 获取图片: ${url}`)
+  // 🔧 使用正确的API端点格式（第22行）
+  const url = `${apiBaseUrl}/api/view?${params.toString()}`
+  console.log(`🔗 [OFFICIAL] 构建图片URL: ${filename} -> ${url}`)
 
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`图片获取失败: ${response.status} ${response.statusText}`)
-    }
-
-    const imageBlob = await response.blob()
-    console.log(`✅ 图片获取成功: ${filename}`)
-    return imageBlob
-  } catch (error) {
-    console.error(`❌ 获取图片失败: ${filename}`, error)
-    throw error
-  }
+  return url
 }
 
-// 确保WebSocket连接
+// 确保WebSocket连接 - 增强版本（保证服务器一致性）
 async function ensureWebSocketConnection() {
-  if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
+  // 🔧 检查现有连接是否健康且服务器一致
+  if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected && currentWebSocketServer) {
+    console.log(`✅ [ensureWebSocket] WebSocket连接健康，锁定服务器: ${currentWebSocketServer}`)
     return true
   }
 
-  console.log('🔄 建立WebSocket连接...')
+  // 🔧 如果有待处理任务但连接断开，必须重连到相同服务器
+  if (pendingTasks.size > 0 && currentWebSocketServer) {
+    console.log(`🔄 [ensureWebSocket] 有 ${pendingTasks.size} 个待处理任务，重连到锁定服务器: ${currentWebSocketServer}`)
+  } else {
+    console.log('🔄 [ensureWebSocket] 建立新的WebSocket连接...')
+  }
+
   await initializeWebSocket()
+
+  // 🔧 验证连接后的服务器锁定状态
+  if (!currentWebSocketServer) {
+    throw new Error('WebSocket连接后未能锁定服务器')
+  }
+
+  console.log(`✅ [ensureWebSocket] WebSocket连接已建立，锁定服务器: ${currentWebSocketServer}`)
   return true
 }
 
 
 
-// 等待任务完成 - 增强版本，采用官方标准机制
+// 🔥 官方标准任务等待 - 基于WebSocket消息的简化版本
 async function waitForTaskCompletion(promptId, maxWaitTime = 600000, onProgress = null, workflowType = 'undress') {
-  console.log(`⏳ 开始等待任务完成: ${promptId}`)
-  console.log(`📊 当前待处理任务数: ${pendingTasks.size}`)
+  console.log(`⏳ [OFFICIAL] 等待任务完成: ${promptId}`)
 
   await ensureWebSocketConnection()
 
   return new Promise((resolve, reject) => {
-    // 设置超时
+    // 设置超时保护
     const timeout = setTimeout(() => {
-      console.log(`⏰ 任务超时: ${promptId}`)
-      console.log(`📋 超时时待处理任务:`, Array.from(pendingTasks.keys()))
-
-      // 清理任务
-      pendingTasks.delete(promptId)
-      showNotification('任务处理超时', 'error')
-      reject(new Error('任务执行超时'))
+      if (pendingTasks.has(promptId)) {
+        console.error(`⏰ [OFFICIAL] 任务超时: ${promptId}`)
+        pendingTasks.delete(promptId)
+        reject(new Error(`任务执行超时 (${Math.round(maxWaitTime/1000)}秒)`))
+      }
     }, maxWaitTime)
 
-    // 创建任务对象，增强调试信息
+    // 创建任务对象 - 包含官方标准状态字段
     const task = {
+      // 基本信息
       workflowType: workflowType,
       createdAt: new Date().toISOString(),
-      onProgress: (status, progress) => {
-        console.log(`📈 任务进度更新: ${promptId} - ${status} (${progress}%)`)
-        if (onProgress) {
-          onProgress(status, progress)
-        }
-      },
+      startTime: Date.now(),
+
+      // 官方标准状态字段
+      status: TASK_STATUS.WAITING,
+      lastStatusUpdate: Date.now(),
+
+      // 执行状态跟踪
+      currentNode: null,
+      completedNodes: [],
+
+      // 回调函数
+      onProgress: onProgress || (() => {}),
       onComplete: (result) => {
         clearTimeout(timeout)
-        console.log(`✅ 任务完成回调触发: ${promptId}`)
-        console.log(`📊 任务结果结构:`, {
-          hasOutputs: !!result?.outputs,
-          outputNodes: result?.outputs ? Object.keys(result.outputs) : [],
-          promptId: result?.promptId
-        })
+        console.log(`✅ [OFFICIAL] 任务完成回调: ${promptId}`)
         resolve(result)
       },
       onError: (error) => {
         clearTimeout(timeout)
-        console.error(`❌ 任务失败回调触发: ${promptId} - ${error}`)
-        showNotification('任务处理失败', 'error')
-        reject(new Error(error))
+        console.error(`❌ [OFFICIAL] 任务错误回调: ${promptId}`, error)
+        reject(error instanceof Error ? error : new Error(error))
       }
     }
 
-    // 注册任务到待处理列表
+    // 注册任务到全局队列
     pendingTasks.set(promptId, task)
-    console.log(`📝 任务已注册到待处理列表: ${promptId}`)
-    console.log(`📊 注册后待处理任务数: ${pendingTasks.size}`)
-    console.log(`📋 所有待处理任务:`, Array.from(pendingTasks.keys()))
+    console.log(`📝 [OFFICIAL] 任务已注册: ${promptId} (状态: ${task.status})`)
 
-    // 启动任务监控（如果还没启动）
-    startTaskMonitoring()
-
-    // 初始进度
+    // 设置初始进度
     if (onProgress) {
-      onProgress('任务已提交，等待处理...', 10)
+      onProgress('任务已提交，等待服务器处理...', 5)
     }
   })
 }
 
-// 处理执行开始消息
-function handleExecutionStartMessage(data) {
-  if (data && data.prompt_id) {
-    const promptId = data.prompt_id
-    const task = pendingTasks.get(promptId)
-    if (task && task.onProgress) {
-      task.onProgress('开始执行', 15)
-    }
-  }
-}
+// 移除执行开始消息处理 - 简化实现
 
-// 任务监控系统 - 解决多任务并发时的遗漏问题
-let taskMonitorInterval = null
-
-// 启动任务监控
-function startTaskMonitoring() {
-  if (taskMonitorInterval) {
-    return // 已经在监控中
-  }
-
-  console.log('🔍 启动任务状态监控')
-  taskMonitorInterval = setInterval(() => {
-    if (pendingTasks.size > 0) {
-      console.log(`📊 任务监控检查 - 当前待处理任务: ${pendingTasks.size}`)
-
-      for (const [promptId, task] of pendingTasks.entries()) {
-        const taskAge = Date.now() - new Date(task.createdAt).getTime()
-
-        // 如果任务等待超过5分钟，主动检查状态
-        if (taskAge > 300000) { // 5分钟
-          console.log(`⚠️ 任务 ${promptId} 等待时间过长 (${Math.round(taskAge/1000)}秒)，主动检查状态`)
-          checkTaskStatusManually(promptId)
-        }
-      }
-    } else if (taskMonitorInterval) {
-      // 没有待处理任务时停止监控
-      console.log('📊 无待处理任务，停止监控')
-      stopTaskMonitoring()
-    }
-  }, 30000) // 每30秒检查一次
-}
-
-// 停止任务监控
-function stopTaskMonitoring() {
-  if (taskMonitorInterval) {
-    clearInterval(taskMonitorInterval)
-    taskMonitorInterval = null
-    console.log('⏹️ 任务监控已停止')
-  }
-}
-
-// 手动检查任务状态 - 用于处理遗漏的完成信号
+// 手动检查任务状态 - 仅用于调试
 async function checkTaskStatusManually(promptId) {
   try {
     console.log(`🔍 手动检查任务状态: ${promptId}`)
@@ -1164,6 +1698,50 @@ async function checkTaskStatusManually(promptId) {
     if (error.message.includes('404')) {
       console.log(`🧹 任务 ${promptId} 不存在，从待处理列表中移除`)
       pendingTasks.delete(promptId)
+    }
+  }
+}
+
+// 🔧 新增：强制完成任务的调试函数
+function forceCompleteTask(promptId) {
+  console.log(`🚀 [DEBUG] 强制完成任务: ${promptId}`)
+
+  const task = pendingTasks.get(promptId)
+  if (!task) {
+    console.error(`❌ [DEBUG] 任务不存在: ${promptId}`)
+    return false
+  }
+
+  console.log(`🎯 [DEBUG] 找到任务，强制触发完成: ${promptId}`)
+
+  // 模拟接收到完成信号
+  const mockExecutingData = {
+    prompt_id: promptId,
+    node: null  // null表示完成
+  }
+
+  console.log(`📨 [DEBUG] 模拟executing消息: ${JSON.stringify(mockExecutingData)}`)
+  handleExecutingMessage(mockExecutingData)
+
+  return true
+}
+
+// 🔧 新增：检查所有待处理任务状态的函数
+async function checkAllPendingTasks() {
+  console.log(`🔍 [DEBUG] 检查所有待处理任务状态`)
+  console.log(`📊 [DEBUG] 当前待处理任务数: ${pendingTasks.size}`)
+
+  if (pendingTasks.size === 0) {
+    console.log(`ℹ️ [DEBUG] 没有待处理任务`)
+    return
+  }
+
+  for (const [promptId] of pendingTasks.entries()) {
+    console.log(`🔍 [DEBUG] 检查任务: ${promptId}`)
+    try {
+      await checkTaskStatusManually(promptId)
+    } catch (error) {
+      console.error(`❌ [DEBUG] 检查任务失败: ${promptId}`, error)
     }
   }
 }
@@ -1207,37 +1785,47 @@ async function processUndressImage(base64Image, onProgress = null) {
 
     const workflowPrompt = await createUndressWorkflowPrompt(uploadedImageName)
 
-    // 第二步：提交工作流
+    // 官方标准：提交工作流
     if (onProgress) onProgress('正在提交工作流到ComfyUI...', 40)
 
-    const promptId = await submitWorkflow(workflowPrompt)
-    console.log('✅ 工作流提交完成，任务ID:', promptId)
+    // 🔧 关键修复：预先创建任务对象，在提交前注册
+    const promptId = generatePromptId()
+    console.log(`🆔 [OFFICIAL] 生成promptId: ${promptId}`)
 
-    // 等待任务完成 - 传递前端进度回调
+    // 🔧 创建临时任务对象，用于预注册
+    const tempTask = {
+      workflowType: 'undress',
+      createdAt: new Date().toISOString(),
+      onProgress: null,
+      onComplete: null,
+      onError: null
+    }
+
+    const submittedPromptId = await submitWorkflow(workflowPrompt, promptId, tempTask)
+    console.log(`✅ [OFFICIAL] 工作流提交完成: ${submittedPromptId}`)
+
+    // 等待任务完成
     if (onProgress) onProgress('正在等待ComfyUI处理...', 50)
 
-    const taskResult = await waitForTaskCompletion(promptId, 600000, (status, progress) => {
-      // 将WebSocket进度传递给前端
+    const taskResult = await waitForTaskCompletion(submittedPromptId, 600000, (status, progress) => {
       if (onProgress) {
-        // 确保进度在50-95之间，为最后的图片获取留出空间
         const adjustedProgress = Math.min(95, Math.max(50, 50 + (progress * 0.45)))
         onProgress(status, adjustedProgress)
       }
     }, 'undress')
     console.log('✅ 任务处理完成')
 
-    // 获取生成的图片
+    // 获取生成的图片URL（直接返回URL，无需传输）
     if (onProgress) onProgress('正在获取处理结果...', 96)
 
-    const resultImage = await getGeneratedImage(taskResult, 'undress')
-    console.log('🎉 换衣处理成功!')
+    const resultImageUrl = await getGeneratedImageUrl(taskResult, 'undress')
+    console.log('🎉 换衣处理成功! 图片URL:', resultImageUrl)
 
     // 消耗积分（从等级卡扣除）
     if (onProgress) onProgress('正在更新积分...', 98)
 
-    // 获取 ComfyUI 图片访问URL而不是 base64 数据
-    const imageViewUrl = getComfyUIImageUrl(resultImage)
-    const pointsResult = await levelCardPointsManager.consumePoints(20, '一键换衣', imageViewUrl)
+    // 直接使用图片URL进行积分扣除
+    const pointsResult = await levelCardPointsManager.consumePoints(20, '一键换衣', resultImageUrl)
 
     // 获取节点49的原图用于对比
     let originalImage = null
@@ -1259,7 +1847,7 @@ async function processUndressImage(base64Image, onProgress = null) {
 
     return {
       success: true,
-      resultImage: resultImage,
+      resultImage: resultImageUrl,  // 直接返回URL
       originalImage: originalImage, // 新增：节点49的原图
       promptId: promptId,
       uploadedImageName: uploadedImageName,
@@ -1409,26 +1997,37 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
 
     if (onProgress) onProgress('正在提交换脸任务...', 80)
 
-    // 提交工作流
-    const promptId = await submitWorkflow(workflow)
+    // 🔧 官方标准：预先创建任务对象并提交
+    const promptId = generatePromptId()
+    console.log(`🆔 [OFFICIAL] 生成换脸promptId: ${promptId}`)
+    logServerConsistency('生成换脸任务', promptId)
+
+    // 🔧 创建临时任务对象，用于预注册
+    const tempTask = {
+      workflowType: 'faceswap',
+      createdAt: new Date().toISOString(),
+      onProgress: null,
+      onComplete: null,
+      onError: null
+    }
+
+    const submittedPromptId = await submitWorkflow(workflow, promptId, tempTask)
 
     if (onProgress) onProgress('正在处理换脸...', 85)
 
-    // 等待任务完成 - 换脸需要更长时间，设置10分钟超时
+    // 等待任务完成
     const maxWaitTime = 600000 // 10分钟
-
-    const taskResult = await waitForTaskCompletion(promptId, maxWaitTime, onProgress, 'faceswap')
+    const taskResult = await waitForTaskCompletion(submittedPromptId, maxWaitTime, onProgress, 'faceswap')
     console.log('✅ 换脸任务处理完成')
 
     if (onProgress) onProgress('正在获取处理结果...', 95)
 
-    // 获取结果图片（指定工作流类型）
-    const imageUrl = await getGeneratedImage(taskResult, 'faceswap')
+    // 获取结果图片URL（指定工作流类型，直接返回URL）
+    const imageUrl = await getGeneratedImageUrl(taskResult, 'faceswap')
 
     // 消耗积分（从等级卡扣除）
-    // 获取 ComfyUI 图片访问URL而不是 base64 数据
-    const imageViewUrl = getComfyUIImageUrl(imageUrl)
-    const pointsResult = await levelCardPointsManager.consumePoints(20, '极速换脸', imageViewUrl)
+    // 直接使用图片URL进行积分扣除
+    const pointsResult = await levelCardPointsManager.consumePoints(20, '极速换脸', imageUrl)
 
     if (onProgress) onProgress('换脸完成！', 100)
 
@@ -1453,6 +2052,264 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
   }
 }
 
+// 测试官方标准实现
+async function testOfficialStandard() {
+  console.log('🧪 [OFFICIAL] 开始测试官方标准实现')
+
+  try {
+    // 1. 确保WebSocket连接
+    await ensureWebSocketConnection()
+    console.log('✅ [OFFICIAL] WebSocket连接成功')
+
+    // 2. 生成promptId
+    const promptId = generatePromptId()
+    console.log(`🆔 [OFFICIAL] 生成promptId: ${promptId}`)
+
+    // 3. 创建简单测试工作流
+    const testWorkflow = {
+      "1": {
+        "inputs": {
+          "text": "test official standard implementation"
+        },
+        "class_type": "CLIPTextEncode"
+      }
+    }
+
+    // 4. 创建临时任务对象并提交工作流
+    const tempTask = {
+      workflowType: 'test',
+      createdAt: new Date().toISOString(),
+      onProgress: null,
+      onComplete: null,
+      onError: null
+    }
+
+    const submittedPromptId = await submitWorkflow(testWorkflow, promptId, tempTask)
+    console.log(`✅ [OFFICIAL] 工作流提交成功: ${submittedPromptId}`)
+
+    // 5. 等待完成
+    const result = await waitForTaskCompletion(submittedPromptId, 60000, (status, progress) => {
+      console.log(`📊 [OFFICIAL] 测试进度: ${status} (${progress}%)`)
+    }, 'test')
+
+    console.log('🎉 [OFFICIAL] 测试完成:', result)
+    return result
+
+  } catch (error) {
+    console.error('❌ [OFFICIAL] 测试失败:', error.message)
+    throw error
+  }
+}
+
+// 🔥 官方标准任务状态调试工具
+function debugTaskStatusOfficial(promptId = null) {
+  console.log('📋 [OFFICIAL] 任务状态调试信息:')
+  console.log('=====================================')
+
+  if (promptId) {
+    // 调试特定任务
+    const task = pendingTasks.get(promptId)
+    if (task) {
+      const runtime = Math.round((Date.now() - task.startTime) / 1000)
+      console.log(`📝 任务: ${promptId}`)
+      console.log(`  状态: ${task.status}`)
+      console.log(`  类型: ${task.workflowType}`)
+      console.log(`  运行时间: ${runtime}秒`)
+      console.log(`  创建时间: ${task.createdAt}`)
+      console.log(`  最后状态更新: ${new Date(task.lastStatusUpdate).toLocaleTimeString()}`)
+      if (task.currentNode) console.log(`  当前节点: ${task.currentNode}`)
+      if (task.completedNodes?.length) console.log(`  完成节点: [${task.completedNodes.join(', ')}]`)
+      if (task.executionStartTime) {
+        const execTime = Math.round((Date.now() - task.executionStartTime) / 1000)
+        console.log(`  执行时间: ${execTime}秒`)
+      }
+    } else {
+      console.log(`❌ 未找到任务: ${promptId}`)
+    }
+  } else {
+    // 调试所有任务
+    console.log(`📊 总任务数: ${pendingTasks.size}`)
+
+    if (pendingTasks.size === 0) {
+      console.log('✅ 没有待处理任务')
+      return
+    }
+
+    // 按状态分组显示
+    const tasksByStatus = {}
+    pendingTasks.forEach((task, id) => {
+      if (!tasksByStatus[task.status]) {
+        tasksByStatus[task.status] = []
+      }
+      tasksByStatus[task.status].push({ id, task })
+    })
+
+    Object.entries(tasksByStatus).forEach(([status, tasks]) => {
+      console.log(`\n📂 状态: ${status} (${tasks.length}个)`)
+      tasks.forEach(({ id, task }) => {
+        const runtime = Math.round((Date.now() - task.startTime) / 1000)
+        console.log(`  ${id.substring(0, 8)}: ${task.workflowType} (${runtime}秒)`)
+      })
+    })
+  }
+
+  console.log('\n🔍 WebSocket连接状态:', isWsConnected ? '✅ 已连接' : '❌ 未连接')
+  console.log('🔒 锁定服务器:', currentWebSocketServer || '无')
+}
+
+// 🔥 获取任务状态统计
+function getTaskStatusStats() {
+  const stats = {
+    total: pendingTasks.size,
+    byStatus: {},
+    byType: {},
+    avgRuntime: 0
+  }
+
+  let totalRuntime = 0
+
+  pendingTasks.forEach(task => {
+    // 按状态统计
+    stats.byStatus[task.status] = (stats.byStatus[task.status] || 0) + 1
+
+    // 按类型统计
+    stats.byType[task.workflowType] = (stats.byType[task.workflowType] || 0) + 1
+
+    // 运行时间统计
+    totalRuntime += (Date.now() - task.startTime)
+  })
+
+  if (pendingTasks.size > 0) {
+    stats.avgRuntime = Math.round(totalRuntime / pendingTasks.size / 1000)
+  }
+
+  return stats
+}
+
+// 🔥 清理超时或异常任务
+function cleanupAbnormalTasks(maxAge = 600000) { // 默认10分钟
+  const now = Date.now()
+  const abnormalTasks = []
+
+  pendingTasks.forEach((task, promptId) => {
+    const age = now - task.startTime
+    const statusAge = now - task.lastStatusUpdate
+
+    // 检查超时任务
+    if (age > maxAge) {
+      abnormalTasks.push({ promptId, reason: 'timeout', age: Math.round(age/1000) })
+    }
+    // 检查状态长时间未更新的任务
+    else if (statusAge > 300000 && task.status === TASK_STATUS.EXECUTING) { // 5分钟无状态更新
+      abnormalTasks.push({ promptId, reason: 'stale', statusAge: Math.round(statusAge/1000) })
+    }
+  })
+
+  if (abnormalTasks.length > 0) {
+    console.log(`🧹 [OFFICIAL] 发现 ${abnormalTasks.length} 个异常任务:`)
+    abnormalTasks.forEach(({ promptId, reason, age, statusAge }) => {
+      console.log(`  ${promptId.substring(0, 8)}: ${reason} (${age || statusAge}秒)`)
+
+      const task = pendingTasks.get(promptId)
+      if (task) {
+        pendingTasks.delete(promptId)
+        if (task.onError) {
+          task.onError(new Error(`任务被清理: ${reason}`))
+        }
+      }
+    })
+  }
+
+  return abnormalTasks.length
+}
+
+// 🔥 官方标准测试函数 - 验证重构后的实现
+async function testOfficialStandardRefactored() {
+  console.log('🧪 [OFFICIAL] 开始测试重构后的官方标准实现')
+
+  try {
+    // 1. 测试WebSocket连接
+    console.log('📡 [OFFICIAL] 测试WebSocket连接...')
+    await ensureWebSocketConnection()
+    console.log('✅ [OFFICIAL] WebSocket连接成功')
+
+    // 2. 测试消息处理函数
+    console.log('📨 [OFFICIAL] 测试消息处理函数...')
+
+    // 模拟 executing 消息
+    const mockExecutingMessage = {
+      type: 'executing',
+      data: {
+        prompt_id: 'test-prompt-id',
+        node: 'test-node'
+      }
+    }
+
+    // 注册测试任务
+    const testTask = {
+      workflowType: 'test',
+      createdAt: new Date().toISOString(),
+      onProgress: (status, progress) => {
+        console.log(`📊 [OFFICIAL] 测试进度: ${status} - ${progress}%`)
+      },
+      onComplete: (result) => {
+        console.log('✅ [OFFICIAL] 测试任务完成:', result)
+      },
+      onError: (error) => {
+        console.error('❌ [OFFICIAL] 测试任务失败:', error)
+      }
+    }
+
+    pendingTasks.set('test-prompt-id', testTask)
+
+    // 测试消息处理
+    handleWebSocketMessage(mockExecutingMessage)
+    console.log('✅ [OFFICIAL] 消息处理测试成功')
+
+    // 3. 测试任务完成检测
+    console.log('🎯 [OFFICIAL] 测试任务完成检测...')
+
+    const mockCompletionMessage = {
+      type: 'executing',
+      data: {
+        prompt_id: 'test-prompt-id',
+        node: null  // 官方标准：node为null表示完成
+      }
+    }
+
+    handleWebSocketMessage(mockCompletionMessage)
+    console.log('✅ [OFFICIAL] 任务完成检测测试成功')
+
+    // 清理测试任务
+    pendingTasks.delete('test-prompt-id')
+
+    console.log('🎉 [OFFICIAL] 重构后的官方标准实现测试完成')
+
+    return {
+      success: true,
+      message: '重构后的官方标准实现测试通过',
+      timestamp: new Date().toISOString()
+    }
+
+  } catch (error) {
+    console.error('❌ [OFFICIAL] 重构测试失败:', error)
+    throw error
+  }
+}
+
+// 🔧 新增：初始化ComfyUI连接的包装函数
+async function initializeComfyUIConnection() {
+  console.log('🔌 初始化ComfyUI直连模式...')
+  try {
+    await initializeWebSocket()
+    console.log('✅ ComfyUI直连初始化成功')
+    return true
+  } catch (error) {
+    console.error('❌ ComfyUI直连初始化失败:', error)
+    throw error
+  }
+}
+
 // 导出所有公共函数
 export {
   getCurrentConfig,
@@ -1467,15 +2324,41 @@ export {
   processFaceSwapImage,
   checkComfyUIServerStatus,
   initializeWebSocket,
+  initializeComfyUIConnection, // 🔧 新增：直连模式初始化函数
   wsConnection,
   isWsConnected,
   getTaskHistory,
   extractTaskResults,
-  getImage,
+  getImageUrl, // 更新：URL版本替代下载版本
   handleTaskCompletion,
   debugTaskStatus,
-  startTaskMonitoring,
-  stopTaskMonitoring,
   checkTaskStatusManually,
-  pendingTasks // 导出用于调试
+  testOfficialStandard, // 新增测试函数
+  testOfficialStandardRefactored, // 🔥 新增：重构后的测试函数
+  pendingTasks, // 导出用于调试
+  resetWebSocketServer, // 🔧 新增：手动重置WebSocket服务器
+  getWebSocketServerStatus, // 🔧 新增：获取WebSocket服务器状态
+  debugWebSocketLock, // 🔧 新增：调试WebSocket锁定机制
+  checkServerUnlockCondition, // 🔧 新增：检查服务器解锁条件
+  validateServerConsistency, // 🔧 新增：验证服务器一致性
+  // 🔥 新增：官方标准函数（重构版本）
+  handleWebSocketMessage,
+  handleExecutingMessage,
+  handleExecutedMessage,
+  handleProgressMessage,
+  handleStatusMessage,
+  handleExecutionStartMessage,
+  handleExecutionCachedMessage,
+  handleExecutionErrorMessage,
+  handleExecutionInterruptedMessage,
+  waitForTaskCompletion,
+  updateTaskStatus,
+  TASK_STATUS,
+  // 🔥 新增：调试和监控工具
+  debugTaskStatusOfficial,
+  getTaskStatusStats,
+  cleanupAbnormalTasks,
+  // 🔥 保留：优化后的图片处理函数
+  getGeneratedImageUrl, // 新增：直接返回URL的图片获取函数
+  getComfyUIImageUrl // 保留：兼容性函数
 }

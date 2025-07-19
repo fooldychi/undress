@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 71,
+            "activePatchIndex": 73,
             "patches": [
                 {
                     "date": 1752348776465,
@@ -292,6 +292,14 @@
                 {
                     "date": 1752898831897,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -112,9 +112,16 @@\n     }\r\n \r\n   } catch (error) {\r\n     console.error('❌ 褪衣处理失败:', error)\r\n-    Toast.fail(`处理失败: ${error.message}`)\r\n+\r\n+    // 使用全局错误处理器\r\n+    const isHandledGlobally = handleError(error, '褪衣处理')\r\n+\r\n+    // 如果没有被全局处理，则显示普通错误提示\r\n+    if (!isHandledGlobally) {\r\n+      Toast.fail(`处理失败: ${error.message}`)\r\n+    }\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n"
+                },
+                {
+                    "date": 1752944772987,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,9 +24,9 @@\n import { ref, onMounted, onUnmounted } from 'vue'\r\n import { Toast } from 'vant'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n import { UndressWomanIcon } from '../components/icons'\r\n-import { processUndressImage } from '../services/comfyui.js'\r\n+import { processUndressImage } from '../services/comfyui-refactored.js'\r\n import { handleError } from '../services/globalErrorHandler.js'\r\n \r\n console.log('ClothesSwap组件已加载，ComfyUI服务已导入')\r\n \r\n"
+                },
+                {
+                    "date": 1752946699778,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,9 +24,9 @@\n import { ref, onMounted, onUnmounted } from 'vue'\r\n import { Toast } from 'vant'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n import { UndressWomanIcon } from '../components/icons'\r\n-import { processUndressImage } from '../services/comfyui-refactored.js'\r\n+import { processUndressImage } from '../services/comfyui.js'\r\n import { handleError } from '../services/globalErrorHandler.js'\r\n \r\n console.log('ClothesSwap组件已加载，ComfyUI服务已导入')\r\n \r\n"
                 }
             ],
             "date": 1752348776465,

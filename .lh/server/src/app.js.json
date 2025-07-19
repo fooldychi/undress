@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 27,
+            "activePatchIndex": 40,
             "patches": [
                 {
                     "date": 1752317973745,
@@ -116,6 +116,58 @@
                 {
                     "date": 1752813100094,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -147,8 +147,9 @@\n // 注意：更具体的路由要放在前面\n app.use('/api/admin/config', require('./routes/config'));\n app.use('/api/admin', adminRoutes);\n app.use('/api/config', require('./routes/public-config'));\n+app.use('/api/workflow-config', require('./routes/workflow-config'));\n \n // 404处理\n app.use('*', (req, res) => {\n   res.status(404).json({\n"
+                },
+                {
+                    "date": 1752942031253,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,16 +2,20 @@\n const cors = require('cors');\n const helmet = require('helmet');\n const morgan = require('morgan');\n const compression = require('compression');\n+const http = require('http');\n require('dotenv').config();\n \n const { testConnection } = require('./config/database');\n const errorHandler = require('./middleware/errorHandler');\n // const { healthMonitor } = require('./utils/healthMonitor');\n // const { memoryManager } = require('./utils/memoryManager');\n const rateLimiter = require('./middleware/rateLimiter');\n \n+// 导入WebSocket服务器\n+const WebSocketServer = require('./websocket/WebSocketServer');\n+\n // 导入路由\n const authRoutes = require('./routes/auth');\n const userRoutes = require('./routes/users');\n const imageRoutes = require('./routes/images');\n"
+                },
+                {
+                    "date": 1752942042054,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -26,8 +26,14 @@\n \n const app = express();\n const PORT = process.env.PORT || 3007;\n \n+// 创建HTTP服务器\n+const server = http.createServer(app);\n+\n+// 创建WebSocket服务器实例\n+let wsServer = null;\n+\n // 中间件配置\n app.use(helmet()); // 安全头\n app.use(compression()); // 压缩响应\n app.use(morgan('combined')); // 日志记录\n"
+                },
+                {
+                    "date": 1752942065670,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -183,18 +183,33 @@\n     //   console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');\n     // }\n \n     // 启动HTTP服务器\n-    global.httpServer = app.listen(PORT, () => {\n+    global.httpServer = server.listen(PORT, async () => {\n       console.log('🚀 Imagic服务器启动成功!');\n-      console.log(`📍 服务地址: http://localhost:${PORT}`);\n+      console.log(`📍 HTTP服务地址: http://localhost:${PORT}`);\n+      console.log(`🔗 WebSocket地址: ws://localhost:${PORT}/ws`);\n       console.log(`🌍 环境: ${process.env.NODE_ENV}`);\n       console.log(`⏰ 启动时间: ${new Date().toLocaleString()}`);\n       console.log(`🆔 进程ID: ${process.pid}`);\n       if (!dbConnected) {\n         console.log('⚠️ 注意：数据库未连接，某些功能可能不可用');\n       }\n \n+      // 启动WebSocket服务器\n+      try {\n+        wsServer = new WebSocketServer(server);\n+        await wsServer.start({\n+          port: PORT,\n+          path: '/ws',\n+          comfyUIUrl: process.env.COMFYUI_SERVER_URL || 'http://localhost:8188'\n+        });\n+        console.log('✅ WebSocket服务器启动成功');\n+      } catch (wsError) {\n+        console.error('❌ WebSocket服务器启动失败:', wsError);\n+        console.log('⚠️ 服务器将继续运行，但WebSocket功能不可用');\n+      }\n+\n       // 启动内存监控\n       console.log('📊 内存监控已启动，每5分钟报告一次');\n       monitorMemoryUsage(); // 立即执行一次\n \n"
+                },
+                {
+                    "date": 1752942081821,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -112,8 +112,18 @@\n     // 检查内存使用情况\n     const memoryUsage = process.memoryUsage();\n     const formatBytes = (bytes) => Math.round(bytes / 1024 / 1024); // MB\n \n+    // 检查WebSocket服务器状态\n+    let wsStatus = null;\n+    if (wsServer) {\n+      try {\n+        wsStatus = wsServer.getStats();\n+      } catch (wsError) {\n+        wsStatus = { error: wsError.message };\n+      }\n+    }\n+\n     const healthData = {\n       status: 'OK',\n       timestamp: new Date().toISOString(),\n       uptime: process.uptime(),\n@@ -122,8 +132,9 @@\n       database: {\n         connected: dbStatus,\n         error: dbError\n       },\n+      websocket: wsStatus,\n       memory: {\n         rss: formatBytes(memoryUsage.rss),\n         heapUsed: formatBytes(memoryUsage.heapUsed),\n         heapTotal: formatBytes(memoryUsage.heapTotal),\n"
+                },
+                {
+                    "date": 1752942102734,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -294,13 +294,23 @@\n   if (memoryMonitorInterval) {\n     clearInterval(memoryMonitorInterval);\n   }\n \n+  // 关闭WebSocket服务器\n+  if (wsServer) {\n+    try {\n+      await wsServer.close();\n+      console.log('✅ WebSocket服务器已关闭');\n+    } catch (error) {\n+      console.error('❌ 关闭WebSocket服务器失败:', error);\n+    }\n+  }\n+\n   // 停止健康监控\n-  healthMonitor.stop();\n+  // healthMonitor.stop();\n \n   // 停止内存管理\n-  memoryManager.stop();\n+  // memoryManager.stop();\n \n   // 关闭数据库连接池\n   try {\n     const { closePool } = require('./config/database');\n"
+                },
+                {
+                    "date": 1752942963513,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -37,8 +37,11 @@\n app.use(helmet()); // 安全头\n app.use(compression()); // 压缩响应\n app.use(morgan('combined')); // 日志记录\n \n+// 静态文件服务\n+app.use(express.static('public'));\n+\n // CORS配置 - 支持动态端口\n app.use(cors({\n   origin: function (origin, callback) {\n     // 从环境变量获取端口配置\n"
+                },
+                {
+                    "date": 1752946497848,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,11 +11,10 @@\n // const { healthMonitor } = require('./utils/healthMonitor');\n // const { memoryManager } = require('./utils/memoryManager');\n const rateLimiter = require('./middleware/rateLimiter');\n \n-// 导入WebSocket服务器\n-const WebSocketServer = require('./websocket/WebSocketServer');\n \n+\n // 导入路由\n const authRoutes = require('./routes/auth');\n const userRoutes = require('./routes/users');\n const imageRoutes = require('./routes/images');\n"
+                },
+                {
+                    "date": 1752946507282,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,11 +28,10 @@\n \n // 创建HTTP服务器\n const server = http.createServer(app);\n \n-// 创建WebSocket服务器实例\n-let wsServer = null;\n \n+\n // 中间件配置\n app.use(helmet()); // 安全头\n app.use(compression()); // 压缩响应\n app.use(morgan('combined')); // 日志记录\n"
+                },
+                {
+                    "date": 1752946517460,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -113,18 +113,10 @@\n     // 检查内存使用情况\n     const memoryUsage = process.memoryUsage();\n     const formatBytes = (bytes) => Math.round(bytes / 1024 / 1024); // MB\n \n-    // 检查WebSocket服务器状态\n-    let wsStatus = null;\n-    if (wsServer) {\n-      try {\n-        wsStatus = wsServer.getStats();\n-      } catch (wsError) {\n-        wsStatus = { error: wsError.message };\n-      }\n-    }\n \n+\n     const healthData = {\n       status: 'OK',\n       timestamp: new Date().toISOString(),\n       uptime: process.uptime(),\n"
+                },
+                {
+                    "date": 1752946526798,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -125,9 +125,9 @@\n       database: {\n         connected: dbStatus,\n         error: dbError\n       },\n-      websocket: wsStatus,\n+\n       memory: {\n         rss: formatBytes(memoryUsage.rss),\n         heapUsed: formatBytes(memoryUsage.heapUsed),\n         heapTotal: formatBytes(memoryUsage.heapTotal),\n"
+                },
+                {
+                    "date": 1752946535758,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -190,9 +190,9 @@\n     // 启动HTTP服务器\n     global.httpServer = server.listen(PORT, async () => {\n       console.log('🚀 Imagic服务器启动成功!');\n       console.log(`📍 HTTP服务地址: http://localhost:${PORT}`);\n-      console.log(`🔗 WebSocket地址: ws://localhost:${PORT}/ws`);\n+\n       console.log(`🌍 环境: ${process.env.NODE_ENV}`);\n       console.log(`⏰ 启动时间: ${new Date().toLocaleString()}`);\n       console.log(`🆔 进程ID: ${process.pid}`);\n       if (!dbConnected) {\n"
+                },
+                {
+                    "date": 1752946546845,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -198,22 +198,10 @@\n       if (!dbConnected) {\n         console.log('⚠️ 注意：数据库未连接，某些功能可能不可用');\n       }\n \n-      // 启动WebSocket服务器\n-      try {\n-        wsServer = new WebSocketServer(server);\n-        await wsServer.start({\n-          port: PORT,\n-          path: '/ws',\n-          comfyUIUrl: process.env.COMFYUI_SERVER_URL || 'http://localhost:8188'\n-        });\n-        console.log('✅ WebSocket服务器启动成功');\n-      } catch (wsError) {\n-        console.error('❌ WebSocket服务器启动失败:', wsError);\n-        console.log('⚠️ 服务器将继续运行，但WebSocket功能不可用');\n-      }\n \n+\n       // 启动内存监控\n       console.log('📊 内存监控已启动，每5分钟报告一次');\n       monitorMemoryUsage(); // 立即执行一次\n \n"
+                },
+                {
+                    "date": 1752946556164,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -275,18 +275,10 @@\n   if (memoryMonitorInterval) {\n     clearInterval(memoryMonitorInterval);\n   }\n \n-  // 关闭WebSocket服务器\n-  if (wsServer) {\n-    try {\n-      await wsServer.close();\n-      console.log('✅ WebSocket服务器已关闭');\n-    } catch (error) {\n-      console.error('❌ 关闭WebSocket服务器失败:', error);\n-    }\n-  }\n \n+\n   // 停止健康监控\n   // healthMonitor.stop();\n \n   // 停止内存管理\n"
                 }
             ],
             "date": 1752317973745,

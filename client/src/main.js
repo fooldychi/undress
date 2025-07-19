@@ -5,7 +5,8 @@ import router from './router'
 // 引入配置服务和负载均衡器
 import configService from './services/configService.js'
 import loadBalancer from './services/loadBalancer.js'
-import { initializeWebSocket } from './services/comfyui.js'
+// 恢复使用直连模式
+import { initializeComfyUIConnection } from './services/comfyui.js'
 import { setupGlobalErrorHandler } from './services/globalErrorHandler.js'
 
 // 开发环境下引入测试工具
@@ -61,6 +62,15 @@ async function initApp() {
       logger.info('✅ 服务器连接测试完成')
     } catch (error) {
       logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')
+    }
+
+    // 🔧 恢复直连模式：初始化ComfyUI直连
+    try {
+      logger.info('🔌 正在初始化ComfyUI直连...')
+      await initializeComfyUIConnection()
+      logger.info('✅ ComfyUI直连初始化完成')
+    } catch (error) {
+      logger.warn('⚠️ ComfyUI直连初始化失败，将在需要时重试:', error.message)
     }
 
     const app = createApp(App)
