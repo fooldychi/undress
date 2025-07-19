@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1752899660459,
@@ -16,6 +16,10 @@
                 {
                     "date": 1752900496905,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -101,25 +101,13 @@\n   if (options.title) title = options.title\n   if (options.message) message = options.message\n   if (options.showRetry !== undefined) showRetry = options.showRetry\n \n-  // 获取错误详情\n-  let details = ''\n-  if (error?.stack) {\n-    details = error.stack\n-  } else if (error?.message) {\n-    details = error.message\n-  } else if (typeof error === 'string') {\n-    details = error\n-  }\n-\n   // 更新错误状态\n   errorState.value = {\n     visible: true,\n     title,\n     message,\n-    details,\n-    showRetry,\n     errorType\n   }\n \n   // 阻止页面交互\n"
+                },
+                {
+                    "date": 1752947431569,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,13 +23,16 @@\n   'ComfyUI服务器不可用',\n   '所有端点测试失败',\n   'ComfyUI服务器不可达',\n   'WebSocket连接失败',\n+  'WebSocket连接后未能锁定服务器',\n   'ComfyUI服务器响应异常',\n   'ComfyUI服务器集群不可用',\n   '个服务器都无法连接',\n   '没有找到健康的服务器',\n-  '没有可用的健康服务器'\n+  '没有可用的健康服务器',\n+  '无法获取可用的ComfyUI服务器',\n+  '负载均衡器未返回有效的服务器URL'\n ]\n \n // 检查是否为 ComfyUI 服务器错误\n function isComfyUIServerError(error) {\n"
                 }
             ],
             "date": 1752899660459,

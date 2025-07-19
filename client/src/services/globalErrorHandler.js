@@ -24,11 +24,14 @@ const COMFYUI_ERROR_KEYWORDS = [
   '所有端点测试失败',
   'ComfyUI服务器不可达',
   'WebSocket连接失败',
+  'WebSocket连接后未能锁定服务器',
   'ComfyUI服务器响应异常',
   'ComfyUI服务器集群不可用',
   '个服务器都无法连接',
   '没有找到健康的服务器',
-  '没有可用的健康服务器'
+  '没有可用的健康服务器',
+  '无法获取可用的ComfyUI服务器',
+  '负载均衡器未返回有效的服务器URL'
 ]
 
 // 检查是否为 ComfyUI 服务器错误
