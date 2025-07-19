@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 30,
+            "activePatchIndex": 31,
             "patches": [
                 {
                     "date": 1752283330589,
@@ -128,6 +128,10 @@
                 {
                     "date": 1752436700839,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -118,44 +118,10 @@\n       throw error\r\n     }\r\n   },\r\n \r\n-  // 文生图API\r\n-  textToImage: async ({ prompt, size = '512x512', style = 'realistic' }) => {\r\n-    try {\r\n-      // 在开发环境中使用模拟响应\r\n-      if (import.meta.env.DEV) {\r\n-        console.log('开发模式：使用模拟文生图API', { prompt, size, style })\r\n-        return await createMockResponse('文生图')\r\n-      }\r\n \r\n-      // 生产环境中的真实API调用\r\n-      const [width, height] = size.split('x').map(Number)\r\n \r\n-      const response = await makeRequest('/api/text-to-image', {\r\n-        body: JSON.stringify({\r\n-          prompt,\r\n-          width,\r\n-          height,\r\n-          style,\r\n-          // ComfyUI工作流参数\r\n-          workflow_id: 'text_to_image_workflow',\r\n-          parameters: {\r\n-            steps: 20,\r\n-            cfg_scale: 7.5,\r\n-            sampler: 'euler_a',\r\n-            seed: -1 // 随机种子\r\n-          }\r\n-        })\r\n-      })\r\n-\r\n-      return response\r\n-    } catch (error) {\r\n-      console.error('文生图API调用失败:', error)\r\n-      throw error\r\n-    }\r\n-  },\r\n-\r\n   // 换脸API\r\n   faceSwap: async ({ sourceImage, targetImage, preserveExpression = true, enhanceQuality = false }) => {\r\n     try {\r\n       // 在开发环境中使用模拟响应\r\n"
+                },
+                {
+                    "date": 1752897710159,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,15 +1,15 @@\n // 导入ComfyUI工作流服务\r\n import { processUndressImage } from './comfyui.js'\r\n \r\n-// ComfyUI API服务配置 - 将使用动态配置\r\n+// ComfyUI API服务配置 - 延长超时时间\r\n const API_CONFIG = {\r\n   // ComfyUI服务器URL - 将从配置服务获取\r\n   BASE_URL: 'https://dzqgp58z0s-8188.cnb.run', // 默认值，将被配置服务覆盖\r\n   // 客户端ID，用于标识请求来源\r\n   CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b', // 默认值，将被配置服务覆盖\r\n   // 请求超时时间（毫秒）\r\n-  TIMEOUT: 300000 // 5分钟\r\n+  TIMEOUT: 600000 // 从5分钟延长到10分钟\r\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n"
                 }
             ],
             "date": 1752283330589,

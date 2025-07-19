@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1752395497153,
@@ -16,6 +16,14 @@
                 {
                     "date": 1752410788844,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -70,12 +70,12 @@\n \n     // 调用褪衣处理服务\n     const result = await processUndressImage(selectedImage.value)\n \n-    if (result.success && result.imageUrl) {\n-      resultImage.value = result.imageUrl\n+    if (result.success && result.resultImage) {\n+      resultImage.value = result.resultImage\n       // 保存原图用于对比\n-      originalImageForComparison.value = result.originalImageUrl || selectedImage.value\n+      originalImageForComparison.value = result.originalImage || selectedImage.value\n       promptId.value = result.promptId || ''\n \n       // 计算处理时间\n       const endTime = Date.now()\n"
+                },
+                {
+                    "date": 1752898852304,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,8 +24,9 @@\n import { Toast } from 'vant'\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\n import { UndressWomanIcon } from '../components/icons'\n import { processUndressImage } from '../services/comfyui.js'\n+import { handleError } from '../services/globalErrorHandler.js'\n \n console.log('ClothesSwapUnified组件已加载，ComfyUI服务已导入')\n \n // 响应式数据\n"
+                },
+                {
+                    "date": 1752898863313,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -91,9 +91,16 @@\n       throw new Error(result.error || '褪衣处理失败')\n     }\n   } catch (error) {\n     console.error('❌ 褪衣处理失败:', error)\n-    Toast.fail(`处理失败: ${error.message}`)\n+\n+    // 使用全局错误处理器\n+    const isHandledGlobally = handleError(error, '褪衣处理')\n+\n+    // 如果没有被全局处理，则显示普通错误提示\n+    if (!isHandledGlobally) {\n+      Toast.fail(`处理失败: ${error.message}`)\n+    }\n   } finally {\n     isLoading.value = false\n     processingStatus.value = ''\n     progressPercent.value = 0\n"
                 }
             ],
             "date": 1752395497153,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 69,
+            "activePatchIndex": 71,
             "patches": [
                 {
                     "date": 1752348776465,
@@ -284,6 +284,14 @@
                 {
                     "date": 1752467853557,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -110,19 +110,14 @@\n       throw new Error(result.error || '褪衣处理失败')\r\n     }\r\n \r\n   } catch (error) {\r\n-    console.error('❌❌❌ 褪衣处理失败 ❌❌❌', error)\r\n-    console.error('错误详情:', error.message)\r\n-    console.error('错误堆栈:', error.stack)\r\n-\r\n+    console.error('❌ 褪衣处理失败:', error)\r\n     Toast.fail(`处理失败: ${error.message}`)\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n-\r\n-    console.log('🏁 处理流程结束，界面状态已重置')\r\n   }\r\n }\r\n \r\n // 重置处理\r\n"
+                },
+                {
+                    "date": 1752898819583,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -25,8 +25,9 @@\n import { Toast } from 'vant'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n import { UndressWomanIcon } from '../components/icons'\r\n import { processUndressImage } from '../services/comfyui.js'\r\n+import { handleError } from '../services/globalErrorHandler.js'\r\n \r\n console.log('ClothesSwap组件已加载，ComfyUI服务已导入')\r\n \r\n // 响应式数据\r\n"
+                },
+                {
+                    "date": 1752898831897,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -112,9 +112,16 @@\n     }\r\n \r\n   } catch (error) {\r\n     console.error('❌ 褪衣处理失败:', error)\r\n-    Toast.fail(`处理失败: ${error.message}`)\r\n+\r\n+    // 使用全局错误处理器\r\n+    const isHandledGlobally = handleError(error, '褪衣处理')\r\n+\r\n+    // 如果没有被全局处理，则显示普通错误提示\r\n+    if (!isHandledGlobally) {\r\n+      Toast.fail(`处理失败: ${error.message}`)\r\n+    }\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n"
                 }
             ],
             "date": 1752348776465,

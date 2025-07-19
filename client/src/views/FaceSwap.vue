@@ -26,6 +26,7 @@ import { Users } from 'lucide-vue-next'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
 import { FaceSwapIcon } from '../components/icons'
 import { processFaceSwapImage } from '../services/comfyui.js'
+import { handleError } from '../services/globalErrorHandler.js'
 
 console.log('FaceSwapUnified组件已加载，ComfyUI服务已导入')
 
@@ -118,7 +119,14 @@ const processImages = async () => {
     }
   } catch (error) {
     console.error('❌ 换脸处理失败:', error)
-    Toast.fail(`换脸失败: ${error.message}`)
+
+    // 使用全局错误处理器
+    const isHandledGlobally = handleError(error, '换脸处理')
+
+    // 如果没有被全局处理，则显示普通错误提示
+    if (!isHandledGlobally) {
+      Toast.fail(`换脸失败: ${error.message}`)
+    }
   } finally {
     isLoading.value = false
     processingStatus.value = ''

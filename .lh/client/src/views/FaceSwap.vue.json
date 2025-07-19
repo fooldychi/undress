@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 34,
+            "activePatchIndex": 36,
             "patches": [
                 {
                     "date": 1752348807217,
@@ -144,6 +144,14 @@
                 {
                     "date": 1752394357267,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -189,40 +189,26 @@\n })\r\n </script>\r\n \r\n <style scoped>\r\n-/* 上传状态样式 */\r\n-.upload-status {\r\n-  display: flex;\r\n-  flex-direction: column;\r\n-  gap: 8px;\r\n-  padding: 12px;\r\n-  background: var(--van-background-2, #f7f8fa);\r\n-  border-radius: 6px;\r\n-}\r\n+/* 这里可以添加特定于换脸功能的样式 */\r\n+/* 大部分样式已经在统一模板中处理 */\r\n \r\n-.status-item {\r\n-  display: flex;\r\n-  align-items: center;\r\n-  gap: 8px;\r\n-  font-size: 14px;\r\n-  color: var(--van-text-color-2, #646566);\r\n+/* 如果需要自定义样式，可以在这里添加 */\r\n+:deep(.unified-image-upload-panel) {\r\n+  /* 自定义上传面板样式 */\r\n }\r\n \r\n-.text-success {\r\n-  color: var(--van-success-color, #07c160);\r\n+:deep(.multi-image-upload) {\r\n+  /* 自定义多图上传样式 */\r\n }\r\n \r\n /* 移动端优化 */\r\n @media (max-width: 768px) {\r\n-  .status-item {\r\n-    font-size: 13px;\r\n-  }\r\n+  /* 移动端特定样式 */\r\n }\r\n \r\n /* 深色主题适配 */\r\n @media (prefers-color-scheme: dark) {\r\n-  .upload-status {\r\n-    background: var(--van-background-2, #1e1e1e);\r\n-  }\r\n+  /* 深色主题样式 */\r\n }\r\n </style>\r\n"
+                },
+                {
+                    "date": 1752898882542,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -25,8 +25,9 @@\n import { Users } from 'lucide-vue-next'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n import { FaceSwapIcon } from '../components/icons'\r\n import { processFaceSwapImage } from '../services/comfyui.js'\r\n+import { handleError } from '../services/globalErrorHandler.js'\r\n \r\n console.log('FaceSwapUnified组件已加载，ComfyUI服务已导入')\r\n \r\n // 响应式数据\r\n"
+                },
+                {
+                    "date": 1752898894652,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -118,9 +118,16 @@\n       throw new Error(result.error || '换脸处理失败')\r\n     }\r\n   } catch (error) {\r\n     console.error('❌ 换脸处理失败:', error)\r\n-    Toast.fail(`换脸失败: ${error.message}`)\r\n+\r\n+    // 使用全局错误处理器\r\n+    const isHandledGlobally = handleError(error, '换脸处理')\r\n+\r\n+    // 如果没有被全局处理，则显示普通错误提示\r\n+    if (!isHandledGlobally) {\r\n+      Toast.fail(`换脸失败: ${error.message}`)\r\n+    }\r\n   } finally {\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n"
                 }
             ],
             "date": 1752348807217,

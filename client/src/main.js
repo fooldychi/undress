@@ -6,6 +6,7 @@ import router from './router'
 import configService from './services/configService.js'
 import loadBalancer from './services/loadBalancer.js'
 import { initializeWebSocket } from './services/comfyui.js'
+import { setupGlobalErrorHandler } from './services/globalErrorHandler.js'
 
 // 开发环境下引入测试工具
 if (import.meta.env.DEV) {
@@ -31,14 +32,8 @@ if (window.location.search.includes('redirect=')) {
   }
 }
 
-// 全局错误处理
-window.addEventListener('error', (event) => {
-  console.error('全局错误:', event.error)
-})
-
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('未处理的Promise拒绝:', event.reason)
-})
+// 设置全局错误处理器
+setupGlobalErrorHandler()
 
 import logger from './utils/logger.js'
 

@@ -5,12 +5,24 @@
 
     <!-- WebSocket 连接状态指示器 -->
     <WebSocketStatus />
+
+    <!-- 全局错误弹窗 -->
+    <GlobalErrorModal
+      :visible="errorState.visible"
+      :title="errorState.title"
+      :message="errorState.message"
+      @close="hideGlobalError"
+    />
   </div>
 </template>
 
 <script setup>
 import WebSocketStatus from './components/WebSocketStatus.vue'
-// VantUI Toast 无需导入容器组件
+import GlobalErrorModal from './components/GlobalErrorModal.vue'
+import { getErrorState, hideGlobalError } from './services/globalErrorHandler.js'
+
+// 获取全局错误状态
+const errorState = getErrorState()
 </script>
 
 <style>

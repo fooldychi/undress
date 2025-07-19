@@ -26,6 +26,7 @@ import { Users } from 'lucide-vue-next'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
 import { FaceSwapIcon } from '../components/icons'
 import { processFaceSwapImage } from '../services/comfyui.js'
+import { handleError } from '../services/globalErrorHandler.js'
 
 console.log('FaceSwapUnified组件已加载，ComfyUI服务已导入')
 
@@ -50,17 +51,17 @@ const canProcess = computed(() => {
 // 处理上传变化
 const handleUploadChange = (panelId, data) => {
   console.log('上传变化:', panelId, data)
-  
+
   if (panelId === 'face-photos') {
     // 处理多图上传数据
     facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []
     resultImage.value = null // 清除之前的结果
-    
+
     // 自动补齐到4张（如果需要的话）
     while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {
       facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])
     }
-    
+
     if (data.length > 0) {
       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)
     }
@@ -118,7 +119,14 @@ const processImages = async () => {
     }
   } catch (error) {
     console.error('❌ 换脸处理失败:', error)
-    Toast.fail(`换脸失败: ${error.message}`)
+
+    // 使用全局错误处理器
+    const isHandledGlobally = handleError(error, '换脸处理')
+
+    // 如果没有被全局处理，则显示普通错误提示
+    if (!isHandledGlobally) {
+      Toast.fail(`换脸失败: ${error.message}`)
+    }
   } finally {
     isLoading.value = false
     processingStatus.value = ''
@@ -135,7 +143,7 @@ const resetProcess = () => {
   processingStatus.value = ''
   promptId.value = ''
   processingTime.value = ''
-  
+
   // 重置模板内部状态
   if (templateRef.value) {
     const { uploadData } = templateRef.value
@@ -146,7 +154,7 @@ const resetProcess = () => {
       uploadData['target-image'] = null
     }
   }
-  
+
   Toast.success('已重置，可以重新选择图片')
 }
 

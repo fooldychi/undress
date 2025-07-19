@@ -1,0 +1,66 @@
+{
+    "sourceFile": "client/src/components/GlobalErrorModal.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 12,
+            "patches": [
+                {
+                    "date": 1752899284752,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752899312789,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -106,13 +106,18 @@\n     // 等待一段时间再重试\n     await new Promise(resolve => setTimeout(resolve, 1000))\n \n     // 检查服务器状态\n-    const status = await checkComfyUIServerStatus()\n-    if (status.status === 'success') {\n+    if (checkComfyUIServerStatus) {\n+      const status = await checkComfyUIServerStatus()\n+      if (status.status === 'success') {\n+        emit('close')\n+      } else {\n+        throw new Error(status.error || '服务器仍然不可用')\n+      }\n+    } else {\n+      // 如果无法检查服务器状态，直接关闭错误弹窗\n       emit('close')\n-    } else {\n-      throw new Error(status.error || '服务器仍然不可用')\n     }\n   } catch (error) {\n     console.error('重试失败:', error)\n     // 重试失败，继续显示错误\n"
+                },
+                {
+                    "date": 1752899325599,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,19 +50,10 @@\n   </van-overlay>\n </template>\n \n <script setup>\n-import { ref, computed } from 'vue'\n+import { ref } from 'vue'\n \n-// 动态导入 ComfyUI 服务，避免循环依赖\n-let checkComfyUIServerStatus = null\n-try {\n-  const comfyuiModule = await import('../services/comfyui.js')\n-  checkComfyUIServerStatus = comfyuiModule.checkComfyUIServerStatus\n-} catch (error) {\n-  console.warn('无法导入 checkComfyUIServerStatus:', error)\n-}\n-\n const props = defineProps({\n   visible: {\n     type: Boolean,\n     default: false\n"
+                },
+                {
+                    "date": 1752899343123,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -96,17 +96,19 @@\n   try {\n     // 等待一段时间再重试\n     await new Promise(resolve => setTimeout(resolve, 1000))\n \n-    // 检查服务器状态\n-    if (checkComfyUIServerStatus) {\n+    // 动态导入并检查服务器状态\n+    try {\n+      const { checkComfyUIServerStatus } = await import('../services/comfyui.js')\n       const status = await checkComfyUIServerStatus()\n-      if (status.status === 'success') {\n+      if (status.status === 'success' || status.status === 'ok') {\n         emit('close')\n       } else {\n         throw new Error(status.error || '服务器仍然不可用')\n       }\n-    } else {\n+    } catch (importError) {\n+      console.warn('无法检查服务器状态:', importError)\n       // 如果无法检查服务器状态，直接关闭错误弹窗\n       emit('close')\n     }\n   } catch (error) {\n"
+                },
+                {
+                    "date": 1752900123106,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -32,20 +32,8 @@\n           :loading=\"refreshing\"\n         >\n           {{ refreshing ? '正在刷新...' : '刷新页面' }}\n         </van-button>\n-\n-        <van-button\n-          v-if=\"showRetry\"\n-          type=\"default\"\n-          size=\"large\"\n-          block\n-          @click=\"handleRetry\"\n-          :loading=\"retrying\"\n-          style=\"margin-top: 12px;\"\n-        >\n-          {{ retrying ? '重试中...' : '重试连接' }}\n-        </van-button>\n       </div>\n     </div>\n   </van-overlay>\n </template>\n"
+                },
+                {
+                    "date": 1752900141632,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -47,21 +47,21 @@\n     default: false\n   },\n   title: {\n     type: String,\n-    default: '服务器连接异常'\n+    default: '服务器不可用'\n   },\n   message: {\n     type: String,\n-    default: 'ComfyUI服务器暂时不可用，请稍后重试'\n+    default: '目前服务器不可用，请刷新页面或稍后再试！'\n   },\n   details: {\n     type: String,\n     default: ''\n   },\n   showRetry: {\n     type: Boolean,\n-    default: true\n+    default: false\n   }\n })\n \n const emit = defineEmits(['close', 'retry'])\n"
+                },
+                {
+                    "date": 1752900155270,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -63,13 +63,12 @@\n     default: false\n   }\n })\n \n-const emit = defineEmits(['close', 'retry'])\n+const emit = defineEmits(['close'])\n \n const activeNames = ref([])\n const refreshing = ref(false)\n-const retrying = ref(false)\n \n // 刷新页面\n const handleRefresh = () => {\n   refreshing.value = true\n"
+                },
+                {
+                    "date": 1752900171130,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -76,36 +76,9 @@\n     window.location.reload()\n   }, 500)\n }\n \n-// 重试连接\n-const handleRetry = async () => {\n-  retrying.value = true\n-  try {\n-    // 等待一段时间再重试\n-    await new Promise(resolve => setTimeout(resolve, 1000))\n \n-    // 动态导入并检查服务器状态\n-    try {\n-      const { checkComfyUIServerStatus } = await import('../services/comfyui.js')\n-      const status = await checkComfyUIServerStatus()\n-      if (status.status === 'success' || status.status === 'ok') {\n-        emit('close')\n-      } else {\n-        throw new Error(status.error || '服务器仍然不可用')\n-      }\n-    } catch (importError) {\n-      console.warn('无法检查服务器状态:', importError)\n-      // 如果无法检查服务器状态，直接关闭错误弹窗\n-      emit('close')\n-    }\n-  } catch (error) {\n-    console.error('重试失败:', error)\n-    // 重试失败，继续显示错误\n-  } finally {\n-    retrying.value = false\n-  }\n-}\n </script>\n \n <style scoped>\n .global-error-overlay {\n"
+                },
+                {
+                    "date": 1752900402809,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,16 +12,8 @@\n \n       <div class=\"error-content\">\n         <h3 class=\"error-title\">{{ title }}</h3>\n         <p class=\"error-message\">{{ message }}</p>\n-\n-        <div class=\"error-details\" v-if=\"details\">\n-          <van-collapse v-model=\"activeNames\">\n-            <van-collapse-item title=\"查看详细信息\" name=\"details\">\n-              <pre class=\"error-stack\">{{ details }}</pre>\n-            </van-collapse-item>\n-          </van-collapse>\n-        </div>\n       </div>\n \n       <div class=\"error-actions\">\n         <van-button\n"
+                },
+                {
+                    "date": 1752900418170,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,16 +44,8 @@\n   },\n   message: {\n     type: String,\n     default: '目前服务器不可用，请刷新页面或稍后再试！'\n-  },\n-  details: {\n-    type: String,\n-    default: ''\n-  },\n-  showRetry: {\n-    type: Boolean,\n-    default: false\n   }\n })\n \n const emit = defineEmits(['close'])\n"
+                },
+                {
+                    "date": 1752900434713,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -49,9 +49,8 @@\n })\n \n const emit = defineEmits(['close'])\n \n-const activeNames = ref([])\n const refreshing = ref(false)\n \n // 刷新页面\n const handleRefresh = () => {\n"
+                },
+                {
+                    "date": 1752900449285,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -103,25 +103,9 @@\n   line-height: 1.5;\n   margin: 0 0 16px 0;\n }\n \n-.error-details {\n-  margin-top: 16px;\n-  text-align: left;\n-}\n \n-.error-stack {\n-  font-size: 12px;\n-  color: var(--van-text-color-3);\n-  background: var(--van-background);\n-  padding: 12px;\n-  border-radius: 8px;\n-  overflow-x: auto;\n-  white-space: pre-wrap;\n-  word-break: break-all;\n-  max-height: 200px;\n-  overflow-y: auto;\n-}\n \n .error-actions {\n   display: flex;\n   flex-direction: column;\n"
+                },
+                {
+                    "date": 1752900464929,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -118,10 +118,7 @@\n     background: var(--van-gray-8);\n     border-color: var(--van-gray-6);\n   }\n \n-  .error-stack {\n-    background: var(--van-gray-9);\n-    border: 1px solid var(--van-gray-6);\n-  }\n+\n }\n </style>\n"
+                }
+            ],
+            "date": 1752899284752,
+            "name": "Commit-0",
+            "content": "<template>\n  <van-overlay\n    :show=\"visible\"\n    :z-index=\"9999\"\n    :lock-scroll=\"true\"\n    class=\"global-error-overlay\"\n  >\n    <div class=\"global-error-modal\">\n      <div class=\"error-icon\">\n        <van-icon name=\"warning-o\" size=\"60\" color=\"#ff4444\" />\n      </div>\n\n      <div class=\"error-content\">\n        <h3 class=\"error-title\">{{ title }}</h3>\n        <p class=\"error-message\">{{ message }}</p>\n\n        <div class=\"error-details\" v-if=\"details\">\n          <van-collapse v-model=\"activeNames\">\n            <van-collapse-item title=\"查看详细信息\" name=\"details\">\n              <pre class=\"error-stack\">{{ details }}</pre>\n            </van-collapse-item>\n          </van-collapse>\n        </div>\n      </div>\n\n      <div class=\"error-actions\">\n        <van-button\n          type=\"primary\"\n          size=\"large\"\n          block\n          @click=\"handleRefresh\"\n          :loading=\"refreshing\"\n        >\n          {{ refreshing ? '正在刷新...' : '刷新页面' }}\n        </van-button>\n\n        <van-button\n          v-if=\"showRetry\"\n          type=\"default\"\n          size=\"large\"\n          block\n          @click=\"handleRetry\"\n          :loading=\"retrying\"\n          style=\"margin-top: 12px;\"\n        >\n          {{ retrying ? '重试中...' : '重试连接' }}\n        </van-button>\n      </div>\n    </div>\n  </van-overlay>\n</template>\n\n<script setup>\nimport { ref, computed } from 'vue'\n\n// 动态导入 ComfyUI 服务，避免循环依赖\nlet checkComfyUIServerStatus = null\ntry {\n  const comfyuiModule = await import('../services/comfyui.js')\n  checkComfyUIServerStatus = comfyuiModule.checkComfyUIServerStatus\n} catch (error) {\n  console.warn('无法导入 checkComfyUIServerStatus:', error)\n}\n\nconst props = defineProps({\n  visible: {\n    type: Boolean,\n    default: false\n  },\n  title: {\n    type: String,\n    default: '服务器连接异常'\n  },\n  message: {\n    type: String,\n    default: 'ComfyUI服务器暂时不可用，请稍后重试'\n  },\n  details: {\n    type: String,\n    default: ''\n  },\n  showRetry: {\n    type: Boolean,\n    default: true\n  }\n})\n\nconst emit = defineEmits(['close', 'retry'])\n\nconst activeNames = ref([])\nconst refreshing = ref(false)\nconst retrying = ref(false)\n\n// 刷新页面\nconst handleRefresh = () => {\n  refreshing.value = true\n  setTimeout(() => {\n    window.location.reload()\n  }, 500)\n}\n\n// 重试连接\nconst handleRetry = async () => {\n  retrying.value = true\n  try {\n    // 等待一段时间再重试\n    await new Promise(resolve => setTimeout(resolve, 1000))\n\n    // 检查服务器状态\n    const status = await checkComfyUIServerStatus()\n    if (status.status === 'success') {\n      emit('close')\n    } else {\n      throw new Error(status.error || '服务器仍然不可用')\n    }\n  } catch (error) {\n    console.error('重试失败:', error)\n    // 重试失败，继续显示错误\n  } finally {\n    retrying.value = false\n  }\n}\n</script>\n\n<style scoped>\n.global-error-overlay {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 20px;\n}\n\n.global-error-modal {\n  background: var(--van-background-2);\n  border-radius: 16px;\n  padding: 32px 24px;\n  max-width: 400px;\n  width: 100%;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);\n  border: 1px solid var(--van-border-color);\n  text-align: center;\n}\n\n.error-icon {\n  margin-bottom: 24px;\n}\n\n.error-content {\n  margin-bottom: 32px;\n}\n\n.error-title {\n  font-size: 20px;\n  font-weight: 600;\n  color: var(--van-text-color);\n  margin: 0 0 12px 0;\n}\n\n.error-message {\n  font-size: 16px;\n  color: var(--van-text-color-2);\n  line-height: 1.5;\n  margin: 0 0 16px 0;\n}\n\n.error-details {\n  margin-top: 16px;\n  text-align: left;\n}\n\n.error-stack {\n  font-size: 12px;\n  color: var(--van-text-color-3);\n  background: var(--van-background);\n  padding: 12px;\n  border-radius: 8px;\n  overflow-x: auto;\n  white-space: pre-wrap;\n  word-break: break-all;\n  max-height: 200px;\n  overflow-y: auto;\n}\n\n.error-actions {\n  display: flex;\n  flex-direction: column;\n  gap: 0;\n}\n\n/* 暗黑主题适配 */\n@media (prefers-color-scheme: dark) {\n  .global-error-modal {\n    background: var(--van-gray-8);\n    border-color: var(--van-gray-6);\n  }\n\n  .error-stack {\n    background: var(--van-gray-9);\n    border: 1px solid var(--van-gray-6);\n  }\n}\n</style>\n"
+        }
+    ]
+}

@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1752395499903,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752898906929,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -25,8 +25,9 @@\n import { Users } from 'lucide-vue-next'\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\n import { FaceSwapIcon } from '../components/icons'\n import { processFaceSwapImage } from '../services/comfyui.js'\n+import { handleError } from '../services/globalErrorHandler.js'\n \n console.log('FaceSwapUnified组件已加载，ComfyUI服务已导入')\n \n // 响应式数据\n@@ -49,19 +50,19 @@\n \n // 处理上传变化\n const handleUploadChange = (panelId, data) => {\n   console.log('上传变化:', panelId, data)\n-  \n+\n   if (panelId === 'face-photos') {\n     // 处理多图上传数据\n     facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []\n     resultImage.value = null // 清除之前的结果\n-    \n+\n     // 自动补齐到4张（如果需要的话）\n     while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {\n       facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])\n     }\n-    \n+\n     if (data.length > 0) {\n       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)\n     }\n   } else if (panelId === 'target-image') {\n@@ -134,9 +135,9 @@\n   resultImage.value = null\n   processingStatus.value = ''\n   promptId.value = ''\n   processingTime.value = ''\n-  \n+\n   // 重置模板内部状态\n   if (templateRef.value) {\n     const { uploadData } = templateRef.value\n     if (uploadData['face-photos']) {\n@@ -145,9 +146,9 @@\n     if (uploadData['target-image']) {\n       uploadData['target-image'] = null\n     }\n   }\n-  \n+\n   Toast.success('已重置，可以重新选择图片')\n }\n \n // 下载结果\n"
+                },
+                {
+                    "date": 1752898918175,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -118,9 +118,16 @@\n       throw new Error(result.error || '换脸处理失败')\n     }\n   } catch (error) {\n     console.error('❌ 换脸处理失败:', error)\n-    Toast.fail(`换脸失败: ${error.message}`)\n+\n+    // 使用全局错误处理器\n+    const isHandledGlobally = handleError(error, '换脸处理')\n+\n+    // 如果没有被全局处理，则显示普通错误提示\n+    if (!isHandledGlobally) {\n+      Toast.fail(`换脸失败: ${error.message}`)\n+    }\n   } finally {\n     isLoading.value = false\n     processingStatus.value = ''\n     progressPercent.value = 0\n"
                 }
             ],
             "date": 1752395499903,

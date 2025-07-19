@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 154,
+            "activePatchIndex": 162,
             "patches": [
                 {
                     "date": 1752333548051,
@@ -624,6 +624,38 @@
                 {
                     "date": 1752896681822,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -149,16 +149,11 @@\n       console.warn('⚠️ 没有可用的健康服务器，使用第一个服务器')\n       return this.serverList.length > 0 ? this.serverList[0].url : comfyUIConfig.BASE_URL\n     }\n \n-    // 按优先级和队列数量排序选择最优服务器\n+    // 仅按队列数量排序选择最优服务器（不考虑优先级）\n     const sortedServers = healthyServers.sort((a, b) => {\n-      // 1. 优先级：primary > backup > default\n-      const priorityOrder = { 'primary': 0, 'backup': 1, 'default': 2 }\n-      const priorityDiff = priorityOrder[a.type] - priorityOrder[b.type]\n-      if (priorityDiff !== 0) return priorityDiff\n-\n-      // 2. 相同优先级下，选择队列最少的服务器\n+      // 选择队列最少的服务器\n       return a.queueInfo.total - b.queueInfo.total\n     })\n \n     const selectedServer = sortedServers[0]\n"
+                },
+                {
+                    "date": 1752899481514,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,7 @@\n import comfyUIConfig from '../config/comfyui.config.js'\n import logger from '../utils/logger.js'\n+import { showGlobalError } from './globalErrorHandler.js'\n \n /**\n  * ComfyUI 负载均衡器\n  * 使用统一的官方端点配置进行健康检测和服务器选择\n"
+                },
+                {
+                    "date": 1752899501565,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -209,8 +209,11 @@\n     const totalServers = this.serverList.length\n \n     if (healthyServers.length === 0) {\n       console.warn(`⚠️ 服务器状态: 0/${totalServers} 可用`)\n+\n+      // 触发全局错误处理\n+      this.handleNoAvailableServers(totalServers)\n       return\n     }\n \n     console.log(`✅ 服务器状态: ${healthyServers.length}/${totalServers} 可用`)\n"
+                },
+                {
+                    "date": 1752899524467,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -228,8 +228,49 @@\n     })\n   }\n \n   /**\n+   * 处理没有可用服务器的情况\n+   */\n+  handleNoAvailableServers(totalServers) {\n+    // 避免重复触发错误提示\n+    if (this.noServerErrorShown) {\n+      return\n+    }\n+\n+    this.noServerErrorShown = true\n+\n+    // 延迟触发，避免在初始化时立即显示错误\n+    setTimeout(() => {\n+      const error = new Error(`ComfyUI服务器集群不可用: 所有 ${totalServers} 个服务器都无法连接`)\n+\n+      try {\n+        showGlobalError(error, {\n+          title: 'ComfyUI 服务器集群异常',\n+          message: `所有 ${totalServers} 个 ComfyUI 服务器都无法连接，这可能是由于网络问题或服务器维护导致的。请稍后重试或刷新页面。`,\n+          showRetry: true\n+        })\n+\n+        console.error('🚨 触发全局错误提示: 没有可用的 ComfyUI 服务器')\n+      } catch (globalErrorError) {\n+        console.error('❌ 无法触发全局错误提示:', globalErrorError)\n+\n+        // 降级处理：显示浏览器原生警告\n+        if (typeof window !== 'undefined') {\n+          setTimeout(() => {\n+            alert(`ComfyUI 服务器集群异常\\n\\n所有 ${totalServers} 个服务器都无法连接，请刷新页面重试。`)\n+          }, 1000)\n+        }\n+      }\n+    }, 2000) // 延迟2秒，避免在页面加载时立即显示\n+\n+    // 5分钟后重置标志，允许再次显示错误\n+    setTimeout(() => {\n+      this.noServerErrorShown = false\n+    }, 300000)\n+  }\n+\n+  /**\n    * 获取服务器状态摘要\n    */\n   getServerStatusSummary() {\n     const healthyServers = this.serverList.filter(s => s.healthy === true)\n"
+                },
+                {
+                    "date": 1752899543707,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,8 +13,9 @@\n     this.serverList = [] // 服务器列表\n     this.lastHealthCheck = 0 // 上次健康检查时间\n     this.healthCheckInterval = 30000 // 30秒检查一次\n     this.verboseLogging = false // 详细日志开关\n+    this.noServerErrorShown = false // 防止重复显示无服务器错误\n   }\n \n   /**\n    * 初始化负载均衡器\n"
+                },
+                {
+                    "date": 1752899559587,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -148,8 +148,12 @@\n     const healthyServers = this.serverList.filter(s => s.healthy === true)\n \n     if (healthyServers.length === 0) {\n       console.warn('⚠️ 没有可用的健康服务器，使用第一个服务器')\n+\n+      // 触发全局错误处理\n+      this.handleNoAvailableServers(this.serverList.length)\n+\n       return this.serverList.length > 0 ? this.serverList[0].url : comfyUIConfig.BASE_URL\n     }\n \n     // 仅按队列数量排序选择最优服务器（不考虑优先级）\n"
+                },
+                {
+                    "date": 1752899576859,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -618,8 +618,11 @@\n     const results = await this.checkAllServers()\n     const healthyServers = results.filter(r => r.overall)\n \n     if (healthyServers.length === 0) {\n+      // 触发全局错误处理\n+      this.handleNoAvailableServers(results.length)\n+\n       throw new Error('没有找到健康的服务器')\n     }\n \n     const selectedServer = healthyServers[0]\n"
+                },
+                {
+                    "date": 1752900085239,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -249,11 +249,11 @@\n       const error = new Error(`ComfyUI服务器集群不可用: 所有 ${totalServers} 个服务器都无法连接`)\n \n       try {\n         showGlobalError(error, {\n-          title: 'ComfyUI 服务器集群异常',\n-          message: `所有 ${totalServers} 个 ComfyUI 服务器都无法连接，这可能是由于网络问题或服务器维护导致的。请稍后重试或刷新页面。`,\n-          showRetry: true\n+          title: '服务器不可用',\n+          message: '目前服务器不可用，请刷新页面或稍后再试！',\n+          showRetry: false\n         })\n \n         console.error('🚨 触发全局错误提示: 没有可用的 ComfyUI 服务器')\n       } catch (globalErrorError) {\n"
+                },
+                {
+                    "date": 1752900103577,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -261,9 +261,9 @@\n \n         // 降级处理：显示浏览器原生警告\n         if (typeof window !== 'undefined') {\n           setTimeout(() => {\n-            alert(`ComfyUI 服务器集群异常\\n\\n所有 ${totalServers} 个服务器都无法连接，请刷新页面重试。`)\n+            alert('服务器不可用\\n\\n请刷新页面重试。')\n           }, 1000)\n         }\n       }\n     }, 2000) // 延迟2秒，避免在页面加载时立即显示\n"
                 }
             ],
             "date": 1752333548051,

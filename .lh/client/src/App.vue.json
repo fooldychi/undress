@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 9,
+            "activePatchIndex": 13,
             "patches": [
                 {
                     "date": 1752369807054,
@@ -44,6 +44,22 @@
                 {
                     "date": 1752464153131,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,22 +4,13 @@\n     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->\r\n \r\n     <!-- WebSocket 连接状态指示器 -->\r\n     <WebSocketStatus />\r\n-\r\n-    <!-- 开发环境下的 WebSocket 调试面板 -->\r\n-    <WebSocketDebugPanel v-if=\"isDev\" />\r\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n-import { ref } from 'vue'\r\n import WebSocketStatus from './components/WebSocketStatus.vue'\r\n-import WebSocketDebugPanel from './components/WebSocketDebugPanel.vue'\r\n-\r\n-// 检查是否为开发环境\r\n-const isDev = ref(import.meta.env.DEV)\r\n-\r\n // VantUI Toast 无需导入容器组件\r\n </script>\r\n \r\n <style>\r\n"
+                },
+                {
+                    "date": 1752898794924,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,8 +4,19 @@\n     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->\r\n \r\n     <!-- WebSocket 连接状态指示器 -->\r\n     <WebSocketStatus />\r\n+\r\n+    <!-- 全局错误弹窗 -->\r\n+    <GlobalErrorModal\r\n+      :visible=\"errorState.visible\"\r\n+      :title=\"errorState.title\"\r\n+      :message=\"errorState.message\"\r\n+      :details=\"errorState.details\"\r\n+      :show-retry=\"errorState.showRetry\"\r\n+      @close=\"hideGlobalError\"\r\n+      @retry=\"hideGlobalError\"\r\n+    />\r\n   </div>\r\n </template>\r\n \r\n <script setup>\r\n"
+                },
+                {
+                    "date": 1752898805671,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,13 @@\n </template>\r\n \r\n <script setup>\r\n import WebSocketStatus from './components/WebSocketStatus.vue'\r\n-// VantUI Toast 无需导入容器组件\r\n+import GlobalErrorModal from './components/GlobalErrorModal.vue'\r\n+import { getErrorState, hideGlobalError } from './services/globalErrorHandler.js'\r\n+\r\n+// 获取全局错误状态\r\n+const errorState = getErrorState()\r\n </script>\r\n \r\n <style>\r\n * {\r\n"
+                },
+                {
+                    "date": 1752900186113,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,11 +11,9 @@\n       :visible=\"errorState.visible\"\r\n       :title=\"errorState.title\"\r\n       :message=\"errorState.message\"\r\n       :details=\"errorState.details\"\r\n-      :show-retry=\"errorState.showRetry\"\r\n       @close=\"hideGlobalError\"\r\n-      @retry=\"hideGlobalError\"\r\n     />\r\n   </div>\r\n </template>\r\n \r\n"
+                },
+                {
+                    "date": 1752900481926,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,9 +10,8 @@\n     <GlobalErrorModal\r\n       :visible=\"errorState.visible\"\r\n       :title=\"errorState.title\"\r\n       :message=\"errorState.message\"\r\n-      :details=\"errorState.details\"\r\n       @close=\"hideGlobalError\"\r\n     />\r\n   </div>\r\n </template>\r\n"
                 }
             ],
             "date": 1752369807054,

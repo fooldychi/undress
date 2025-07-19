@@ -1,5 +1,6 @@
 import comfyUIConfig from '../config/comfyui.config.js'
 import logger from '../utils/logger.js'
+import { showGlobalError } from './globalErrorHandler.js'
 
 /**
  * ComfyUI 负载均衡器
@@ -13,6 +14,7 @@ class LoadBalancer {
     this.lastHealthCheck = 0 // 上次健康检查时间
     this.healthCheckInterval = 30000 // 30秒检查一次
     this.verboseLogging = false // 详细日志开关
+    this.noServerErrorShown = false // 防止重复显示无服务器错误
   }
 
   /**
@@ -147,6 +149,10 @@ class LoadBalancer {
 
     if (healthyServers.length === 0) {
       console.warn('⚠️ 没有可用的健康服务器，使用第一个服务器')
+
+      // 触发全局错误处理
+      this.handleNoAvailableServers(this.serverList.length)
+
       return this.serverList.length > 0 ? this.serverList[0].url : comfyUIConfig.BASE_URL
     }
 
@@ -209,6 +215,9 @@ class LoadBalancer {
 
     if (healthyServers.length === 0) {
       console.warn(`⚠️ 服务器状态: 0/${totalServers} 可用`)
+
+      // 触发全局错误处理
+      this.handleNoAvailableServers(totalServers)
       return
     }
 
@@ -222,6 +231,47 @@ class LoadBalancer {
 
       console.log(`  📊 ${server.type}: ${queueText}`)
     })
+  }
+
+  /**
+   * 处理没有可用服务器的情况
+   */
+  handleNoAvailableServers(totalServers) {
+    // 避免重复触发错误提示
+    if (this.noServerErrorShown) {
+      return
+    }
+
+    this.noServerErrorShown = true
+
+    // 延迟触发，避免在初始化时立即显示错误
+    setTimeout(() => {
+      const error = new Error(`ComfyUI服务器集群不可用: 所有 ${totalServers} 个服务器都无法连接`)
+
+      try {
+        showGlobalError(error, {
+          title: '服务器不可用',
+          message: '目前服务器不可用，请刷新页面或稍后再试！',
+          showRetry: false
+        })
+
+        console.error('🚨 触发全局错误提示: 没有可用的 ComfyUI 服务器')
+      } catch (globalErrorError) {
+        console.error('❌ 无法触发全局错误提示:', globalErrorError)
+
+        // 降级处理：显示浏览器原生警告
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            alert('服务器不可用\n\n请刷新页面重试。')
+          }, 1000)
+        }
+      }
+    }, 2000) // 延迟2秒，避免在页面加载时立即显示
+
+    // 5分钟后重置标志，允许再次显示错误
+    setTimeout(() => {
+      this.noServerErrorShown = false
+    }, 300000)
   }
 
   /**
@@ -569,6 +619,9 @@ class LoadBalancer {
     const healthyServers = results.filter(r => r.overall)
 
     if (healthyServers.length === 0) {
+      // 触发全局错误处理
+      this.handleNoAvailableServers(results.length)
+
       throw new Error('没有找到健康的服务器')
     }
 
