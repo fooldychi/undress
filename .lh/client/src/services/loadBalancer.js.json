@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 153,
+            "activePatchIndex": 154,
             "patches": [
                 {
                     "date": 1752333548051,
@@ -620,6 +620,10 @@
                 {
                     "date": 1752836194644,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -474,10 +474,9 @@\n   /**\n    * 执行完整的服务器健康检查\n    */\n   async performHealthCheck(serverUrl) {\n-    console.log(`\\n🏥 开始健康检查: ${serverUrl}`)\n-    console.log('=' .repeat(50))\n+    logger.health(`开始健康检查: ${serverUrl}`)\n \n     const healthResult = {\n       url: serverUrl,\n       timestamp: new Date().toISOString(),\n"
+                },
+                {
+                    "date": 1752896681822,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -149,16 +149,11 @@\n       console.warn('⚠️ 没有可用的健康服务器，使用第一个服务器')\n       return this.serverList.length > 0 ? this.serverList[0].url : comfyUIConfig.BASE_URL\n     }\n \n-    // 按优先级和队列数量排序选择最优服务器\n+    // 仅按队列数量排序选择最优服务器（不考虑优先级）\n     const sortedServers = healthyServers.sort((a, b) => {\n-      // 1. 优先级：primary > backup > default\n-      const priorityOrder = { 'primary': 0, 'backup': 1, 'default': 2 }\n-      const priorityDiff = priorityOrder[a.type] - priorityOrder[b.type]\n-      if (priorityDiff !== 0) return priorityDiff\n-\n-      // 2. 相同优先级下，选择队列最少的服务器\n+      // 选择队列最少的服务器\n       return a.queueInfo.total - b.queueInfo.total\n     })\n \n     const selectedServer = sortedServers[0]\n"
                 }
             ],
             "date": 1752333548051,

@@ -12,8 +12,8 @@
 - **健康状态跟踪** - 持续监控服务器可用性
 
 ### 2. 智能负载均衡
-- **优先级排序** - Primary > Backup > Default
-- **队列优化** - 相同优先级下选择队列最少的服务器
+- **队列优先** - 仅根据队列数量选择最优服务器
+- **最少队列** - 始终选择队列数量最少的健康服务器
 - **动态调整** - 根据实时队列状况自动调整选择
 
 ### 3. 简化日志输出
@@ -28,14 +28,9 @@
 // 1. 筛选健康服务器
 const healthyServers = serverList.filter(s => s.healthy === true)
 
-// 2. 按优先级和队列数量排序
+// 2. 仅按队列数量排序（不考虑优先级）
 const sortedServers = healthyServers.sort((a, b) => {
-  // 优先级比较
-  const priorityOrder = { 'primary': 0, 'backup': 1, 'default': 2 }
-  const priorityDiff = priorityOrder[a.type] - priorityOrder[b.type]
-  if (priorityDiff !== 0) return priorityDiff
-  
-  // 队列数量比较
+  // 选择队列最少的服务器
   return a.queueInfo.total - b.queueInfo.total
 })
 
@@ -48,7 +43,7 @@ return sortedServers[0].url
 parseQueueInfo(data) {
   const running = Array.isArray(data.queue_running) ? data.queue_running.length : 0
   const pending = Array.isArray(data.queue_pending) ? data.queue_pending.length : 0
-  
+
   return {
     running,   // 正在运行的任务数
     pending,   // 等待中的任务数
@@ -128,7 +123,7 @@ for (let i = 0; i < 10; i++) {
 
 ### 负载均衡效果
 - **智能分配** - 自动选择队列最少的服务器
-- **优先级保证** - 主服务器优先，备用服务器补充
+- **公平调度** - 不考虑服务器类型，纯粹基于队列数量选择
 - **实时调整** - 根据队列变化动态调整选择
 
 ### 日志输出优化

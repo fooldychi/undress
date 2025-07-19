@@ -150,14 +150,9 @@ class LoadBalancer {
       return this.serverList.length > 0 ? this.serverList[0].url : comfyUIConfig.BASE_URL
     }
 
-    // 按优先级和队列数量排序选择最优服务器
+    // 仅按队列数量排序选择最优服务器（不考虑优先级）
     const sortedServers = healthyServers.sort((a, b) => {
-      // 1. 优先级：primary > backup > default
-      const priorityOrder = { 'primary': 0, 'backup': 1, 'default': 2 }
-      const priorityDiff = priorityOrder[a.type] - priorityOrder[b.type]
-      if (priorityDiff !== 0) return priorityDiff
-
-      // 2. 相同优先级下，选择队列最少的服务器
+      // 选择队列最少的服务器
       return a.queueInfo.total - b.queueInfo.total
     })
 

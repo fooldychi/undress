@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 267,
+            "activePatchIndex": 268,
             "patches": [
                 {
                     "date": 1752326450066,
@@ -1076,6 +1076,10 @@
                 {
                     "date": 1752891278546,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -860,9 +860,9 @@\n \r\n     const task = pendingTasks.get(promptId)\r\n \r\n     if (!task) {\r\n-      console.log(`� 未找到任务: ${promptId} (节点: ${nodeId})`)\r\n+      console.log(`\udcdd 未找到任务: ${promptId} (节点: ${nodeId})`)\r\n       return\r\n     }\r\n \r\n     if (nodeId === null) {\r\n"
+                },
+                {
+                    "date": 1752894808188,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1125,8 +1125,12 @@\n       },\r\n       onComplete: (result) => {\r\n         clearTimeout(timeout)\r\n         console.log(`✅ 任务完成回调触发: ${promptId}`)\r\n+        // 如果没有其他待处理任务，停止监控\r\n+        if (pendingTasks.size <= 1) {\r\n+          stopTaskMonitoring()\r\n+        }\r\n         resolve(result)\r\n       },\r\n       onError: (error) => {\r\n         clearTimeout(timeout)\r\n"
                 }
             ],
             "date": 1752326450066,

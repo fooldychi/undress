@@ -681,12 +681,18 @@ async function initializeWebSocket() {
 
 // 移除复杂的健康检查系统
 
-// 处理 WebSocket 消息 - 基于ComfyUI官方标准
+// 处理 WebSocket 消息 - 基于ComfyUI官方标准，增强并发任务支持
 function handleWebSocketMessage(message) {
   try {
     const { type, data } = message
 
-    // 只处理官方标准消息类型
+    // 记录所有消息以便调试并发问题
+    if (data && data.prompt_id) {
+      console.log(`📨 收到任务相关消息: ${type} for ${data.prompt_id}`)
+      console.log(`📊 当前待处理任务: [${Array.from(pendingTasks.keys()).join(', ')}]`)
+    }
+
+    // 处理官方标准消息类型
     switch (type) {
       case 'status':
         handleStatusMessage(data)
@@ -706,12 +712,21 @@ function handleWebSocketMessage(message) {
       case 'execution_cached':
         handleExecutionCachedMessage(data)
         break
+      case 'crystools.monitor':
+        // 处理crystools监控消息，可能包含任务状态信息
+        handleCrystoolsMonitorMessage(data)
+        break
       default:
-        // 忽略非官方消息类型
-        console.debug(`忽略消息类型: ${type}`)
+        // 记录未知消息类型，特别是包含prompt_id的消息
+        if (data && data.prompt_id) {
+          console.warn(`⚠️ 未处理的任务相关消息类型: ${type}`, data)
+        } else {
+          console.debug(`忽略消息类型: ${type}`)
+        }
     }
   } catch (error) {
     console.error('❌ 处理 WebSocket 消息失败:', error)
+    console.error('❌ 消息内容:', message)
   }
 }
 
@@ -729,6 +744,43 @@ function handleExecutionCachedMessage(data) {
     if (task && task.onProgress) {
       task.onProgress('使用缓存节点', 20)
     }
+  }
+}
+
+// 处理crystools监控消息
+function handleCrystoolsMonitorMessage(data) {
+  if (data && data.prompt_id) {
+    const promptId = data.prompt_id
+    console.log(`🔍 crystools监控消息 for ${promptId}:`, data)
+
+    // 检查是否包含任务完成信息
+    if (data.status === 'completed' || data.finished === true) {
+      console.log(`✅ crystools检测到任务 ${promptId} 完成`)
+      const task = pendingTasks.get(promptId)
+      if (task) {
+        // 作为备用完成检测机制
+        setTimeout(async () => {
+          const stillPending = pendingTasks.get(promptId)
+          if (stillPending) {
+            console.log('⚠️ crystools备用检测：任务仍在等待，尝试获取结果')
+            try {
+              const taskResult = await checkTaskStatus(promptId)
+              if (taskResult && taskResult.outputs && Object.keys(taskResult.outputs).length > 0) {
+                console.log('✅ crystools备用检测获取到任务结果')
+                if (task.onComplete) {
+                  task.onComplete(taskResult)
+                }
+                pendingTasks.delete(promptId)
+              }
+            } catch (error) {
+              console.error('❌ crystools备用检测失败:', error)
+            }
+          }
+        }, 1000)
+      }
+    }
+  } else {
+    console.debug('📊 crystools监控消息（非任务相关）:', data)
   }
 }
 
@@ -759,8 +811,32 @@ function handleExecutedMessage(data) {
   const task = pendingTasks.get(promptId)
 
   if (!task) {
-    console.warn(`⚠️ 任务 ${promptId} 已被处理或不存在`)
+    console.warn(`⚠️ executed消息：任务 ${promptId} 已被处理或不存在`)
     console.log('📋 当前待处理任务:', Array.from(pendingTasks.keys()))
+    console.log('🔍 任务ID匹配检查:', {
+      收到的promptId: promptId,
+      promptId类型: typeof promptId,
+      待处理任务列表: Array.from(pendingTasks.keys()),
+      是否存在完全匹配: pendingTasks.has(promptId)
+    })
+
+    // 尝试模糊匹配（防止ID格式问题）
+    const fuzzyMatch = Array.from(pendingTasks.keys()).find(id =>
+      id.includes(promptId) || promptId.includes(id)
+    )
+    if (fuzzyMatch) {
+      console.log(`🔍 找到模糊匹配的任务ID: ${fuzzyMatch}`)
+      // 使用模糊匹配的任务继续处理
+      const fuzzyTask = pendingTasks.get(fuzzyMatch)
+      if (fuzzyTask) {
+        console.log(`✅ 使用模糊匹配任务 ${fuzzyMatch} 处理executed消息`)
+        // 递归调用，使用正确的任务ID
+        const correctedData = { ...data, prompt_id: fuzzyMatch }
+        handleExecutedMessage(correctedData)
+        return
+      }
+    }
+
     return
   }
 
@@ -874,7 +950,31 @@ function handleExecutingMessage(data) {
     const task = pendingTasks.get(promptId)
 
     if (!task) {
-      console.log(`� 未找到任务: ${promptId} (节点: ${nodeId})`)
+      console.log(`⚠️ executing消息：未找到任务 ${promptId} (节点: ${nodeId})`)
+      console.log('📋 当前待处理任务:', Array.from(pendingTasks.keys()))
+      console.log('🔍 任务ID匹配检查:', {
+        收到的promptId: promptId,
+        promptId类型: typeof promptId,
+        待处理任务列表: Array.from(pendingTasks.keys()),
+        是否存在完全匹配: pendingTasks.has(promptId)
+      })
+
+      // 尝试模糊匹配
+      const fuzzyMatch = Array.from(pendingTasks.keys()).find(id =>
+        id.includes(promptId) || promptId.includes(id)
+      )
+      if (fuzzyMatch) {
+        console.log(`🔍 找到模糊匹配的任务ID: ${fuzzyMatch}`)
+        const fuzzyTask = pendingTasks.get(fuzzyMatch)
+        if (fuzzyTask) {
+          console.log(`✅ 使用模糊匹配任务 ${fuzzyMatch} 处理executing消息`)
+          // 递归调用，使用正确的任务ID
+          const correctedData = { ...data, prompt_id: fuzzyMatch }
+          handleExecutingMessage(correctedData)
+          return
+        }
+      }
+
       return
     }
 
@@ -937,25 +1037,85 @@ async function ensureWebSocketConnection() {
   return true
 }
 
-// 等待任务完成 - 添加工作流类型参数
+// 全局任务状态监控 - 防止任务丢失
+let taskMonitorInterval = null
+
+function startTaskMonitoring() {
+  if (taskMonitorInterval) {
+    clearInterval(taskMonitorInterval)
+  }
+
+  taskMonitorInterval = setInterval(async () => {
+    if (pendingTasks.size === 0) return
+
+    console.log(`🔍 定期检查 ${pendingTasks.size} 个待处理任务状态...`)
+
+    for (const [promptId, task] of pendingTasks.entries()) {
+      try {
+        // 检查任务是否已在服务器端完成
+        const taskResult = await checkTaskStatus(promptId)
+        if (taskResult && taskResult.outputs && Object.keys(taskResult.outputs).length > 0) {
+          console.log(`🎯 监控发现任务 ${promptId} 已完成但未被WebSocket处理`)
+
+          // 触发任务完成
+          if (task.onComplete) {
+            task.onComplete(taskResult)
+          }
+          pendingTasks.delete(promptId)
+          console.log(`🧹 监控机制完成任务 ${promptId}`)
+        }
+      } catch (error) {
+        console.debug(`任务 ${promptId} 状态检查失败:`, error.message)
+      }
+    }
+  }, 10000) // 每10秒检查一次
+}
+
+function stopTaskMonitoring() {
+  if (taskMonitorInterval) {
+    clearInterval(taskMonitorInterval)
+    taskMonitorInterval = null
+  }
+}
+
+// 等待任务完成 - 添加工作流类型参数和增强监控
 async function waitForTaskCompletion(promptId, maxWaitTime = 300000, onProgress = null, workflowType = 'undress') {
   console.log(`⏳ 开始等待任务完成: ${promptId} (${workflowType})`)
   console.log(`📊 当前待处理任务数: ${pendingTasks.size}`)
 
   await ensureWebSocketConnection()
 
+  // 启动任务监控
+  startTaskMonitoring()
+
   return new Promise((resolve, reject) => {
-    // 设置超时
-    const timeout = setTimeout(() => {
-      console.log(`⏰ 任务超时: ${promptId}`)
+    // 设置超时 - 增强超时前的最后检查
+    const timeout = setTimeout(async () => {
+      console.log(`⏰ 任务即将超时: ${promptId}，进行最后检查...`)
+
+      try {
+        // 超时前最后一次检查任务状态
+        const lastCheckResult = await checkTaskStatus(promptId)
+        if (lastCheckResult && lastCheckResult.outputs && Object.keys(lastCheckResult.outputs).length > 0) {
+          console.log(`✅ 超时前检查发现任务 ${promptId} 已完成`)
+          pendingTasks.delete(promptId)
+          resolve(lastCheckResult)
+          return
+        }
+      } catch (error) {
+        console.error(`❌ 超时前检查失败:`, error)
+      }
+
+      console.log(`⏰ 任务确认超时: ${promptId}`)
       pendingTasks.delete(promptId)
       showNotification('任务处理超时', 'error')
       reject(new Error('任务执行超时'))
     }, maxWaitTime)
 
-    // 创建任务对象，包含工作流类型
+    // 创建任务对象，包含工作流类型和超时控制
     const task = {
       workflowType: workflowType, // 记录工作流类型
+      timeout: timeout, // 保存超时引用
       创建时间: new Date().toISOString(),
       onProgress: (status, progress) => {
         console.log(`📈 任务进度更新: ${promptId} - ${status} (${progress}%)`)
@@ -966,6 +1126,10 @@ async function waitForTaskCompletion(promptId, maxWaitTime = 300000, onProgress 
       onComplete: (result) => {
         clearTimeout(timeout)
         console.log(`✅ 任务完成回调触发: ${promptId}`)
+        // 如果没有其他待处理任务，停止监控
+        if (pendingTasks.size <= 1) {
+          stopTaskMonitoring()
+        }
         resolve(result)
       },
       onError: (error) => {
@@ -1298,5 +1462,8 @@ export {
   processFaceSwapImage,
   initializeWebSocket,
   wsConnection,
-  isWsConnected
+  isWsConnected,
+  startTaskMonitoring,
+  stopTaskMonitoring,
+  pendingTasks // 导出用于调试
 }
