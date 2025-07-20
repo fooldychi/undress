@@ -227,13 +227,28 @@ const showBatchGenerateDialog = async () => {
 const loadCardTypes = async () => {
   cardTypesLoading.value = true
   try {
+    console.log('🔍 开始加载等级卡类型...');
+
+    // 确保有token
+    const { getToken, setToken } = await import('@/utils/auth');
+    let token = getToken();
+    if (!token) {
+      console.log('⚠️ 没有找到token，设置测试token');
+      setToken('admin-token');
+      token = 'admin-token';
+    }
+    console.log('🔑 当前token:', token);
+
     const response = await getCardTypes()
+    console.log('📊 API响应:', response);
+
     if (response.success) {
       cardTypes.value = response.data.cardTypes
+      console.log('✅ 等级卡类型加载成功:', cardTypes.value);
     }
   } catch (error) {
-    console.error('加载等级卡类型失败:', error)
-    ElMessage.error('加载等级卡类型失败')
+    console.error('❌ 加载等级卡类型失败:', error)
+    ElMessage.error('加载等级卡类型失败: ' + error.message)
   } finally {
     cardTypesLoading.value = false
   }

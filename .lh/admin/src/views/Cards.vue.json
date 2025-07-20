@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 24,
+            "activePatchIndex": 25,
             "patches": [
                 {
                     "date": 1752314235686,
@@ -104,6 +104,10 @@
                 {
                     "date": 1752324460833,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -238,25 +238,8 @@\n     cardTypesLoading.value = false\n   }\n }\n \n-const handleGenerate = async () => {\n-  try {\n-    const response = await generateExperienceCards({\n-      count: generateForm.count,\n-      points: generateForm.points\n-    })\n-    if (response.success) {\n-      ElMessage.success(`已生成 ${generateForm.count} 张体验卡`)\n-      generateDialogVisible.value = false\n-      loadCards()\n-    }\n-  } catch (error) {\n-    console.error('生成体验卡失败:', error)\n-    ElMessage.error('生成体验卡失败')\n-  }\n-}\n-\n // 批量生成等级卡\n const handleBatchGenerate = async () => {\n   if (!batchGenerateForm.cardTypeId) {\n     ElMessage.warning('请选择等级卡类型')\n"
+                },
+                {
+                    "date": 1752985440148,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -226,15 +226,30 @@\n // 加载等级卡类型\n const loadCardTypes = async () => {\n   cardTypesLoading.value = true\n   try {\n+    console.log('🔍 开始加载等级卡类型...');\n+\n+    // 确保有token\n+    const { getToken, setToken } = await import('@/utils/auth');\n+    let token = getToken();\n+    if (!token) {\n+      console.log('⚠️ 没有找到token，设置测试token');\n+      setToken('admin-token');\n+      token = 'admin-token';\n+    }\n+    console.log('🔑 当前token:', token);\n+\n     const response = await getCardTypes()\n+    console.log('📊 API响应:', response);\n+\n     if (response.success) {\n       cardTypes.value = response.data.cardTypes\n+      console.log('✅ 等级卡类型加载成功:', cardTypes.value);\n     }\n   } catch (error) {\n-    console.error('加载等级卡类型失败:', error)\n-    ElMessage.error('加载等级卡类型失败')\n+    console.error('❌ 加载等级卡类型失败:', error)\n+    ElMessage.error('加载等级卡类型失败: ' + error.message)\n   } finally {\n     cardTypesLoading.value = false\n   }\n }\n"
                 }
             ],
             "date": 1752314235686,

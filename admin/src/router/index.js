@@ -78,6 +78,16 @@ const routes = [
         }
       },
       {
+        path: 'test-api',
+        name: 'TestAPI',
+        component: () => import('@/views/TestAPI.vue'),
+        meta: {
+          title: 'API测试 - iComfy管理系统',
+          icon: 'Monitor',
+          hidden: false
+        }
+      },
+      {
         path: 'workflow-config',
         name: 'WorkflowConfig',
         component: () => import('@/views/WorkflowConfig.vue'),

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 40,
+            "activePatchIndex": 42,
             "patches": [
                 {
                     "date": 1752317973745,
@@ -168,6 +168,14 @@
                 {
                     "date": 1752946556164,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -275,18 +275,10 @@\n   if (memoryMonitorInterval) {\n     clearInterval(memoryMonitorInterval);\n   }\n \n-  // 关闭WebSocket服务器\n-  if (wsServer) {\n-    try {\n-      await wsServer.close();\n-      console.log('✅ WebSocket服务器已关闭');\n-    } catch (error) {\n-      console.error('❌ 关闭WebSocket服务器失败:', error);\n-    }\n-  }\n \n+\n   // 停止健康监控\n   // healthMonitor.stop();\n \n   // 停止内存管理\n"
+                },
+                {
+                    "date": 1752984387798,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -178,15 +178,14 @@\n \n // 启动服务器\n async function startServer() {\n   try {\n-    // 测试数据库连接 - 暂时跳过以快速启动\n-    console.log('⚠️ 跳过数据库连接测试，直接启动服务器');\n-    const dbConnected = false;\n-    // const dbConnected = await testConnection();\n-    // if (!dbConnected) {\n-    //   console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');\n-    // }\n+    // 测试数据库连接\n+    console.log('🔍 测试数据库连接...');\n+    const dbConnected = await testConnection();\n+    if (!dbConnected) {\n+      console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');\n+    }\n \n     // 启动HTTP服务器\n     global.httpServer = server.listen(PORT, async () => {\n       console.log('🚀 Imagic服务器启动成功!');\n"
+                },
+                {
+                    "date": 1752985375022,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -150,8 +150,19 @@\n     });\n   }\n });\n \n+// 健康检查接口\n+app.get('/api/health', (req, res) => {\n+  res.json({\n+    success: true,\n+    message: '服务器运行正常',\n+    timestamp: new Date().toISOString(),\n+    port: PORT,\n+    env: process.env.NODE_ENV\n+  });\n+});\n+\n // API路由\n app.use('/api/auth', authRoutes);\n app.use('/api/users', userRoutes);\n app.use('/api/images', imageRoutes);\n"
                 }
             ],
             "date": 1752317973745,

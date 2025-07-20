@@ -151,6 +151,17 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// 健康检查接口
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: '服务器运行正常',
+    timestamp: new Date().toISOString(),
+    port: PORT,
+    env: process.env.NODE_ENV
+  });
+});
+
 // API路由
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -179,13 +190,12 @@ app.use(errorHandler);
 // 启动服务器
 async function startServer() {
   try {
-    // 测试数据库连接 - 暂时跳过以快速启动
-    console.log('⚠️ 跳过数据库连接测试，直接启动服务器');
-    const dbConnected = false;
-    // const dbConnected = await testConnection();
-    // if (!dbConnected) {
-    //   console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');
-    // }
+    // 测试数据库连接
+    console.log('🔍 测试数据库连接...');
+    const dbConnected = await testConnection();
+    if (!dbConnected) {
+      console.warn('⚠️ 数据库连接失败，但服务器将继续启动（仅用于管理界面）');
+    }
 
     // 启动HTTP服务器
     global.httpServer = server.listen(PORT, async () => {

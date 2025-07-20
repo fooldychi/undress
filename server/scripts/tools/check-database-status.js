@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 
 async function checkDatabaseStatus() {
   console.log('🔍 检查数据库状态...\n');
-  
+
   try {
     // 创建数据库连接
     const connection = await mysql.createConnection({
@@ -14,69 +14,69 @@ async function checkDatabaseStatus() {
       database: process.env.DB_NAME,
       charset: 'utf8mb4'
     });
-    
+
     console.log('✅ 数据库连接成功');
     console.log(`📍 连接到: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}\n`);
-    
+
     // 查询函数
     const query = async (sql, params = []) => {
       const [rows] = await connection.execute(sql, params);
       return rows;
     };
-    
+
     // 获取详细统计信息
     console.log('📊 数据库统计信息:');
-    
+
     // 用户统计
     const userStats = await query(`
-      SELECT 
+      SELECT
         COUNT(*) as total_users,
         COUNT(CASE WHEN status = 'active' THEN 1 END) as active_users,
         COUNT(CASE WHEN status = 'banned' THEN 1 END) as banned_users,
         COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as recent_users
       FROM users
     `);
-    
+
     const userStat = userStats[0];
     console.log(`   👥 用户: ${userStat.total_users} 总数 (${userStat.active_users} 活跃, ${userStat.banned_users} 封禁, ${userStat.recent_users} 近7天新增)`);
-    
+
     // 等级卡统计
     const cardStats = await query(`
-      SELECT 
+      SELECT
         COUNT(*) as total_cards,
         COUNT(CASE WHEN bound_user_id IS NOT NULL THEN 1 END) as bound_cards,
         COUNT(CASE WHEN bound_user_id IS NULL THEN 1 END) as available_cards,
         SUM(remaining_points) as total_points
       FROM level_cards
     `);
-    
+
     const cardStat = cardStats[0];
     console.log(`   🎫 等级卡: ${cardStat.total_cards} 总数 (${cardStat.bound_cards} 已绑定, ${cardStat.available_cards} 可用, ${cardStat.total_points} 总积分)`);
-    
+
     // 积分记录统计
     const pointStats = await query(`
-      SELECT 
+      SELECT
         COUNT(*) as total_logs,
         COUNT(CASE WHEN action_type = 'consume' THEN 1 END) as consume_logs,
         COUNT(CASE WHEN action_type = 'bind' THEN 1 END) as bind_logs,
         SUM(CASE WHEN action_type = 'consume' THEN points_amount ELSE 0 END) as total_consumed
       FROM point_logs
     `);
-    
+
     const pointStat = pointStats[0];
     console.log(`   💰 积分记录: ${pointStat.total_logs} 总记录 (${pointStat.consume_logs} 消费, ${pointStat.bind_logs} 绑定, ${pointStat.total_consumed} 总消费积分)`);
-    
+
     // 管理员统计
     const adminStats = await query('SELECT COUNT(*) as admin_count FROM admins');
     console.log(`   👨‍💼 管理员: ${adminStats[0].admin_count} 个账号`);
-    
+
     // 卡片类型统计
     const cardTypes = await query('SELECT name, COUNT(*) as count FROM level_cards lc JOIN card_types ct ON lc.type_id = ct.id GROUP BY ct.name');
     console.log('\n🎯 卡片类型分布:');
     cardTypes.forEach(type => {
       console.log(`   ${type.name}: ${type.count} 张`);
     });
-    
+
     // 最近活动
     console.log('\n📈 最近活动:');
     const recentLogs = await query(`
@@ -86,7 +86,7 @@ async function checkDatabaseStatus() {
       ORDER BY pl.created_at DESC
       LIMIT 5
     `);
-    
+
     if (recentLogs.length > 0) {
       recentLogs.forEach(log => {
         const date = new Date(log.created_at).toLocaleString('zh-CN');
@@ -95,12 +95,29 @@ async function checkDatabaseStatus() {
     } else {
       console.log('   暂无积分记录');
     }
-    
+
+    // 管理员账号详情
+    console.log('\n👨‍💼 管理员账号详情:');
+    const adminDetails = await query(`
+      SELECT id, username, role, status, created_at
+      FROM admins
+      ORDER BY created_at DESC
+    `);
+
+    if (adminDetails.length > 0) {
+      adminDetails.forEach(admin => {
+        const date = new Date(admin.created_at).toLocaleString('zh-CN');
+        console.log(`   ID: ${admin.id}, 用户名: ${admin.username}, 角色: ${admin.role}, 状态: ${admin.status}, 创建时间: ${date}`);
+      });
+    } else {
+      console.log('   暂无管理员账号');
+    }
+
     console.log('\n🎉 数据库状态检查完成！');
     console.log('💡 数据库连接正常，可以启动管理后台使用真实数据。');
-    
+
     await connection.end();
-    
+
   } catch (error) {
     console.error('❌ 数据库连接失败:', error.message);
     console.log('\n🔧 请检查以下配置:');

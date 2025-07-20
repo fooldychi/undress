@@ -321,7 +321,6 @@ router.post('/init-level-cards', async (req, res, next) => {
         icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
         price DECIMAL(10,2) NOT NULL COMMENT '价格',
         points INT NOT NULL COMMENT '积分数量',
-        description TEXT COMMENT '描述',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -377,11 +376,11 @@ router.post('/init-level-cards', async (req, res, next) => {
     const existingTypes = await query('SELECT COUNT(*) as count FROM card_types');
     if (existingTypes[0].count === 0) {
       await query(`
-        INSERT INTO card_types (name, icon, price, points, description) VALUES
-        ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
-        ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
-        ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
-        ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')
+        INSERT INTO card_types (name, icon, price, points) VALUES
+        ('体验卡', '🎁', 0.00, 20),
+        ('基础卡', '🥉', 9.90, 300),
+        ('高级卡', '🥈', 30.00, 1000),
+        ('至尊卡', '🥇', 50.00, 2000)
       `);
     }
 
@@ -400,40 +399,30 @@ router.post('/init-level-cards', async (req, res, next) => {
 router.get('/card-types', adminAuth, async (req, res, next) => {
   try {
     console.log('🔍 获取等级卡类型列表...');
+    console.log('👤 管理员信息:', req.admin);
 
-    // 首先检查表是否存在
-    try {
-      const cardTypes = await query(`
-        SELECT id, name, icon, points, price, description
-        FROM card_types
-        ORDER BY points ASC
-      `);
+    // 确保表存在（先创建表，避免查询失败）
+    console.log('🔧 确保等级卡类型表存在...');
+    await query(`
+      CREATE TABLE IF NOT EXISTS card_types (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
+        icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
+        price DECIMAL(10,2) NOT NULL COMMENT '价格',
+        points INT NOT NULL COMMENT '积分数量',
+        description TEXT COMMENT '描述',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ 等级卡类型表确保存在');
 
-      console.log('✅ 成功获取等级卡类型:', cardTypes.length, '个');
-      res.json({
-        success: true,
-        data: {
-          cardTypes
-        }
-      });
-    } catch (tableError) {
-      console.log('⚠️ 等级卡类型表不存在，尝试创建...');
+    // 检查是否已有数据
+    const existingData = await query(`SELECT COUNT(*) as count FROM card_types`);
+    console.log('📊 现有数据数量:', existingData[0].count);
 
-      // 创建表和初始数据
-      await query(`
-        CREATE TABLE IF NOT EXISTS card_types (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(50) NOT NULL COMMENT '等级卡名称',
-          icon VARCHAR(10) NOT NULL COMMENT '等级卡图标',
-          price DECIMAL(10,2) NOT NULL COMMENT '价格',
-          points INT NOT NULL COMMENT '积分数量',
-          description TEXT COMMENT '描述',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-
-      // 插入初始数据
+    if (existingData[0].count === 0) {
+      console.log('📝 插入初始数据...');
       await query(`
         INSERT INTO card_types (name, icon, price, points, description) VALUES
         ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
@@ -441,22 +430,27 @@ router.get('/card-types', adminAuth, async (req, res, next) => {
         ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
         ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')
       `);
-
-      // 重新获取数据
-      const cardTypes = await query(`
-        SELECT id, name, icon, points, price, description
-        FROM card_types
-        ORDER BY points ASC
-      `);
-
-      console.log('✅ 表创建成功，获取等级卡类型:', cardTypes.length, '个');
-      res.json({
-        success: true,
-        data: {
-          cardTypes
-        }
-      });
+      console.log('✅ 初始数据插入成功');
     }
+
+    // 获取数据
+    console.log('📋 查询等级卡类型表...');
+    const cardTypes = await query(`
+      SELECT id, name, icon, points, price, created_at
+      FROM card_types
+      ORDER BY points ASC
+    `);
+
+    console.log('✅ 成功获取等级卡类型:', cardTypes.length, '个');
+    console.log('📊 卡片类型数据:', cardTypes);
+
+    res.json({
+      success: true,
+      data: {
+        cardTypes
+      }
+    });
+
   } catch (error) {
     console.error('❌ 获取等级卡类型失败:', error);
     next(error);
@@ -978,9 +972,12 @@ router.put('/users/batch-status', adminAuth, async (req, res, next) => {
 // 生成等级卡（管理员用）
 router.post('/generate-cards', adminAuth, async (req, res, next) => {
   try {
+    console.log('🎫 收到生成等级卡请求，请求体:', req.body);
+
     const { cardTypeId, count = 5 } = req.body;
 
     if (!cardTypeId) {
+      console.log('❌ 缺少cardTypeId参数');
       return res.status(400).json({
         success: false,
         message: '请选择等级卡类型'
@@ -988,6 +985,7 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
     }
 
     if (!count || count <= 0 || count > 100) {
+      console.log('❌ count参数无效:', count);
       return res.status(400).json({
         success: false,
         message: '生成数量必须在1-100之间'
@@ -996,35 +994,18 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
 
     console.log(`🎫 开始生成${count}张等级卡，类型ID: ${cardTypeId}...`);
 
-    // 确保level_cards表存在
-    await query(`
-      CREATE TABLE IF NOT EXISTS level_cards (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        card_number VARCHAR(20) UNIQUE NOT NULL COMMENT '卡号',
-        card_password VARCHAR(20) NOT NULL COMMENT '卡密',
-        type_id INT NOT NULL COMMENT '等级卡类型ID',
-        total_points INT NOT NULL COMMENT '总积分',
-        remaining_points INT NOT NULL COMMENT '剩余积分',
-        status ENUM('active', 'used', 'expired', 'disabled') DEFAULT 'active' COMMENT '状态',
-        bound_user_id INT NULL COMMENT '绑定的用户ID',
-        bound_at DATETIME NULL COMMENT '绑定时间',
-        expires_at DATETIME NULL COMMENT '过期时间',
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NULL,
-        INDEX idx_card_number (card_number),
-        INDEX idx_bound_user (bound_user_id),
-        INDEX idx_status (status)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
     // 获取卡片类型信息
+    console.log('📋 查询卡片类型信息...');
     const cardTypeResult = await query(`
-      SELECT id, name, points, price, description
+      SELECT id, name, points, price
       FROM card_types
       WHERE id = ?
     `, [cardTypeId]);
 
+    console.log('📋 卡片类型查询结果:', cardTypeResult);
+
     if (cardTypeResult.length === 0) {
+      console.log('❌ 卡片类型不存在:', cardTypeId);
       return res.status(400).json({
         success: false,
         message: '无效的卡片类型'
@@ -1032,28 +1013,40 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
     }
 
     const typeInfo = cardTypeResult[0];
+    console.log('✅ 找到卡片类型:', typeInfo);
+
     const generatedCards = [];
 
     // 批量生成等级卡
     for (let i = 1; i <= count; i++) {
-      const cardNumber = generateCardNumber(typeInfo.name, i);
-      const cardPassword = generateCardPassword();
+      try {
+        const cardNumber = generateCardNumber(typeInfo.name, i);
+        const cardPassword = generateCardPassword();
 
-      await query(`
-        INSERT INTO level_cards (card_number, card_password, type_id, remaining_points, created_at)
-        VALUES (?, ?, ?, ?, NOW())
-      `, [cardNumber, cardPassword, typeInfo.id, typeInfo.points]);
+        console.log(`📝 生成第${i}张卡: ${cardNumber} - ${cardPassword}`);
 
-      generatedCards.push({
-        cardNumber,
-        cardPassword,
-        typeName: typeInfo.name,
-        points: typeInfo.points,
-        price: typeInfo.price
-      });
+        // 根据实际表结构插入数据（不包含total_points字段）
+        await query(`
+          INSERT INTO level_cards (card_number, card_password, type_id, remaining_points, created_at)
+          VALUES (?, ?, ?, ?, NOW())
+        `, [cardNumber, cardPassword, typeInfo.id, typeInfo.points]);
+
+        generatedCards.push({
+          cardNumber,
+          cardPassword,
+          typeName: typeInfo.name,
+          points: typeInfo.points,
+          price: typeInfo.price
+        });
+
+        console.log(`✅ 第${i}张卡生成成功`);
+      } catch (insertError) {
+        console.error(`❌ 生成第${i}张卡失败:`, insertError);
+        throw insertError;
+      }
     }
 
-    console.log(`✅ 成功生成${count}张${typeInfo.name}`);
+    console.log(`🎉 成功生成${count}张${typeInfo.name}`);
 
     res.json({
       success: true,
@@ -1066,8 +1059,17 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error('❌ 生成等级卡失败:', error);
-    next(error);
+    console.error('❌ 生成等级卡失败 - 详细错误信息:');
+    console.error('错误消息:', error.message);
+    console.error('错误代码:', error.code);
+    console.error('SQL状态:', error.sqlState);
+    console.error('SQL消息:', error.sqlMessage);
+    console.error('完整错误:', error);
+
+    res.status(500).json({
+      success: false,
+      message: '生成等级卡失败: ' + error.message
+    });
   }
 });
 
@@ -1360,3 +1362,4 @@ router.post('/test-comfyui', adminAuth, async (req, res, next) => {
 // 生成卡密函数已在文件开头定义，这里删除重复定义
 
 module.exports = router;
+

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1752316890568,
@@ -32,6 +32,14 @@
                 {
                     "date": 1752323598310,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -114,8 +114,15 @@\n export function unbindCard(id) {\n   return request({\n     url: `/admin/cards/${id}/unbind`,\n     method: 'put'\n+  }).catch(error => {\n+    // 如果服务器连接失败，返回模拟数据用于开发测试\n+    console.warn('服务器连接失败，使用模拟数据:', error.message);\n+    return Promise.resolve({\n+      success: true,\n+      message: '等级卡解绑成功（模拟数据）'\n+    });\n   })\n }\n \n /**\n"
+                },
+                {
+                    "date": 1752978267706,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -184,42 +184,6 @@\n   return request({\n     url: '/admin/generate-cards',\n     method: 'post',\n     data\n-  }).catch(error => {\n-    // 如果服务器连接失败，返回模拟数据用于开发测试\n-    console.warn('服务器连接失败，使用模拟数据:', error.message);\n-\n-    // 模拟生成卡片数据\n-    const cardTypeNames = ['体验卡', '基础卡', '高级卡', '至尊卡'];\n-    const cardTypePoints = [20, 300, 1000, 2000];\n-    const cardTypePrices = [0.00, 9.90, 30.00, 50.00];\n-\n-    const typeName = cardTypeNames[data.cardTypeId - 1] || '基础卡';\n-    const points = cardTypePoints[data.cardTypeId - 1] || 300;\n-    const price = cardTypePrices[data.cardTypeId - 1] || 9.90;\n-\n-    const generatedCards = [];\n-    for (let i = 1; i <= data.count; i++) {\n-      const cardNumber = `DEMO${Date.now().toString().slice(-6)}${i.toString().padStart(3, '0')}`;\n-      const cardPassword = Math.random().toString(36).substring(2, 10).toUpperCase();\n-\n-      generatedCards.push({\n-        cardNumber,\n-        cardPassword,\n-        typeName,\n-        points,\n-        price\n-      });\n-    }\n-\n-    return Promise.resolve({\n-      success: true,\n-      message: `成功生成${data.count}张${typeName}（模拟数据）`,\n-      data: {\n-        cards: generatedCards,\n-        cardType: typeName,\n-        totalGenerated: data.count\n-      }\n-    });\n   })\n }\n"
+                },
+                {
+                    "date": 1752985421949,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -128,12 +128,24 @@\n /**\n  * 获取等级卡类型列表\n  */\n export function getCardTypes() {\n+  console.log('🚀 开始调用 getCardTypes API...');\n+\n   return request({\n     url: '/admin/card-types',\n     method: 'get'\n+  }).then(response => {\n+    console.log('✅ getCardTypes API 调用成功:', response);\n+    return response;\n   }).catch(error => {\n+    console.error('❌ getCardTypes API 调用失败:');\n+    console.error('错误对象:', error);\n+    console.error('错误消息:', error.message);\n+    console.error('错误响应:', error.response);\n+    console.error('错误状态:', error.response?.status);\n+    console.error('错误数据:', error.response?.data);\n+\n     // 如果服务器连接失败，返回模拟数据用于开发测试\n     console.warn('服务器连接失败，使用模拟数据:', error.message);\n     return Promise.resolve({\n       success: true,\n"
                 }
             ],
             "date": 1752316890568,

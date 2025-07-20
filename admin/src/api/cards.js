@@ -129,10 +129,22 @@ export function unbindCard(id) {
  * 获取等级卡类型列表
  */
 export function getCardTypes() {
+  console.log('🚀 开始调用 getCardTypes API...');
+
   return request({
     url: '/admin/card-types',
     method: 'get'
+  }).then(response => {
+    console.log('✅ getCardTypes API 调用成功:', response);
+    return response;
   }).catch(error => {
+    console.error('❌ getCardTypes API 调用失败:');
+    console.error('错误对象:', error);
+    console.error('错误消息:', error.message);
+    console.error('错误响应:', error.response);
+    console.error('错误状态:', error.response?.status);
+    console.error('错误数据:', error.response?.data);
+
     // 如果服务器连接失败，返回模拟数据用于开发测试
     console.warn('服务器连接失败，使用模拟数据:', error.message);
     return Promise.resolve({
@@ -185,41 +197,5 @@ export function generateCards(data) {
     url: '/admin/generate-cards',
     method: 'post',
     data
-  }).catch(error => {
-    // 如果服务器连接失败，返回模拟数据用于开发测试
-    console.warn('服务器连接失败，使用模拟数据:', error.message);
-
-    // 模拟生成卡片数据
-    const cardTypeNames = ['体验卡', '基础卡', '高级卡', '至尊卡'];
-    const cardTypePoints = [20, 300, 1000, 2000];
-    const cardTypePrices = [0.00, 9.90, 30.00, 50.00];
-
-    const typeName = cardTypeNames[data.cardTypeId - 1] || '基础卡';
-    const points = cardTypePoints[data.cardTypeId - 1] || 300;
-    const price = cardTypePrices[data.cardTypeId - 1] || 9.90;
-
-    const generatedCards = [];
-    for (let i = 1; i <= data.count; i++) {
-      const cardNumber = `DEMO${Date.now().toString().slice(-6)}${i.toString().padStart(3, '0')}`;
-      const cardPassword = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-      generatedCards.push({
-        cardNumber,
-        cardPassword,
-        typeName,
-        points,
-        price
-      });
-    }
-
-    return Promise.resolve({
-      success: true,
-      message: `成功生成${data.count}张${typeName}（模拟数据）`,
-      data: {
-        cards: generatedCards,
-        cardType: typeName,
-        totalGenerated: data.count
-      }
-    });
   })
 }

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "check-admin.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1752979706053,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1752979706053,
+            "name": "Commit-0",
+            "content": "require('dotenv').config();\nconst { query } = require('./src/config/database');\n\nasync function checkAdmin() {\n  try {\n    console.log('🔍 检查管理员账号...');\n\n    const admins = await query('SELECT id, username, role, status FROM admins');\n\n    console.log('👨‍💼 管理员账号列表:');\n    admins.forEach(admin => {\n      console.log(`  - ID: ${admin.id}, 用户名: ${admin.username}, 角色: ${admin.role}, 状态: ${admin.status}`);\n    });\n\n    if (admins.length === 0) {\n      console.log('❌ 没有找到管理员账号');\n    }\n\n    process.exit(0);\n  } catch (error) {\n    console.error('❌ 检查管理员账号失败:', error);\n    process.exit(1);\n  }\n}\n\ncheckAdmin();\n"
+        }
+    ]
+}
