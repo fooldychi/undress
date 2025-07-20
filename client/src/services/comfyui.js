@@ -668,6 +668,13 @@ function registerWindowTask(promptId, task) {
   windowTasks.set(promptId, task)
   console.log(`📝 [${WINDOW_ID}] 任务已注册: ${promptId}, 绑定服务器: ${task.executionServer}`)
   console.log(`📊 [${WINDOW_ID}] 当前窗口任务数: ${windowTasks.size}`)
+
+  // 🔧 锁定续期：检测到新任务时自动续期锁定状态
+  if (windowLockedServer) {
+    console.log(`🔄 [${WINDOW_ID}] 检测到新任务，续期服务器锁定状态`)
+    // 重新调度解锁检查
+    scheduleServerUnlockCheck()
+  }
 }
 
 function getWindowTask(promptId) {
@@ -690,6 +697,15 @@ function removeWindowTask(promptId) {
     windowTasks.delete(promptId)
     console.log(`🗑️ [${WINDOW_ID}] 任务已移除: ${promptId}`)
     console.log(`📊 [${WINDOW_ID}] 剩余窗口任务数: ${windowTasks.size}`)
+
+    // 🔧 任务移除后立即检查是否可以解锁服务器
+    if (windowTasks.size === 0 && windowLockedServer) {
+      console.log(`🔓 [${WINDOW_ID}] 最后一个任务完成，立即解锁服务器`)
+      unlockServerForWindow()
+    } else if (windowTasks.size > 0) {
+      console.log(`🔒 [${WINDOW_ID}] 仍有任务运行，保持服务器锁定`)
+    }
+
     return true
   }
   return false
@@ -706,7 +722,11 @@ function getTaskBoundServer(promptId) {
   return null
 }
 
-// 🔧 窗口级别的服务器锁定管理
+// 🔧 动态服务器锁定管理（基于任务状态的智能锁定）
+// 🎯 解决问题：防止长时间运行的AI任务因锁定超时导致图片链接错误
+// - 移除固定5分钟超时机制，改为基于任务状态的动态锁定
+// - 确保图片链接始终指向正确的服务器（任务实际处理的服务器）
+// - 只有在所有任务完成后才解锁服务器
 function lockServerForWindow(serverUrl) {
   windowLockedServer = serverUrl
   windowLockTimestamp = Date.now()
@@ -717,25 +737,41 @@ function lockServerForWindow(serverUrl) {
 
   console.log(`🔒 [${WINDOW_ID}] 锁定服务器: ${serverUrl}`)
   console.log(`🕐 [${WINDOW_ID}] 锁定时间: ${new Date(windowLockTimestamp).toLocaleTimeString()}`)
+  console.log(`🎯 [${WINDOW_ID}] 锁定模式: 任务驱动动态锁定（无固定超时）`)
 
-  // 设置窗口级别的锁定超时
-  setTimeout(() => {
-    if (windowTasks.size === 0) {
-      unlockServerForWindow()
-    }
-  }, 300000) // 5分钟超时
+  // 🔧 实现动态锁定机制：在任务完成前不解锁服务器
+  // 移除固定时间的超时机制，改为基于任务状态的动态检查
+  scheduleServerUnlockCheck()
 }
 
 function unlockServerForWindow() {
   if (windowLockedServer) {
+    const lockDuration = Date.now() - windowLockTimestamp
     console.log(`🔓 [${WINDOW_ID}] 解锁服务器: ${windowLockedServer}`)
+    console.log(`⏱️ [${WINDOW_ID}] 锁定持续时间: ${Math.round(lockDuration / 1000)}秒`)
+    console.log(`📊 [${WINDOW_ID}] 解锁时任务数: ${windowTasks.size}`)
+
     windowLockedServer = null
     windowLockTimestamp = null
 
     // 同步更新全局变量
     currentWebSocketServer = null
     serverLockTimestamp = null
+
+    // 清理解锁检查定时器
+    clearServerUnlockTimer()
   }
+}
+
+// 🔧 强制解锁服务器（用于异常情况处理）
+function forceUnlockServerForWindow() {
+  if (windowLockedServer) {
+    console.log(`🚨 [${WINDOW_ID}] 强制解锁服务器: ${windowLockedServer}`)
+    console.log(`⚠️ [${WINDOW_ID}] 当前仍有 ${windowTasks.size} 个待处理任务`)
+    unlockServerForWindow()
+    return true
+  }
+  return false
 }
 
 // 🔧 窗口间通信机制（用于调试和监控）
@@ -1073,6 +1109,74 @@ if (typeof window !== 'undefined') {
   window.checkAllPendingTasks = checkAllPendingTasks
   window.pendingTasks = windowTasks // 🔧 暴露窗口级别的任务队列
 
+  // 🔧 新增：动态锁定管理函数
+  window.forceUnlockServerForWindow = forceUnlockServerForWindow
+  window.scheduleServerUnlockCheck = scheduleServerUnlockCheck
+  window.clearServerUnlockTimer = clearServerUnlockTimer
+
+  // 🔧 新增：专门调试换脸任务的函数
+  window.debugFaceSwapTasks = function() {
+    console.log(`🪟 当前窗口: ${WINDOW_ID}`)
+    console.log(`🔒 锁定服务器: ${windowLockedServer}`)
+    console.log(`📋 所有任务:`, Array.from(windowTasks.entries()))
+
+    const faceSwapTasks = Array.from(windowTasks.entries()).filter(([_, task]) => task.workflowType === 'faceswap')
+    console.log(`👤 换脸任务数量: ${faceSwapTasks.length}`)
+
+    faceSwapTasks.forEach(([promptId, task]) => {
+      console.log(`👤 换脸任务 ${promptId}:`, {
+        status: task.status,
+        windowId: task.windowId,
+        executionServer: task.executionServer,
+        hasOnProgress: !!task.onProgress,
+        registeredAt: task.registeredAt,
+        createdAt: task.createdAt
+      })
+    })
+
+    // 检查WebSocket连接状态
+    console.log(`🔗 WebSocket连接:`, {
+      readyState: wsConnection ? wsConnection.readyState : 'null',
+      url: wsConnection ? wsConnection.url : 'null'
+    })
+  }
+
+  // 🔧 新增：标准化工作流调试函数
+  window.debugWorkflowStandard = function(workflowType = null) {
+    console.log(`🔍 [${WINDOW_ID}] 工作流标准化调试`)
+
+    const tasks = Array.from(windowTasks.entries())
+    const filteredTasks = workflowType ?
+      tasks.filter(([_, task]) => task.workflowType === workflowType) : tasks
+
+    console.log(`📋 ${workflowType || '所有'}任务数量: ${filteredTasks.length}`)
+
+    filteredTasks.forEach(([promptId, task]) => {
+      console.log(`📝 任务 ${promptId}:`, {
+        类型: task.workflowType,
+        状态: task.status,
+        窗口: task.windowId,
+        服务器: task.executionServer,
+        进度回调: !!task.onProgress,
+        创建时间: task.createdAt
+      })
+    })
+
+    // 验证标准化合规性
+    const complianceIssues = []
+    filteredTasks.forEach(([promptId, task]) => {
+      if (!task.onProgress) complianceIssues.push(`${promptId}: 缺少进度回调`)
+      if (!task.executionServer) complianceIssues.push(`${promptId}: 缺少服务器绑定`)
+      if (!task.windowId) complianceIssues.push(`${promptId}: 缺少窗口标识`)
+    })
+
+    if (complianceIssues.length > 0) {
+      console.warn('⚠️ 标准化合规性问题:', complianceIssues)
+    } else {
+      console.log('✅ 所有任务符合标准化规范')
+    }
+  }
+
   // 🔧 新增：窗口信息调试函数
   window.getWindowInfo = () => ({
     windowId: WINDOW_ID,
@@ -1111,7 +1215,7 @@ if (typeof window !== 'undefined') {
     }
   }
 
-  console.log(`🔧 [${WINDOW_ID}] WebSocket管理函数已暴露到全局: window.resetWebSocketServer(), window.getWebSocketServerStatus(), window.debugWebSocketLock(), window.getApiBaseUrl(), window.checkServerUnlockCondition(), window.validateServerConsistency(), window.debugTaskStatus(), window.checkTaskStatusManually(), window.forceCompleteTask(), window.checkAllPendingTasks(), window.pendingTasks, window.getWindowInfo(), window.debugMultiWindowServers()`)
+  console.log(`🔧 [${WINDOW_ID}] WebSocket管理函数已暴露到全局: window.resetWebSocketServer(), window.getWebSocketServerStatus(), window.debugWebSocketLock(), window.getApiBaseUrl(), window.checkServerUnlockCondition(), window.validateServerConsistency(), window.debugTaskStatus(), window.checkTaskStatusManually(), window.forceCompleteTask(), window.checkAllPendingTasks(), window.pendingTasks, window.getWindowInfo(), window.debugMultiWindowServers(), window.debugFaceSwapTasks(), window.debugWorkflowStandard(), window.forceUnlockServerForWindow(), window.scheduleServerUnlockCheck(), window.clearServerUnlockTimer()`)
 }
 
 // 🔧 新增：获取当前WebSocket服务器状态的函数（窗口隔离版本）
@@ -1173,21 +1277,73 @@ function debugWebSocketLock() {
   }
 }
 
-// 🔧 新增：检查是否可以解锁服务器的函数（窗口隔离版本）
-function checkServerUnlockCondition() {
-  // 只有在以下条件都满足时才解锁服务器：
-  // 1. 没有待处理任务
-  // 2. WebSocket连接已断开超过一定时间（可选）
+// 🔧 动态解锁检查机制
+let serverUnlockTimer = null
 
-  if (windowTasks.size === 0) {
-    if (windowLockedServer) {
-      console.log(`🔓 [${WINDOW_ID}] 所有任务已完成，解锁服务器`)
-      console.log(`🔓 [${WINDOW_ID}] 解锁服务器: ${windowLockedServer}`)
-      unlockServerForWindow()
-      return true
-    }
+// 🔧 调度服务器解锁检查（定期检查任务状态）
+function scheduleServerUnlockCheck() {
+  // 清理之前的定时器
+  clearServerUnlockTimer()
+
+  // 设置定期检查（每30秒检查一次）
+  serverUnlockTimer = setInterval(() => {
+    checkServerUnlockCondition()
+  }, 30000)
+
+  console.log(`⏰ [${WINDOW_ID}] 已调度动态解锁检查（每30秒检查一次）`)
+}
+
+// 🔧 清理解锁检查定时器
+function clearServerUnlockTimer() {
+  if (serverUnlockTimer) {
+    clearInterval(serverUnlockTimer)
+    serverUnlockTimer = null
+    console.log(`🧹 [${WINDOW_ID}] 已清理解锁检查定时器`)
+  }
+}
+
+// 🔧 检查是否可以解锁服务器的函数（增强版本）
+function checkServerUnlockCondition() {
+  if (!windowLockedServer) {
+    // 服务器未锁定，清理定时器
+    clearServerUnlockTimer()
+    return false
+  }
+
+  const taskCount = windowTasks.size
+  const lockDuration = Date.now() - windowLockTimestamp
+
+  console.log(`🔍 [${WINDOW_ID}] 解锁条件检查:`)
+  console.log(`   - 待处理任务数: ${taskCount}`)
+  console.log(`   - 锁定持续时间: ${Math.round(lockDuration / 1000)}秒`)
+  console.log(`   - 锁定服务器: ${windowLockedServer}`)
+
+  if (taskCount === 0) {
+    console.log(`🔓 [${WINDOW_ID}] 所有任务已完成，自动解锁服务器`)
+    unlockServerForWindow()
+    return true
   } else {
-    console.log(`🔒 [${WINDOW_ID}] 仍有 ${windowTasks.size} 个待处理任务，保持服务器锁定`)
+    console.log(`🔒 [${WINDOW_ID}] 仍有 ${taskCount} 个待处理任务，保持服务器锁定`)
+
+    // 列出待处理任务
+    const taskIds = Array.from(windowTasks.keys())
+    console.log(`📋 [${WINDOW_ID}] 待处理任务: [${taskIds.join(', ')}]`)
+
+    // 检查是否有长时间运行的任务
+    const longRunningTasks = []
+    windowTasks.forEach((task, promptId) => {
+      const taskDuration = Date.now() - (task.registeredAt || windowLockTimestamp)
+      if (taskDuration > 10 * 60 * 1000) { // 超过10分钟
+        longRunningTasks.push({ promptId, duration: Math.round(taskDuration / 1000) })
+      }
+    })
+
+    if (longRunningTasks.length > 0) {
+      console.log(`⚠️ [${WINDOW_ID}] 检测到长时间运行的任务:`)
+      longRunningTasks.forEach(({ promptId, duration }) => {
+        console.log(`   - ${promptId}: ${duration}秒`)
+      })
+    }
   }
 
   return false
@@ -1993,40 +2149,38 @@ async function waitForTaskCompletion(promptId, onProgress = null, workflowType =
     // 🔧 移除超时机制 - 参考官方 websockets_api_example.py 的 while True 无限等待逻辑
     console.log(`📝 [${WINDOW_ID}] 任务将无限期等待，直到收到完成或失败的WebSocket消息`)
 
-    // 创建任务对象 - 包含官方标准状态字段和窗口标识（无超时机制）
-    const task = {
-      // 🔧 窗口标识
-      windowId: WINDOW_ID,
-      clientId: WINDOW_CLIENT_ID,
+    // 🔧 关键修复：检查任务是否已经注册，避免重复注册
+    let task = getWindowTask(promptId)
 
-      // 基本信息
-      workflowType: workflowType,
-      createdAt: new Date().toISOString(),
-      startTime: Date.now(),
-
-      // 官方标准状态字段
-      status: TASK_STATUS.WAITING,
-      lastStatusUpdate: Date.now(),
-
-      // 执行状态跟踪
-      currentNode: null,
-      completedNodes: [],
-
-      // 回调函数（移除超时处理）
-      onProgress: onProgress || (() => {}),
-      onComplete: (result) => {
-        console.log(`✅ [${WINDOW_ID}] 任务完成回调: ${promptId}`)
-        resolve(result)
-      },
-      onError: (error) => {
-        console.error(`❌ [${WINDOW_ID}] 任务错误回调: ${promptId}`, error)
-        reject(error instanceof Error ? error : new Error(error))
+    if (!task) {
+      console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 未找到，这不应该发生（任务应该在submitWorkflow中预注册）`)
+      // 创建备用任务对象
+      task = {
+        windowId: WINDOW_ID,
+        clientId: WINDOW_CLIENT_ID,
+        workflowType: workflowType,
+        createdAt: new Date().toISOString(),
+        startTime: Date.now(),
+        status: TASK_STATUS.WAITING,
+        lastStatusUpdate: Date.now(),
+        currentNode: null,
+        completedNodes: []
       }
+      registerWindowTask(promptId, task)
     }
 
-    // 🔧 注册任务到窗口队列
-    registerWindowTask(promptId, task)
-    console.log(`📝 [${WINDOW_ID}] 任务已注册: ${promptId} (状态: ${task.status})`)
+    // 🔧 更新任务的回调函数（不重复注册任务）
+    task.onProgress = onProgress || (() => {})
+    task.onComplete = (result) => {
+      console.log(`✅ [${WINDOW_ID}] 任务完成回调: ${promptId}`)
+      resolve(result)
+    }
+    task.onError = (error) => {
+      console.error(`❌ [${WINDOW_ID}] 任务错误回调: ${promptId}`, error)
+      reject(error instanceof Error ? error : new Error(error))
+    }
+
+    console.log(`📝 [${WINDOW_ID}] 任务回调已更新: ${promptId} (状态: ${task.status})`)
 
     // 设置初始进度
     if (onProgress) {
@@ -2105,6 +2259,49 @@ async function checkAllPendingTasks() {
   }
 }
 
+// 🔧 新增：标准化任务创建函数
+function createStandardTask(workflowType, onProgress = null) {
+  return {
+    workflowType: workflowType,
+    createdAt: new Date().toISOString(),
+    onProgress: onProgress,  // ✅ 标准化：直接传递进度回调
+    onComplete: null,
+    onError: null
+  }
+}
+
+// 🔧 新增：标准化进度处理器创建函数
+function createProgressHandler(onProgress, baseProgress, maxProgress) {
+  const progressRange = maxProgress - baseProgress
+  return (status, progress) => {
+    if (onProgress) {
+      const adjustedProgress = Math.min(maxProgress, Math.max(baseProgress, baseProgress + (progress * progressRange / 100)))
+      onProgress(status, adjustedProgress)
+    }
+  }
+}
+
+// 🔧 新增：标准化结果创建函数
+function createStandardResult(success, data) {
+  if (success) {
+    return {
+      success: true,
+      resultImage: data.resultImage,
+      originalImage: data.originalImage,
+      promptId: data.promptId,
+      pointsConsumed: data.pointsConsumed,
+      pointsRemaining: data.pointsRemaining,
+      message: data.message
+    }
+  } else {
+    return {
+      success: false,
+      error: data.error,
+      message: data.message
+    }
+  }
+}
+
 // 主要的换衣API函数 - 两步流程
 async function processUndressImage(base64Image, onProgress = null) {
   try {
@@ -2162,7 +2359,7 @@ async function processUndressImage(base64Image, onProgress = null) {
     const tempTask = {
       workflowType: 'undress',
       createdAt: new Date().toISOString(),
-      onProgress: null,
+      onProgress: onProgress,  // 🔧 修复：直接传递进度回调
       onComplete: null,
       onError: null
     }
@@ -2386,7 +2583,7 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
     const tempTask = {
       workflowType: 'faceswap',
       createdAt: new Date().toISOString(),
-      onProgress: null,
+      onProgress: onProgress,  // 🔧 修复：直接传递进度回调
       onComplete: null,
       onError: null
     }
@@ -2396,7 +2593,12 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
     if (onProgress) onProgress('正在处理换脸...', 85)
 
     // 等待任务完成（无超时限制）
-    const taskResult = await waitForTaskCompletion(submittedPromptId, onProgress, 'faceswap')
+    const taskResult = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
+      if (onProgress) {
+        const adjustedProgress = Math.min(95, Math.max(85, 85 + (progress * 0.1)))
+        onProgress(status, adjustedProgress)
+      }
+    }, 'faceswap')
     console.log('✅ 换脸任务处理完成')
 
     if (onProgress) onProgress('正在获取处理结果...', 95)
@@ -2745,5 +2947,9 @@ export {
   getTaskBoundImageUrl, // 🔧 新增：使用任务绑定服务器的图片获取函数
   getTaskBoundServer, // 🔧 新增：获取任务绑定的服务器地址
   buildImageUrlWithServer, // 🔧 新增：使用指定服务器构建图片URL
-  getComfyUIImageUrl // 保留：兼容性函数
+  getComfyUIImageUrl, // 保留：兼容性函数
+  // 🔧 新增：动态锁定管理函数
+  forceUnlockServerForWindow, // 🔧 新增：强制解锁服务器（异常情况处理）
+  scheduleServerUnlockCheck, // 🔧 新增：调度动态解锁检查
+  clearServerUnlockTimer // 🔧 新增：清理解锁检查定时器
 }
