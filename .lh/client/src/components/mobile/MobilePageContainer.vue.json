@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 13,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1752384723098,
@@ -60,6 +60,14 @@
                 {
                     "date": 1752389222922,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -113,8 +113,13 @@\n }\n \n /* 移动端优化 */\n @media (max-width: 768px) {\n+  .mobile-page-content {\n+    padding-top: 60px; /* 移动端导航栏高度 */\n+    min-height: calc(100vh - 60px); /* 匹配移动端导航栏高度 */\n+  }\n+\n   .mobile-page-main {\n     padding: 16px;\n   }\n \n"
+                },
+                {
+                    "date": 1753017824251,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,9 @@\n <template>\n   <div class=\"mobile-page\">\n     <!-- 顶部导航 -->\n     <TopNavigation\n+      ref=\"topNavigationRef\"\n       :title=\"title\"\n       :show-back=\"showBack\"\n       @login=\"$emit('login', $event)\"\n       @logout=\"$emit('logout', $event)\"\n"
+                },
+                {
+                    "date": 1753017836194,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -29,10 +29,14 @@\n   </div>\n </template>\n \n <script setup>\n+import { ref } from 'vue'\n import TopNavigation from '../TopNavigation.vue'\n \n+// TopNavigation 组件引用\n+const topNavigationRef = ref(null)\n+\n // Props\n defineProps({\n   title: {\n     type: String,\n@@ -45,8 +49,17 @@\n })\n \n // Events\n defineEmits(['login', 'logout'])\n+\n+// 暴露给父组件的方法\n+defineExpose({\n+  showLoginModal: () => {\n+    if (topNavigationRef.value) {\n+      topNavigationRef.value.showLoginModal()\n+    }\n+  }\n+})\n </script>\n \n <style scoped>\n .mobile-page {\n"
                 }
             ],
             "date": 1752384723098,

@@ -2,6 +2,7 @@
   <div class="mobile-page">
     <!-- 顶部导航 -->
     <TopNavigation
+      ref="topNavigationRef"
       :title="title"
       :show-back="showBack"
       @login="$emit('login', $event)"
@@ -29,7 +30,11 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import TopNavigation from '../TopNavigation.vue'
+
+// TopNavigation 组件引用
+const topNavigationRef = ref(null)
 
 // Props
 defineProps({
@@ -45,6 +50,15 @@ defineProps({
 
 // Events
 defineEmits(['login', 'logout'])
+
+// 暴露给父组件的方法
+defineExpose({
+  showLoginModal: () => {
+    if (topNavigationRef.value) {
+      topNavigationRef.value.showLoginModal()
+    }
+  }
+})
 </script>
 
 <style scoped>

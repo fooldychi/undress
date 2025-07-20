@@ -207,7 +207,7 @@ class LoadBalancer {
   }
 
   /**
-   * 显示简化的服务器状态日志
+   * 显示服务器状态日志
    */
   logServerStatus() {
     const healthyServers = this.serverList.filter(s => s.healthy === true)
@@ -216,8 +216,10 @@ class LoadBalancer {
     if (healthyServers.length === 0) {
       console.warn(`⚠️ 服务器状态: 0/${totalServers} 可用`)
 
-      // 触发全局错误处理
-      this.handleNoAvailableServers(totalServers)
+      // 业务层面错误：立即触发错误处理
+      if (totalServers > 0) {
+        this.handleNoAvailableServers(totalServers)
+      }
       return
     }
 
@@ -235,6 +237,10 @@ class LoadBalancer {
 
   /**
    * 处理没有可用服务器的情况
+   *
+   * 🎯 错误处理策略区分：
+   * - 业务层面错误（所有服务器不可用）→ 立即显示用户友好的错误弹窗
+   * - 技术层面错误（WebSocket连接、服务器锁定）→ 仅记录日志，不弹窗
    */
   handleNoAvailableServers(totalServers) {
     // 避免重复触发错误提示
@@ -244,34 +250,37 @@ class LoadBalancer {
 
     this.noServerErrorShown = true
 
-    // 延迟触发，避免在初始化时立即显示错误
+    console.log('🚨 业务层面错误：所有服务器都不可用，立即显示用户提示')
+
+    // 立即显示错误提示（业务层面的问题需要用户知晓）
     setTimeout(() => {
       const error = new Error(`ComfyUI服务器集群不可用: 所有 ${totalServers} 个服务器都无法连接`)
 
       try {
         showGlobalError(error, {
           title: '服务器不可用',
-          message: '目前服务器不可用，请刷新页面或稍后再试！',
-          showRetry: false
+          message: '服务器不可用，请稍后重试',
+          showRetry: true
         })
 
-        console.error('🚨 触发全局错误提示: 没有可用的 ComfyUI 服务器')
+        console.error('🚨 已显示全局错误提示: 没有可用的 ComfyUI 服务器')
       } catch (globalErrorError) {
-        console.error('❌ 无法触发全局错误提示:', globalErrorError)
+        console.error('❌ 无法显示全局错误提示:', globalErrorError)
 
         // 降级处理：显示浏览器原生警告
         if (typeof window !== 'undefined') {
           setTimeout(() => {
-            alert('服务器不可用\n\n请刷新页面重试。')
+            alert('服务器不可用\n\n请稍后重试。')
           }, 1000)
         }
       }
-    }, 2000) // 延迟2秒，避免在页面加载时立即显示
+    }, 1000) // 短暂延迟1秒，确保页面已加载
 
-    // 5分钟后重置标志，允许再次显示错误
+    // 2分钟后重置标志，允许再次显示错误
     setTimeout(() => {
       this.noServerErrorShown = false
-    }, 300000)
+      console.log('🔄 重置服务器错误提示标志')
+    }, 120000) // 2分钟后重置
   }
 
   /**

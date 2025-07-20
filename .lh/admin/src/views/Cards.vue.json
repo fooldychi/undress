@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 25,
+            "activePatchIndex": 26,
             "patches": [
                 {
                     "date": 1752314235686,
@@ -108,6 +108,10 @@
                 {
                     "date": 1752985440148,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -226,15 +226,30 @@\n // 加载等级卡类型\n const loadCardTypes = async () => {\n   cardTypesLoading.value = true\n   try {\n+    console.log('🔍 开始加载等级卡类型...');\n+\n+    // 确保有token\n+    const { getToken, setToken } = await import('@/utils/auth');\n+    let token = getToken();\n+    if (!token) {\n+      console.log('⚠️ 没有找到token，设置测试token');\n+      setToken('admin-token');\n+      token = 'admin-token';\n+    }\n+    console.log('🔑 当前token:', token);\n+\n     const response = await getCardTypes()\n+    console.log('📊 API响应:', response);\n+\n     if (response.success) {\n       cardTypes.value = response.data.cardTypes\n+      console.log('✅ 等级卡类型加载成功:', cardTypes.value);\n     }\n   } catch (error) {\n-    console.error('加载等级卡类型失败:', error)\n-    ElMessage.error('加载等级卡类型失败')\n+    console.error('❌ 加载等级卡类型失败:', error)\n+    ElMessage.error('加载等级卡类型失败: ' + error.message)\n   } finally {\n     cardTypesLoading.value = false\n   }\n }\n"
+                },
+                {
+                    "date": 1753015841284,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -255,8 +255,12 @@\n }\n \n // 批量生成等级卡\n const handleBatchGenerate = async () => {\n+  console.log('🎫 开始批量生成等级卡...');\n+  console.log('📋 当前表单数据:', batchGenerateForm);\n+  console.log('📊 可用卡类型:', cardTypes.value);\n+\n   if (!batchGenerateForm.cardTypeId) {\n     ElMessage.warning('请选择等级卡类型')\n     return\n   }\n@@ -267,13 +271,17 @@\n   }\n \n   batchGenerating.value = true\n   try {\n-    const response = await generateCards({\n+    const requestData = {\n       cardTypeId: batchGenerateForm.cardTypeId,\n       count: batchGenerateForm.count\n-    })\n+    };\n+    console.log('📤 发送请求数据:', requestData);\n \n+    const response = await generateCards(requestData)\n+    console.log('📥 收到响应:', response);\n+\n     if (response.success) {\n       // 获取选中的卡类型名称\n       const selectedCardType = cardTypes.value.find(type => type.id === batchGenerateForm.cardTypeId)\n       selectedCardTypeName.value = selectedCardType?.name || '等级卡'\n@@ -289,12 +297,15 @@\n       // 刷新列表\n       loadCards()\n \n       ElMessage.success(response.message)\n+    } else {\n+      console.error('❌ 生成失败，响应不成功:', response);\n+      ElMessage.error(response.message || '生成等级卡失败')\n     }\n   } catch (error) {\n-    console.error('批量生成等级卡失败:', error)\n-    ElMessage.error('批量生成等级卡失败')\n+    console.error('❌ 批量生成等级卡失败:', error)\n+    ElMessage.error('批量生成等级卡失败: ' + (error.response?.data?.message || error.message))\n   } finally {\n     batchGenerating.value = false\n   }\n }\n"
                 }
             ],
             "date": 1752314235686,

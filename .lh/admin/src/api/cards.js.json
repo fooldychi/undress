@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 8,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752316890568,
@@ -40,6 +40,10 @@
                 {
                     "date": 1752985421949,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -128,12 +128,24 @@\n /**\n  * 获取等级卡类型列表\n  */\n export function getCardTypes() {\n+  console.log('🚀 开始调用 getCardTypes API...');\n+\n   return request({\n     url: '/admin/card-types',\n     method: 'get'\n+  }).then(response => {\n+    console.log('✅ getCardTypes API 调用成功:', response);\n+    return response;\n   }).catch(error => {\n+    console.error('❌ getCardTypes API 调用失败:');\n+    console.error('错误对象:', error);\n+    console.error('错误消息:', error.message);\n+    console.error('错误响应:', error.response);\n+    console.error('错误状态:', error.response?.status);\n+    console.error('错误数据:', error.response?.data);\n+\n     // 如果服务器连接失败，返回模拟数据用于开发测试\n     console.warn('服务器连接失败，使用模拟数据:', error.message);\n     return Promise.resolve({\n       success: true,\n"
+                },
+                {
+                    "date": 1753015779594,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -192,10 +192,24 @@\n /**\n  * 批量生成等级卡\n  */\n export function generateCards(data) {\n+  console.log('🚀 开始调用 generateCards API...');\n+  console.log('📤 请求数据:', data);\n+\n   return request({\n     url: '/admin/generate-cards',\n     method: 'post',\n     data\n+  }).then(response => {\n+    console.log('✅ generateCards API 调用成功:', response);\n+    return response;\n+  }).catch(error => {\n+    console.error('❌ generateCards API 调用失败:');\n+    console.error('错误对象:', error);\n+    console.error('错误消息:', error.message);\n+    console.error('错误响应:', error.response);\n+    console.error('错误状态:', error.response?.status);\n+    console.error('错误数据:', error.response?.data);\n+    throw error; // 重新抛出错误，让调用方处理\n   })\n }\n"
                 }
             ],
             "date": 1752316890568,

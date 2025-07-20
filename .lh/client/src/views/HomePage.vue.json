@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 87,
+            "activePatchIndex": 90,
             "patches": [
                 {
                     "date": 1752290191013,
@@ -356,6 +356,18 @@
                 {
                     "date": 1752836000346,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -161,16 +161,16 @@\n \r\n \r\n // 用户登录成功回调\r\n const handleUserLogin = (data) => {\r\n-  console.log('用户登录成功:', data)\r\n+  logger.user('用户登录成功')\r\n   // 可以在这里触发一些需要登录状态的操作\r\n   // 比如刷新积分信息等\r\n }\r\n \r\n // 用户登出回调\r\n const handleUserLogout = () => {\r\n-  console.log('用户已登出')\r\n+  logger.user('用户已登出')\r\n   // 可以在这里清理一些用户相关的状态\r\n }\r\n \r\n \r\n"
+                },
+                {
+                    "date": 1753017782444,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -90,8 +90,11 @@\n import logger from '../utils/logger.js'\r\n \r\n const router = useRouter()\r\n \r\n+// 页面容器组件引用\r\n+const mobilePageContainerRef = ref(null)\r\n+\r\n // 功能配置 - 从配置文件获取\r\n const featureConfigs = ref([])\r\n \r\n // 动态生成CSS样式\r\n"
+                },
+                {
+                    "date": 1753017792219,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,7 @@\n <template>\r\n   <MobilePageContainer\r\n+    ref=\"mobilePageContainerRef\"\r\n     title=\"AI Magic\"\r\n     @login=\"handleUserLogin\"\r\n     @logout=\"handleUserLogout\"\r\n   >\r\n"
+                },
+                {
+                    "date": 1753017802193,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -142,11 +142,11 @@\n     if (!authApi.isLoggedIn()) {\r\n       logger.debug('未登录，显示登录提示')\r\n       Toast.fail('请先登录后再使用此功能')\r\n \r\n-      // 触发TopNavigation组件显示登录弹窗\r\n-      if (topNavigationRef.value) {\r\n-        topNavigationRef.value.showLoginModal()\r\n+      // 触发MobilePageContainer组件显示登录弹窗\r\n+      if (mobilePageContainerRef.value) {\r\n+        mobilePageContainerRef.value.showLoginModal()\r\n       }\r\n       return\r\n     }\r\n   }\r\n"
                 }
             ],
             "date": 1752290191013,

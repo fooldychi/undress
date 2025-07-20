@@ -256,6 +256,10 @@ const loadCardTypes = async () => {
 
 // 批量生成等级卡
 const handleBatchGenerate = async () => {
+  console.log('🎫 开始批量生成等级卡...');
+  console.log('📋 当前表单数据:', batchGenerateForm);
+  console.log('📊 可用卡类型:', cardTypes.value);
+
   if (!batchGenerateForm.cardTypeId) {
     ElMessage.warning('请选择等级卡类型')
     return
@@ -268,10 +272,14 @@ const handleBatchGenerate = async () => {
 
   batchGenerating.value = true
   try {
-    const response = await generateCards({
+    const requestData = {
       cardTypeId: batchGenerateForm.cardTypeId,
       count: batchGenerateForm.count
-    })
+    };
+    console.log('📤 发送请求数据:', requestData);
+
+    const response = await generateCards(requestData)
+    console.log('📥 收到响应:', response);
 
     if (response.success) {
       // 获取选中的卡类型名称
@@ -290,10 +298,13 @@ const handleBatchGenerate = async () => {
       loadCards()
 
       ElMessage.success(response.message)
+    } else {
+      console.error('❌ 生成失败，响应不成功:', response);
+      ElMessage.error(response.message || '生成等级卡失败')
     }
   } catch (error) {
-    console.error('批量生成等级卡失败:', error)
-    ElMessage.error('批量生成等级卡失败')
+    console.error('❌ 批量生成等级卡失败:', error)
+    ElMessage.error('批量生成等级卡失败: ' + (error.response?.data?.message || error.message))
   } finally {
     batchGenerating.value = false
   }

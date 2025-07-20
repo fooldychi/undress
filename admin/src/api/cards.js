@@ -193,9 +193,23 @@ export function getCardTypes() {
  * 批量生成等级卡
  */
 export function generateCards(data) {
+  console.log('🚀 开始调用 generateCards API...');
+  console.log('📤 请求数据:', data);
+
   return request({
     url: '/admin/generate-cards',
     method: 'post',
     data
+  }).then(response => {
+    console.log('✅ generateCards API 调用成功:', response);
+    return response;
+  }).catch(error => {
+    console.error('❌ generateCards API 调用失败:');
+    console.error('错误对象:', error);
+    console.error('错误消息:', error.message);
+    console.error('错误响应:', error.response);
+    console.error('错误状态:', error.response?.status);
+    console.error('错误数据:', error.response?.data);
+    throw error; // 重新抛出错误，让调用方处理
   })
 }

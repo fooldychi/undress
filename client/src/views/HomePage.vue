@@ -1,5 +1,6 @@
 <template>
   <MobilePageContainer
+    ref="mobilePageContainerRef"
     title="AI Magic"
     @login="handleUserLogin"
     @logout="handleUserLogout"
@@ -91,6 +92,9 @@ import logger from '../utils/logger.js'
 
 const router = useRouter()
 
+// 页面容器组件引用
+const mobilePageContainerRef = ref(null)
+
 // 功能配置 - 从配置文件获取
 const featureConfigs = ref([])
 
@@ -139,9 +143,9 @@ const navigateTo = (featureConfig) => {
       logger.debug('未登录，显示登录提示')
       Toast.fail('请先登录后再使用此功能')
 
-      // 触发TopNavigation组件显示登录弹窗
-      if (topNavigationRef.value) {
-        topNavigationRef.value.showLoginModal()
+      // 触发MobilePageContainer组件显示登录弹窗
+      if (mobilePageContainerRef.value) {
+        mobilePageContainerRef.value.showLoginModal()
       }
       return
     }

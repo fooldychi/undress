@@ -1927,57 +1927,73 @@ function getImageUrl(filename, subfolder, folderType, apiBaseUrl) {
   return url
 }
 
-// 确保WebSocket连接 - 增强版本（保证服务器一致性）
+// 🔧 简化版：确保WebSocket连接（技术层面错误降级为警告）
+// 🎯 错误处理策略：WebSocket连接问题属于技术层面，不显示用户弹窗，仅记录日志
 async function ensureWebSocketConnection() {
-  // 🔧 检查现有连接是否健康且服务器一致
-  if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected && windowLockedServer) {
-    console.log(`✅ [${WINDOW_ID}] [ensureWebSocket] WebSocket连接健康，锁定服务器: ${windowLockedServer}`)
+  console.log(`🔌 [${WINDOW_ID}] 确保WebSocket连接`)
+
+  // 如果已连接，直接返回（不强制要求服务器锁定）
+  if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
+    console.log(`✅ [${WINDOW_ID}] WebSocket已连接`)
+
+    // 尝试锁定服务器，但失败不影响继续使用
+    if (!windowLockedServer) {
+      try {
+        const apiBaseUrl = await getApiBaseUrl()
+        lockServerForWindow(apiBaseUrl)
+        console.log(`🔒 [${WINDOW_ID}] 补充锁定服务器: ${apiBaseUrl}`)
+      } catch (error) {
+        console.warn(`⚠️ [${WINDOW_ID}] 服务器锁定失败，但继续使用连接:`, error.message)
+      }
+    }
     return true
   }
 
-  // 🔧 如果有待处理任务但连接断开，必须重连到相同服务器
-  if (windowTasks.size > 0 && windowLockedServer) {
-    console.log(`🔄 [${WINDOW_ID}] 有 ${windowTasks.size} 个待处理任务，重连到锁定服务器: ${windowLockedServer}`)
-  } else {
-    console.log(`🔄 [${WINDOW_ID}] 建立新的WebSocket连接...`)
-  }
+  // 需要建立新连接
+  console.log(`🔄 [${WINDOW_ID}] 建立新的WebSocket连接`)
 
   try {
     await initializeWebSocket()
 
-    // 🔧 验证连接后的窗口级别服务器锁定状态
-    if (!windowLockedServer) {
-      throw new Error('WebSocket连接后未能锁定服务器')
+    // 给连接一些时间稳定
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    if (!isWsConnected) {
+      console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接状态异常，但尝试继续`)
     }
 
-    console.log(`✅ [${WINDOW_ID}] [ensureWebSocket] WebSocket连接已建立，锁定服务器: ${windowLockedServer}`)
+    console.log(`✅ [${WINDOW_ID}] WebSocket连接完成`)
     return true
+
   } catch (error) {
-    console.error('❌ [ensureWebSocket] WebSocket连接失败:', error)
-    // 重新抛出原始错误，而不是服务器锁定错误
-    throw error
+    console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接失败，但不阻止操作:`, error.message)
+    // 🔧 关键改进：不抛出错误，允许降级使用
+    return false
   }
 }
 
 
 
-// 🔥 官方标准任务等待 - 基于WebSocket消息的简化版本（窗口隔离版本）
-async function waitForTaskCompletion(promptId, maxWaitTime = 600000, onProgress = null, workflowType = 'undress') {
-  console.log(`⏳ [${WINDOW_ID}] 等待任务完成: ${promptId}`)
+// 🔥 官方标准任务等待 - 基于WebSocket消息的无超时版本（参考官方 while True 逻辑）
+// 🎯 业务需求：移除客户端任务超时机制
+// - AI图像处理任务执行时间不可预测，客户端不应主动中断
+// - 参考官方 websockets_api_example.py 的 while True 无限等待逻辑
+// - 只有服务器主动中断或任务失败时才结束等待
+async function waitForTaskCompletion(promptId, onProgress = null, workflowType = 'undress') {
+  console.log(`⏳ [${WINDOW_ID}] 等待任务完成: ${promptId} (无超时限制)`)
 
-  await ensureWebSocketConnection()
+  // 🔧 尝试确保WebSocket连接，但失败不阻止继续
+  try {
+    await ensureWebSocketConnection()
+  } catch (connectionError) {
+    console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接问题，但继续等待任务:`, connectionError.message)
+  }
 
   return new Promise((resolve, reject) => {
-    // 设置超时保护
-    const timeout = setTimeout(() => {
-      if (windowTasks.has(promptId)) {
-        console.error(`⏰ [${WINDOW_ID}] 任务超时: ${promptId}`)
-        removeWindowTask(promptId)
-        reject(new Error(`任务执行超时 (${Math.round(maxWaitTime/1000)}秒)`))
-      }
-    }, maxWaitTime)
+    // 🔧 移除超时机制 - 参考官方 websockets_api_example.py 的 while True 无限等待逻辑
+    console.log(`📝 [${WINDOW_ID}] 任务将无限期等待，直到收到完成或失败的WebSocket消息`)
 
-    // 创建任务对象 - 包含官方标准状态字段和窗口标识
+    // 创建任务对象 - 包含官方标准状态字段和窗口标识（无超时机制）
     const task = {
       // 🔧 窗口标识
       windowId: WINDOW_ID,
@@ -1996,15 +2012,13 @@ async function waitForTaskCompletion(promptId, maxWaitTime = 600000, onProgress 
       currentNode: null,
       completedNodes: [],
 
-      // 回调函数
+      // 回调函数（移除超时处理）
       onProgress: onProgress || (() => {}),
       onComplete: (result) => {
-        clearTimeout(timeout)
         console.log(`✅ [${WINDOW_ID}] 任务完成回调: ${promptId}`)
         resolve(result)
       },
       onError: (error) => {
-        clearTimeout(timeout)
         console.error(`❌ [${WINDOW_ID}] 任务错误回调: ${promptId}`, error)
         reject(error instanceof Error ? error : new Error(error))
       }
@@ -2096,12 +2110,19 @@ async function processUndressImage(base64Image, onProgress = null) {
   try {
     console.log('🚀 开始处理换衣请求')
 
-    // 预检查服务器状态
+    // 🔧 预检查改为警告而非阻断
     if (onProgress) onProgress('正在检查服务器状态...', 5)
 
-    const serverStatus = await checkComfyUIServerStatus()
-    if (serverStatus.status === 'error') {
-      throw new Error(`ComfyUI服务器不可用: ${serverStatus.error}`)
+    try {
+      const serverStatus = await checkComfyUIServerStatus()
+      if (serverStatus.status === 'error') {
+        console.warn('⚠️ 服务器预检查失败，但尝试继续处理:', serverStatus.error)
+        // 不要立即抛出错误，给用户一个尝试的机会
+      } else if (serverStatus.status === 'warning') {
+        console.warn('⚠️ 服务器状态警告，但继续尝试:', serverStatus.note)
+      }
+    } catch (preCheckError) {
+      console.warn('⚠️ 预检查异常，但继续尝试处理:', preCheckError.message)
     }
 
     // 检查积分（优先使用等级卡系统）
@@ -2152,7 +2173,7 @@ async function processUndressImage(base64Image, onProgress = null) {
     // 等待任务完成
     if (onProgress) onProgress('正在等待ComfyUI处理...', 50)
 
-    const taskResult = await waitForTaskCompletion(submittedPromptId, 600000, (status, progress) => {
+    const taskResult = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
       if (onProgress) {
         const adjustedProgress = Math.min(95, Math.max(50, 50 + (progress * 0.45)))
         onProgress(status, adjustedProgress)
@@ -2211,48 +2232,62 @@ async function processUndressImage(base64Image, onProgress = null) {
   }
 }
 
-// 检查ComfyUI服务器状态 - 使用统一的官方端点配置
+// 🔧 简化版：检查ComfyUI服务器状态（更宽松的检查策略）
 async function checkComfyUIServerStatus() {
   try {
     const apiBaseUrl = await getApiBaseUrl()
-    const testEndpoints = comfyUIConfig.getHealthCheckEndpoints()
+    console.log('🔍 检查服务器状态:', apiBaseUrl)
 
-    console.log('🔍 检查ComfyUI服务器状态:', apiBaseUrl)
-    console.log('📋 使用端点列表:', testEndpoints)
+    // 🔧 简化检查：只要能连通就认为可用
+    const response = await fetch(`${apiBaseUrl}/api/system_stats`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000) // 5秒超时
+    })
 
-    for (const endpoint of testEndpoints) {
-      try {
-        const response = await fetch(`${apiBaseUrl}${endpoint}`, {
-          method: 'GET',
-          signal: AbortSignal.timeout(comfyUIConfig.HEALTH_CHECK.TIMEOUT)
-        })
-
-        if (response.ok) {
-          try {
-            const data = await response.json()
-            const isValid = comfyUIConfig.validateResponse(endpoint, data)
-
-            if (isValid) {
-              console.log(`✅ 服务器状态检查成功: ${endpoint} (已验证ComfyUI响应)`)
-              return { status: 'ok', endpoint, data, validated: true }
-            } else {
-              console.log(`⚠️ 端点 ${endpoint} 响应但验证失败`)
-              continue
-            }
-          } catch (jsonError) {
-            // 即使不是JSON，只要响应成功就认为服务器正常
-            console.log(`✅ 服务器状态检查成功: ${endpoint} (非JSON响应但连接正常)`)
-            return { status: 'ok', endpoint, note: '非JSON响应但连接正常' }
-          }
-        }
-      } catch (endpointError) {
-        console.log(`端点 ${endpoint} 测试失败: ${endpointError.message}`)
-      }
+    if (response.ok) {
+      console.log('✅ 服务器状态正常')
+      return { status: 'ok', endpoint: '/api/system_stats' }
+    } else {
+      // 🔧 即使system_stats失败，尝试其他端点
+      console.log('⚠️ system_stats失败，尝试其他检查')
+      return await fallbackServerCheck(apiBaseUrl)
     }
-
-    return { status: 'error', error: '所有端点测试失败' }
   } catch (error) {
-    return { status: 'error', error: error.message }
+    console.log('⚠️ 主要检查失败，尝试备用检查:', error.message)
+    return await fallbackServerCheck()
+  }
+}
+
+// 🔧 备用检查方法
+async function fallbackServerCheck(apiBaseUrl) {
+  if (!apiBaseUrl) {
+    apiBaseUrl = await getApiBaseUrl()
+  }
+
+  const fallbackEndpoints = ['/api/queue', '/api/history', '/']
+
+  for (const endpoint of fallbackEndpoints) {
+    try {
+      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000)
+      })
+
+      if (response.ok) {
+        console.log(`✅ 备用检查成功: ${endpoint}`)
+        return { status: 'ok', endpoint, note: '备用检查通过' }
+      }
+    } catch (error) {
+      console.log(`❌ 备用端点 ${endpoint} 失败:`, error.message)
+    }
+  }
+
+  // 🔧 关键改进：即使所有检查都失败，也给出更友好的结果
+  console.log('⚠️ 所有端点检查失败，但这可能是暂时的网络问题')
+  return {
+    status: 'warning', // 改为warning而不是error
+    error: '所有检查端点都失败',
+    note: '但这可能是暂时的网络问题，可以尝试继续操作'
   }
 }
 
@@ -2360,9 +2395,8 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
 
     if (onProgress) onProgress('正在处理换脸...', 85)
 
-    // 等待任务完成
-    const maxWaitTime = 600000 // 10分钟
-    const taskResult = await waitForTaskCompletion(submittedPromptId, maxWaitTime, onProgress, 'faceswap')
+    // 等待任务完成（无超时限制）
+    const taskResult = await waitForTaskCompletion(submittedPromptId, onProgress, 'faceswap')
     console.log('✅ 换脸任务处理完成')
 
     if (onProgress) onProgress('正在获取处理结果...', 95)
@@ -2432,8 +2466,8 @@ async function testOfficialStandard() {
     const submittedPromptId = await submitWorkflow(testWorkflow, promptId, tempTask)
     console.log(`✅ [OFFICIAL] 工作流提交成功: ${submittedPromptId}`)
 
-    // 5. 等待完成
-    const result = await waitForTaskCompletion(submittedPromptId, 60000, (status, progress) => {
+    // 5. 等待完成（无超时限制）
+    const result = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
       console.log(`📊 [OFFICIAL] 测试进度: ${status} (${progress}%)`)
     }, 'test')
 
@@ -2531,35 +2565,38 @@ function getTaskStatusStats() {
   return stats
 }
 
-// 🔥 清理超时或异常任务
-function cleanupAbnormalTasks(maxAge = 600000) { // 默认10分钟
+// 🔧 修改版：清理真正异常的任务（移除超时清理，保留必要的异常检测）
+function cleanupAbnormalTasks() {
   const now = Date.now()
   const abnormalTasks = []
 
   pendingTasks.forEach((task, promptId) => {
-    const age = now - task.startTime
-    const statusAge = now - task.lastStatusUpdate
+    // 🔧 移除超时检查 - AI任务执行时间不可预测，不应该被客户端主动中断
 
-    // 检查超时任务
-    if (age > maxAge) {
-      abnormalTasks.push({ promptId, reason: 'timeout', age: Math.round(age/1000) })
+    // 🔧 只检查真正的异常情况：
+    // 1. 任务状态异常（比如状态为undefined或无效值）
+    if (!task.status || !Object.values(TASK_STATUS).includes(task.status)) {
+      abnormalTasks.push({ promptId, reason: 'invalid_status', status: task.status })
     }
-    // 检查状态长时间未更新的任务
-    else if (statusAge > 300000 && task.status === TASK_STATUS.EXECUTING) { // 5分钟无状态更新
-      abnormalTasks.push({ promptId, reason: 'stale', statusAge: Math.round(statusAge/1000) })
+    // 2. 任务对象损坏（缺少必要字段）
+    else if (!task.workflowType || !task.createdAt) {
+      abnormalTasks.push({ promptId, reason: 'corrupted_task', task: task })
     }
+
+    // 🔧 移除状态更新超时检查 - 长时间运行的任务可能确实需要很长时间
+    // 只有在确实收到服务器错误信号时才清理任务
   })
 
   if (abnormalTasks.length > 0) {
-    console.log(`🧹 [OFFICIAL] 发现 ${abnormalTasks.length} 个异常任务:`)
-    abnormalTasks.forEach(({ promptId, reason, age, statusAge }) => {
-      console.log(`  ${promptId.substring(0, 8)}: ${reason} (${age || statusAge}秒)`)
+    console.log(`🧹 [OFFICIAL] 发现 ${abnormalTasks.length} 个真正异常的任务:`)
+    abnormalTasks.forEach(({ promptId, reason, status, task }) => {
+      console.log(`  ${promptId.substring(0, 8)}: ${reason}`, status || task)
 
-      const task = pendingTasks.get(promptId)
-      if (task) {
+      const taskObj = pendingTasks.get(promptId)
+      if (taskObj) {
         pendingTasks.delete(promptId)
-        if (task.onError) {
-          task.onError(new Error(`任务被清理: ${reason}`))
+        if (taskObj.onError) {
+          taskObj.onError(new Error(`任务数据异常: ${reason}`))
         }
       }
     })

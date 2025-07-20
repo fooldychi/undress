@@ -423,14 +423,49 @@ router.get('/card-types', adminAuth, async (req, res, next) => {
 
     if (existingData[0].count === 0) {
       console.log('📝 插入初始数据...');
-      await query(`
-        INSERT INTO card_types (name, icon, price, points, description) VALUES
-        ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
-        ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
-        ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
-        ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')
-      `);
-      console.log('✅ 初始数据插入成功');
+
+      // 先检查表结构，确定是否有 description 字段
+      try {
+        const tableStructure = await query('DESCRIBE card_types');
+        const hasDescription = tableStructure.some(col => col.Field === 'description');
+
+        if (hasDescription) {
+          // 如果有 description 字段
+          await query(`
+            INSERT INTO card_types (name, icon, price, points, description) VALUES
+            ('体验卡', '🎁', 0.00, 20, '免费体验卡，每张20积分'),
+            ('基础卡', '🥉', 9.90, 300, '适合轻度使用的用户'),
+            ('高级卡', '🥈', 30.00, 1000, '适合中度使用的用户'),
+            ('至尊卡', '🥇', 50.00, 2000, '适合重度使用的用户')
+          `);
+        } else {
+          // 如果没有 description 字段
+          await query(`
+            INSERT INTO card_types (name, icon, price, points) VALUES
+            ('体验卡', '🎁', 0.00, 20),
+            ('基础卡', '🥉', 9.90, 300),
+            ('高级卡', '🥈', 30.00, 1000),
+            ('至尊卡', '🥇', 50.00, 2000)
+          `);
+        }
+        console.log('✅ 初始数据插入成功');
+      } catch (insertError) {
+        console.error('❌ 插入初始数据失败:', insertError);
+        // 如果插入失败，尝试不带 description 字段的插入
+        try {
+          await query(`
+            INSERT INTO card_types (name, icon, price, points) VALUES
+            ('体验卡', '🎁', 0.00, 20),
+            ('基础卡', '🥉', 9.90, 300),
+            ('高级卡', '🥈', 30.00, 1000),
+            ('至尊卡', '🥇', 50.00, 2000)
+          `);
+          console.log('✅ 初始数据插入成功（不含description字段）');
+        } catch (fallbackError) {
+          console.error('❌ 备用插入也失败:', fallbackError);
+          throw fallbackError;
+        }
+      }
     }
 
     // 获取数据
@@ -972,10 +1007,13 @@ router.put('/users/batch-status', adminAuth, async (req, res, next) => {
 // 生成等级卡（管理员用）
 router.post('/generate-cards', adminAuth, async (req, res, next) => {
   try {
-    console.log('🎫 收到生成等级卡请求，请求体:', req.body);
+    console.log('🎫 收到生成等级卡请求');
+    console.log('📋 请求体:', JSON.stringify(req.body, null, 2));
+    console.log('👤 管理员信息:', req.admin);
 
     const { cardTypeId, count = 5 } = req.body;
 
+    // 参数验证
     if (!cardTypeId) {
       console.log('❌ 缺少cardTypeId参数');
       return res.status(400).json({
@@ -994,13 +1032,48 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
 
     console.log(`🎫 开始生成${count}张等级卡，类型ID: ${cardTypeId}...`);
 
+    // 检查 level_cards 表是否存在
+    console.log('🔧 检查等级卡表是否存在...');
+    const tableExists = await query("SHOW TABLES LIKE 'level_cards'");
+
+    if (tableExists.length === 0) {
+      console.log('❌ level_cards 表不存在，请先创建表');
+      return res.status(500).json({
+        success: false,
+        message: 'level_cards 表不存在，请联系管理员'
+      });
+    }
+
+    console.log('✅ level_cards 表存在');
+
+    // 检查表结构
+    const tableStructure = await query('DESCRIBE level_cards');
+    console.log('📊 表结构:', tableStructure.map(col => col.Field).join(', '));
+
     // 获取卡片类型信息
     console.log('📋 查询卡片类型信息...');
-    const cardTypeResult = await query(`
-      SELECT id, name, points, price
-      FROM card_types
-      WHERE id = ?
-    `, [cardTypeId]);
+    let cardTypeResult;
+    try {
+      cardTypeResult = await query(`
+        SELECT id, name, points, price
+        FROM card_types
+        WHERE id = ?
+      `, [cardTypeId]);
+    } catch (queryError) {
+      console.error('❌ 查询卡片类型失败:', queryError);
+
+      // 如果查询失败，可能是字段不存在，尝试基本查询
+      try {
+        cardTypeResult = await query(`
+          SELECT id, name, points, price
+          FROM card_types
+          WHERE id = ?
+        `, [cardTypeId]);
+      } catch (fallbackError) {
+        console.error('❌ 备用查询也失败:', fallbackError);
+        throw fallbackError;
+      }
+    }
 
     console.log('📋 卡片类型查询结果:', cardTypeResult);
 
@@ -1025,11 +1098,46 @@ router.post('/generate-cards', adminAuth, async (req, res, next) => {
 
         console.log(`📝 生成第${i}张卡: ${cardNumber} - ${cardPassword}`);
 
-        // 根据实际表结构插入数据（不包含total_points字段）
-        await query(`
-          INSERT INTO level_cards (card_number, card_password, type_id, remaining_points, created_at)
-          VALUES (?, ?, ?, ?, NOW())
-        `, [cardNumber, cardPassword, typeInfo.id, typeInfo.points]);
+        // 插入等级卡数据 - 根据现有表结构
+        try {
+          // 根据表结构动态构建插入语句
+          const hasRemainingPoints = tableStructure.some(col => col.Field === 'remaining_points');
+          const hasTotalPoints = tableStructure.some(col => col.Field === 'total_points');
+          const hasCreatedAt = tableStructure.some(col => col.Field === 'created_at');
+
+          let insertSQL;
+          let insertValues;
+
+          if (hasRemainingPoints) {
+            if (hasCreatedAt) {
+              insertSQL = `INSERT INTO level_cards (card_number, card_password, type_id, remaining_points) VALUES (?, ?, ?, ?)`;
+              insertValues = [cardNumber, cardPassword, typeInfo.id, typeInfo.points];
+            } else {
+              insertSQL = `INSERT INTO level_cards (card_number, card_password, type_id, remaining_points) VALUES (?, ?, ?, ?)`;
+              insertValues = [cardNumber, cardPassword, typeInfo.id, typeInfo.points];
+            }
+          } else if (hasTotalPoints) {
+            insertSQL = `INSERT INTO level_cards (card_number, card_password, type_id, total_points) VALUES (?, ?, ?, ?)`;
+            insertValues = [cardNumber, cardPassword, typeInfo.id, typeInfo.points];
+          } else {
+            insertSQL = `INSERT INTO level_cards (card_number, card_password, type_id) VALUES (?, ?, ?)`;
+            insertValues = [cardNumber, cardPassword, typeInfo.id];
+          }
+
+          console.log(`📝 执行插入SQL: ${insertSQL}`);
+          console.log(`📝 插入参数:`, insertValues);
+
+          await query(insertSQL, insertValues);
+
+        } catch (insertError) {
+          console.error(`❌ 插入等级卡数据失败:`, insertError);
+          console.error('错误详情:', {
+            message: insertError.message,
+            code: insertError.code,
+            sqlState: insertError.sqlState
+          });
+          throw insertError;
+        }
 
         generatedCards.push({
           cardNumber,
@@ -1102,8 +1210,8 @@ router.post('/generate-experience-cards', adminAuth, async (req, res, next) => {
       const cardPassword = generateCardPassword();
 
       await query(`
-        INSERT INTO level_cards (card_number, card_password, type_id, remaining_points, created_at)
-        VALUES (?, ?, ?, ?, NOW())
+        INSERT INTO level_cards (card_number, card_password, type_id, remaining_points)
+        VALUES (?, ?, ?, ?)
       `, [cardNumber, cardPassword, typeInfo.id, typeInfo.points]);
 
       generatedCards.push({
