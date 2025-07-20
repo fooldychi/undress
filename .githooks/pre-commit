@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# AIMagic 项目 Pre-commit Hook
+# 检查端口配置一致性，防止意外修改
+
+echo "🔍 检查端口配置一致性..."
+
+# 检查是否有端口配置相关文件被修改
+PORT_CONFIG_FILES="port-config.json server/.env client/vite.config.js admin/vite.config.js server/app.js server/src/app.js"
+MODIFIED_PORT_FILES=""
+
+for file in $PORT_CONFIG_FILES; do
+    if git diff --cached --name-only | grep -q "^$file$"; then
+        MODIFIED_PORT_FILES="$MODIFIED_PORT_FILES $file"
+    fi
+done
+
+# 如果有端口配置文件被修改，进行检查
+if [ -n "$MODIFIED_PORT_FILES" ]; then
+    echo "⚠️ 检测到端口配置文件修改:$MODIFIED_PORT_FILES"
+    echo "🔧 运行端口配置一致性检查..."
+    
+    # 运行端口配置检查
+    if ! node scripts/port-config-manager.js check; then
+        echo ""
+        echo "❌ 端口配置检查失败！"
+        echo ""
+        echo "请运行以下命令修复配置问题："
+        echo "  node scripts/port-config-manager.js fix"
+        echo ""
+        echo "或者查看端口配置规则："
+        echo "  cat PORT_CONFIG_RULES.md"
+        echo ""
+        exit 1
+    fi
+    
+    echo "✅ 端口配置检查通过"
+fi
+
+# 检查是否有未追踪的端口配置变更
+echo "🔍 检查未追踪的配置变更..."
+
+# 运行配置检查，如果有问题则阻止提交
+if ! node scripts/port-config-manager.js check > /dev/null 2>&1; then
+    echo ""
+    echo "❌ 发现端口配置不一致！"
+    echo ""
+    echo "请运行以下命令查看详细问题："
+    echo "  node scripts/port-config-manager.js check"
+    echo ""
+    echo "然后运行以下命令修复："
+    echo "  node scripts/port-config-manager.js fix"
+    echo ""
+    echo "修复后请重新提交。"
+    echo ""
+    exit 1
+fi
+
+echo "✅ 所有端口配置检查通过，允许提交"
+exit 0

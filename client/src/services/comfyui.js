@@ -588,13 +588,20 @@ async function buildImageUrlWithServer(apiBaseUrl, taskResult, workflowType = 'u
     const outputs = taskResult.outputs
     let imageInfo = null
 
-    // 按照配置的优先级查找图片
-    for (const nodeId of nodeConfig.outputNodes) {
-      const nodeOutput = outputs[nodeId]
-      if (nodeOutput && nodeOutput.images && nodeOutput.images.length > 0) {
-        imageInfo = nodeOutput.images[0]
-        console.log(`📷 找到节点${nodeId}的图片:`, imageInfo)
-        break
+    // 按照配置的优先级查找图片：先查找主要输出节点
+    const primaryNodeId = nodeConfig.outputNodes.primary
+    if (primaryNodeId && outputs[primaryNodeId] && outputs[primaryNodeId].images && outputs[primaryNodeId].images.length > 0) {
+      imageInfo = outputs[primaryNodeId].images[0]
+      console.log(`📷 找到主要输出节点${primaryNodeId}的图片:`, imageInfo)
+    } else {
+      // 如果主要节点没有图片，查找备用节点
+      const secondaryNodes = nodeConfig.outputNodes.secondary || []
+      for (const nodeId of secondaryNodes) {
+        if (outputs[nodeId] && outputs[nodeId].images && outputs[nodeId].images.length > 0) {
+          imageInfo = outputs[nodeId].images[0]
+          console.log(`📷 找到备用输出节点${nodeId}的图片:`, imageInfo)
+          break
+        }
       }
     }
 
@@ -1728,8 +1735,17 @@ async function extractTaskResultsOfficial(history, promptId) {
       // 官方标准：for image in node_output['images']:
       for (const image of nodeOutput.images) {
         try {
-          // 优化：直接构建图片URL，无需下载
-          const apiBaseUrl = await getApiBaseUrl()
+          // 🔧 修复：使用任务绑定的服务器构建图片URL
+          let apiBaseUrl
+          const task = getWindowTask(promptId)
+          if (task && task.executionServer) {
+            apiBaseUrl = task.executionServer.replace(/\/$/, '')
+            console.log(`🎯 [${WINDOW_ID}] extractTaskResultsOfficial 使用任务绑定服务器: ${apiBaseUrl}`)
+          } else {
+            apiBaseUrl = await getApiBaseUrl()
+            console.warn(`⚠️ [${WINDOW_ID}] extractTaskResultsOfficial 未找到绑定服务器，使用默认: ${apiBaseUrl}`)
+          }
+
           const imageUrl = getImageUrlOfficial(image.filename, image.subfolder, image.type, apiBaseUrl)
           imagesOutput.push({
             ...image,

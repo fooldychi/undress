@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1752304393248,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1752976965442,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,32 +1,47 @@\n-const axios = require('./server/node_modules/axios');\n+const http = require('http');\n \n-async function testLogin() {\n-  try {\n-    console.log('🧪 测试管理员登录 API...');\n+function testLogin() {\n+  const postData = JSON.stringify({\n+    username: 'admin',\n+    password: 'admin123456'\n+  });\n \n-    const response = await axios.post('http://localhost:3006/api/admin-auth/login', {\n-      username: 'admin',\n-      password: 'admin123456'\n-    }, {\n-      headers: {\n-        'Content-Type': 'application/json'\n-      },\n-      timeout: 10000\n+  const options = {\n+    hostname: 'localhost',\n+    port: 3007,\n+    path: '/api/admin-auth/login',\n+    method: 'POST',\n+    headers: {\n+      'Content-Type': 'application/json',\n+      'Content-Length': Buffer.byteLength(postData)\n+    }\n+  };\n+\n+  const req = http.request(options, (res) => {\n+    console.log('Status:', res.statusCode);\n+    console.log('Headers:', res.headers);\n+\n+    let data = '';\n+    res.on('data', (chunk) => {\n+      data += chunk;\n     });\n \n-    console.log('✅ 登录成功!');\n-    console.log('状态码:', response.status);\n-    console.log('响应数据:', JSON.stringify(response.data, null, 2));\n+    res.on('end', () => {\n+      try {\n+        const result = JSON.parse(data);\n+        console.log('Response:', result);\n+      } catch (e) {\n+        console.log('Raw response:', data);\n+      }\n+    });\n+  });\n \n-  } catch (error) {\n-    console.error('❌ 登录失败:');\n-    if (error.response) {\n-      console.error('状态码:', error.response.status);\n-      console.error('响应数据:', JSON.stringify(error.response.data, null, 2));\n-    } else {\n-      console.error('错误信息:', error.message);\n-    }\n-  }\n+  req.on('error', (error) => {\n+    console.error('Error:', error.message);\n+  });\n+\n+  req.write(postData);\n+  req.end();\n }\n \n testLogin();\n"
                 }
             ],
             "date": 1752304393247,
