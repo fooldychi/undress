@@ -13,11 +13,15 @@ function generateWindowId() {
   return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// 🔧 为当前窗口生成唯一的clientId
+// 🔧 为当前窗口生成唯一的clientId - 增强唯一性防止冲突
 function generateUniqueClientId() {
   const baseId = 'abc1373d4ad648a3a81d0587fbe5534b' // 基础clientId
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substr(2, 9)
   const windowId = generateWindowId()
-  return `${baseId}_${windowId}`
+
+  // 🔧 增强唯一性：基础ID + 时间戳 + 随机数 + 窗口ID
+  return `${baseId}_${timestamp}_${random}_${windowId}`
 }
 
 // 🔧 窗口级别的全局变量 - 确保每个窗口都有唯一标识
@@ -26,6 +30,50 @@ const WINDOW_ID = generateWindowId()
 
 console.log(`🪟 窗口标识: ${WINDOW_ID}`)
 console.log(`🔑 窗口客户端ID: ${WINDOW_CLIENT_ID}`)
+
+// 🔧 窗口关闭时的清理机制
+window.addEventListener('beforeunload', () => {
+  console.log(`🚪 [${WINDOW_ID}] 窗口即将关闭，执行清理...`)
+
+  // 清理当前窗口的服务器锁定
+  const currentLock = getWindowServerLock()
+  if (currentLock) {
+    console.log(`🔓 [${WINDOW_ID}] 窗口关闭，清理服务器锁定: ${currentLock.server}`)
+    clearWindowServerLock()
+  }
+
+  // 清理当前窗口的任务
+  if (windowTasks.size > 0) {
+    console.log(`🗑️ [${WINDOW_ID}] 窗口关闭，清理 ${windowTasks.size} 个任务`)
+    windowTasks.clear()
+  }
+
+  // 关闭WebSocket连接
+  if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+    console.log(`🔌 [${WINDOW_ID}] 窗口关闭，断开WebSocket连接`)
+    wsConnection.close()
+  }
+})
+
+// 🔧 页面可见性变化时的处理
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    console.log(`👁️ [${WINDOW_ID}] 窗口隐藏`)
+  } else {
+    console.log(`👁️ [${WINDOW_ID}] 窗口重新可见`)
+
+    // 检查服务器锁定状态
+    const currentLock = getWindowServerLock()
+    if (currentLock) {
+      console.log(`🔒 [${WINDOW_ID}] 窗口重新可见，服务器锁定状态: ${currentLock.server}`)
+    }
+
+    // 检查任务状态
+    if (windowTasks.size > 0) {
+      console.log(`📊 [${WINDOW_ID}] 窗口重新可见，当前任务数: ${windowTasks.size}`)
+    }
+  }
+})
 
 // API配置 - 直连模式
 const DEFAULT_CONFIG = {
@@ -195,35 +243,39 @@ function getCurrentConfig(forceRefresh = false) {
 // 🔧 获取API基础URL - 强化版本（严格的服务器锁定机制）
 async function getApiBaseUrl() {
   try {
+    const currentLock = getWindowServerLock()
+    const lockedServer = currentLock ? currentLock.server : null
+
     // 🔧 强化锁定检查：有待处理任务时必须使用锁定服务器
-    if (windowTasks.size > 0 && !windowLockedServer) {
-      throw new Error('服务器一致性错误：有待处理任务但服务器未锁定')
+    if (windowTasks.size > 0 && !lockedServer) {
+      throw new Error(`窗口 ${WINDOW_ID} 服务器一致性错误：有待处理任务但服务器未锁定`)
     }
 
     // 🔧 详细的状态检查和日志
-    console.log('🔍 [getApiBaseUrl] 开始获取API基础URL...')
-    console.log(`🔍 [getApiBaseUrl] windowLockedServer: ${windowLockedServer}`)
-    console.log(`🔍 [getApiBaseUrl] wsConnection存在: ${!!wsConnection}`)
-    console.log(`🔍 [getApiBaseUrl] wsConnection.readyState: ${wsConnection?.readyState} (1=OPEN)`)
-    console.log(`🔍 [getApiBaseUrl] isWsConnected: ${isWsConnected}`)
-    console.log(`🔍 [getApiBaseUrl] windowTasks.size: ${windowTasks.size}`)
+    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] 开始获取API基础URL...`)
+    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] 锁定服务器: ${lockedServer}`)
+    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] wsConnection存在: ${!!wsConnection}`)
+    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] wsConnection.readyState: ${wsConnection?.readyState} (1=OPEN)`)
+    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] isWsConnected: ${isWsConnected}`)
+    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] windowTasks.size: ${windowTasks.size}`)
 
     // 🔧 强化的锁定条件（窗口级别）：
     // 1. 有锁定的服务器 AND
     // 2. (WebSocket连接正常 OR 有待处理任务需要保持一致性)
-    const hasLockedServer = !!windowLockedServer
+    const hasLockedServer = !!lockedServer
     const wsIsHealthy = wsConnection && wsConnection.readyState === WebSocket.OPEN
     const hasPendingTasks = windowTasks.size > 0
     const shouldUseLocked = hasLockedServer && (wsIsHealthy || hasPendingTasks)
 
     if (shouldUseLocked) {
-      console.log(`🔒 [${WINDOW_ID}] 使用WebSocket锁定的服务器:`, windowLockedServer)
-      console.log(`🕐 [${WINDOW_ID}] 服务器锁定时间:`, new Date(windowLockTimestamp).toLocaleTimeString())
-      console.log(`⏱️ [${WINDOW_ID}] 锁定持续时间:`, Math.round((Date.now() - windowLockTimestamp) / 1000) + '秒')
+      console.log(`🔒 [${WINDOW_ID}] 使用WebSocket锁定的服务器:`, lockedServer)
+      console.log(`🕐 [${WINDOW_ID}] 服务器锁定时间:`, new Date(currentLock.timestamp).toLocaleTimeString())
+      console.log(`⏱️ [${WINDOW_ID}] 锁定持续时间:`, Math.round((Date.now() - currentLock.timestamp) / 1000) + '秒')
       console.log(`📊 [${WINDOW_ID}] 锁定原因: WebSocket健康=${wsIsHealthy}, 待处理任务=${hasPendingTasks}`)
+      console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 使用当前窗口独立锁定的服务器`)
 
       // 确保URL格式正确，移除末尾的斜杠
-      let baseUrl = windowLockedServer
+      let baseUrl = lockedServer
       if (baseUrl && baseUrl.endsWith('/')) {
         baseUrl = baseUrl.slice(0, -1)
       }
@@ -278,23 +330,32 @@ async function getApiBaseUrl() {
   }
 }
 
-// 🔧 新增：服务器切换检测和阻止机制
+// 🔧 新增：服务器切换检测和阻止机制 - 完全窗口隔离版本
 function validateServerConsistency(operation, currentServer) {
-  if (windowTasks.size > 0 && windowLockedServer && currentServer !== windowLockedServer) {
+  const currentLock = getWindowServerLock()
+  const lockedServer = currentLock ? currentLock.server : null
+
+  // 🔧 窗口级别的任务和服务器一致性检查
+  if (windowTasks.size > 0 && lockedServer && currentServer !== lockedServer) {
     const error = new Error(
-      `服务器切换检测：${operation} 尝试使用 ${currentServer}，但锁定服务器为 ${windowLockedServer}`
+      `窗口 ${WINDOW_ID} 服务器切换检测：${operation} 尝试使用 ${currentServer}，但当前窗口锁定服务器为 ${lockedServer}`
     )
     console.error(`❌ [${WINDOW_ID}] ${error.message}`)
+    console.error(`📊 [${WINDOW_ID}] 当前窗口任务数: ${windowTasks.size}`)
+    console.error(`🔒 [${WINDOW_ID}] 锁定信息:`, currentLock)
     throw error
   }
 
-  if (windowTasks.size > 0 && !windowLockedServer) {
-    const error = new Error(`服务器一致性错误：有 ${windowTasks.size} 个待处理任务但服务器未锁定`)
+  if (windowTasks.size > 0 && !lockedServer) {
+    const error = new Error(`窗口 ${WINDOW_ID} 服务器一致性错误：有 ${windowTasks.size} 个待处理任务但服务器未锁定`)
     console.error(`❌ [${WINDOW_ID}] ${error.message}`)
+    console.error(`🪟 [${WINDOW_ID}] 窗口任务列表:`, Array.from(windowTasks.keys()))
     throw error
   }
 
   console.log(`✅ [${WINDOW_ID}] ${operation} 服务器一致性验证通过: ${currentServer}`)
+  console.log(`🔒 [${WINDOW_ID}] 当前锁定: ${lockedServer || '无'}`)
+  console.log(`📊 [${WINDOW_ID}] 任务数: ${windowTasks.size}`)
 }
 
 // 删除重试机制，直接使用最优服务器
@@ -319,25 +380,27 @@ function generatePromptId() {
 
 
 
-// 第一步：上传Base64图片到ComfyUI服务器并获取文件名 - 增强版本（服务器一致性）
+// 第一步：上传Base64图片到ComfyUI服务器并获取文件名 - 重构版本（任务-服务器绑定一致性）
 async function uploadImageToComfyUI(base64Image) {
-  // 🔧 关键修复：确保WebSocket连接和服务器锁定
-  await ensureWebSocketConnection()
-
   const apiBaseUrl = await getApiBaseUrl()
   console.log('🔄 第一步：上传图片到ComfyUI服务器')
   console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
+
+  // 🔧 关键修复：确保WebSocket连接到与上传相同的服务器
+  await ensureWebSocketConnection(apiBaseUrl)
+
   logServerConsistency('上传图片到ComfyUI')
 
   // 🔧 验证服务器一致性
   validateServerConsistency('uploadImageToComfyUI', apiBaseUrl)
 
   // 🔧 验证窗口级别的服务器一致性
-  if (windowLockedServer && apiBaseUrl !== windowLockedServer.replace(/\/$/, '')) {
+  const currentLock = getWindowServerLock()
+  if (currentLock && apiBaseUrl !== currentLock.server.replace(/\/$/, '')) {
     console.error(`❌ [${WINDOW_ID}] [uploadImage] 服务器不一致！`)
-    console.error(`   锁定服务器: ${windowLockedServer}`)
+    console.error(`   锁定服务器: ${currentLock.server}`)
     console.error(`   上传服务器: ${apiBaseUrl}`)
-    throw new Error(`服务器不一致：WebSocket连接到 ${windowLockedServer}，但上传到 ${apiBaseUrl}`)
+    throw new Error(`服务器不一致：WebSocket连接到 ${currentLock.server}，但上传到 ${apiBaseUrl}`)
   }
 
   // 验证base64格式
@@ -435,29 +498,29 @@ async function createUndressWorkflowPrompt(uploadedImageName) {
   }
 }
 
-// 官方标准工作流提交 - 修复版本（支持预注册任务和强制服务器锁定）
+// 官方标准工作流提交 - 重构版本（任务-服务器绑定一致性）
 async function submitWorkflow(workflowPrompt, promptId = null, tempTask = null) {
   console.log('📤 [OFFICIAL] 提交工作流')
 
-  // 🔧 关键修复：确保WebSocket连接并强制锁定服务器
-  await ensureWebSocketConnection()
+  const apiBaseUrl = await getApiBaseUrl()
+
+  // 🔧 关键修复：确保WebSocket连接到与提交相同的服务器
+  await ensureWebSocketConnection(apiBaseUrl)
 
   // 🔧 验证窗口级别的服务器锁定状态
-  if (!windowLockedServer) {
+  const currentLock = getWindowServerLock()
+  if (!currentLock) {
     throw new Error('WebSocket服务器未锁定，无法确保任务一致性')
   }
 
-  console.log(`🔒 [${WINDOW_ID}] 确认使用锁定服务器: ${windowLockedServer}`)
-
-  const config = getComfyUIConfig()
-  const apiBaseUrl = await getApiBaseUrl()
+  console.log(`🔒 [${WINDOW_ID}] 确认使用锁定服务器: ${currentLock.server}`)
 
   // 🔧 验证服务器一致性
   validateServerConsistency('submitWorkflow', apiBaseUrl)
 
   // 🔧 双重验证：确保API使用的是锁定的服务器
-  if (apiBaseUrl !== windowLockedServer.replace(/\/$/, '')) {
-    console.warn(`⚠️ [${WINDOW_ID}] API服务器(${apiBaseUrl})与锁定服务器(${windowLockedServer})不一致`)
+  if (apiBaseUrl !== currentLock.server.replace(/\/$/, '')) {
+    console.warn(`⚠️ [${WINDOW_ID}] API服务器(${apiBaseUrl})与锁定服务器(${currentLock.server})不一致`)
     throw new Error('服务器不一致，可能导致任务状态同步问题')
   }
 
@@ -708,29 +771,91 @@ let isWsConnected = false
 // 🔧 窗口隔离的任务队列 - 避免多窗口任务冲突
 let windowTasks = new Map() // promptId -> task
 
-// 🔧 窗口级别的服务器锁定机制
-let windowLockedServer = null
-let windowLockTimestamp = null
+// 🔥 窗口级别的服务器锁定机制 - 完全隔离版本
+// 使用窗口ID作为命名空间，确保真正的窗口隔离
+const WINDOW_SERVER_LOCKS = new Map() // windowId -> { server, timestamp, tasks }
+
+// 🔧 获取当前窗口的服务器锁定信息
+function getWindowServerLock() {
+  return WINDOW_SERVER_LOCKS.get(WINDOW_ID) || null
+}
+
+// 🔧 设置当前窗口的服务器锁定信息
+function setWindowServerLock(server, timestamp = Date.now()) {
+  WINDOW_SERVER_LOCKS.set(WINDOW_ID, {
+    server,
+    timestamp,
+    windowId: WINDOW_ID,
+    clientId: WINDOW_CLIENT_ID
+  })
+  console.log(`🔒 [${WINDOW_ID}] 设置窗口服务器锁定: ${server}`)
+}
+
+// 🔧 清除当前窗口的服务器锁定信息
+function clearWindowServerLock() {
+  const lock = WINDOW_SERVER_LOCKS.get(WINDOW_ID)
+  if (lock) {
+    WINDOW_SERVER_LOCKS.delete(WINDOW_ID)
+    console.log(`🔓 [${WINDOW_ID}] 清除窗口服务器锁定: ${lock.server}`)
+  }
+}
+
+// 🔧 兼容性：动态获取当前窗口的锁定服务器
+Object.defineProperty(window, 'windowLockedServer', {
+  get() {
+    const lock = getWindowServerLock()
+    return lock ? lock.server : null
+  },
+  set(value) {
+    if (value) {
+      setWindowServerLock(value)
+    } else {
+      clearWindowServerLock()
+    }
+  }
+})
+
+Object.defineProperty(window, 'windowLockTimestamp', {
+  get() {
+    const lock = getWindowServerLock()
+    return lock ? lock.timestamp : null
+  }
+})
 
 // 🔧 为了向后兼容，保留 pendingTasks 引用但指向窗口任务队列
 let pendingTasks = windowTasks
 
-// 🔧 保留原有的全局变量名但使用窗口级别的值
-let currentWebSocketServer = windowLockedServer
-let serverLockTimestamp = windowLockTimestamp
+// 🔧 保留原有的全局变量名但使用窗口级别的值（动态获取）
+Object.defineProperty(window, 'currentWebSocketServer', {
+  get() {
+    return window.windowLockedServer
+  },
+  set(value) {
+    window.windowLockedServer = value
+  }
+})
 
-// 🔧 窗口级别的任务管理函数
+Object.defineProperty(window, 'serverLockTimestamp', {
+  get() {
+    return window.windowLockTimestamp
+  }
+})
+
+// 🔧 窗口级别的任务管理函数 - 完全隔离版本
 function registerWindowTask(promptId, task) {
+  const currentLock = getWindowServerLock()
+
   // 🔧 强化验证：确保服务器已锁定
-  if (!windowLockedServer) {
-    throw new Error(`无法注册任务 ${promptId}：服务器未锁定，任务-服务器绑定失败`)
+  if (!currentLock || !currentLock.server) {
+    throw new Error(`无法注册任务 ${promptId}：窗口 ${WINDOW_ID} 服务器未锁定，任务-服务器绑定失败`)
   }
 
   // 🔧 强制绑定当前锁定的服务器
-  task.executionServer = windowLockedServer
+  task.executionServer = currentLock.server
   task.windowId = WINDOW_ID
   task.clientId = WINDOW_CLIENT_ID
   task.registeredAt = Date.now()
+  task.lockInfo = { ...currentLock } // 保存锁定信息快照
 
   windowTasks.set(promptId, task)
 
@@ -741,9 +866,10 @@ function registerWindowTask(promptId, task) {
 
   console.log(`📝 [${WINDOW_ID}] 任务已注册: ${promptId}, 绑定服务器: ${task.executionServer}`)
   console.log(`📊 [${WINDOW_ID}] 当前窗口任务数: ${windowTasks.size}`)
+  console.log(`🔒 [${WINDOW_ID}] 任务锁定信息:`, task.lockInfo)
 
   // 🔧 锁定续期：检测到新任务时自动续期锁定状态
-  if (windowLockedServer) {
+  if (currentLock) {
     console.log(`🔄 [${WINDOW_ID}] 检测到新任务，续期服务器锁定状态`)
     // 重新调度解锁检查
     scheduleServerUnlockCheck()
@@ -772,7 +898,8 @@ function removeWindowTask(promptId) {
     console.log(`📊 [${WINDOW_ID}] 剩余窗口任务数: ${windowTasks.size}`)
 
     // 🔧 任务移除后立即检查是否可以解锁服务器
-    if (windowTasks.size === 0 && windowLockedServer) {
+    const currentLock = getWindowServerLock()
+    if (windowTasks.size === 0 && currentLock) {
       console.log(`🔓 [${WINDOW_ID}] 最后一个任务完成，立即解锁服务器`)
       unlockServerForWindow()
     } else if (windowTasks.size > 0) {
@@ -795,22 +922,20 @@ function getTaskBoundServer(promptId) {
   return null
 }
 
-// 🔧 动态服务器锁定管理（基于任务状态的智能锁定）
+// 🔧 动态服务器锁定管理（基于任务状态的智能锁定）- 完全窗口隔离版本
 // 🎯 解决问题：防止长时间运行的AI任务因锁定超时导致图片链接错误
 // - 移除固定5分钟超时机制，改为基于任务状态的动态锁定
 // - 确保图片链接始终指向正确的服务器（任务实际处理的服务器）
 // - 只有在所有任务完成后才解锁服务器
+// - 完全按窗口隔离，不同窗口可以锁定不同服务器
 function lockServerForWindow(serverUrl) {
-  windowLockedServer = serverUrl
-  windowLockTimestamp = Date.now()
-
-  // 同步更新全局变量以保持兼容性
-  currentWebSocketServer = windowLockedServer
-  serverLockTimestamp = windowLockTimestamp
+  const timestamp = Date.now()
+  setWindowServerLock(serverUrl, timestamp)
 
   console.log(`🔒 [${WINDOW_ID}] 锁定服务器: ${serverUrl}`)
-  console.log(`🕐 [${WINDOW_ID}] 锁定时间: ${new Date(windowLockTimestamp).toLocaleTimeString()}`)
+  console.log(`🕐 [${WINDOW_ID}] 锁定时间: ${new Date(timestamp).toLocaleTimeString()}`)
   console.log(`🎯 [${WINDOW_ID}] 锁定模式: 任务驱动动态锁定（无固定超时）`)
+  console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 独立锁定，不影响其他窗口`)
 
   // 🔧 实现动态锁定机制：在任务完成前不解锁服务器
   // 移除固定时间的超时机制，改为基于任务状态的动态检查
@@ -818,18 +943,15 @@ function lockServerForWindow(serverUrl) {
 }
 
 function unlockServerForWindow() {
-  if (windowLockedServer) {
-    const lockDuration = Date.now() - windowLockTimestamp
-    console.log(`🔓 [${WINDOW_ID}] 解锁服务器: ${windowLockedServer}`)
+  const currentLock = getWindowServerLock()
+  if (currentLock) {
+    const lockDuration = Date.now() - currentLock.timestamp
+    console.log(`🔓 [${WINDOW_ID}] 解锁服务器: ${currentLock.server}`)
     console.log(`⏱️ [${WINDOW_ID}] 锁定持续时间: ${Math.round(lockDuration / 1000)}秒`)
     console.log(`📊 [${WINDOW_ID}] 解锁时任务数: ${windowTasks.size}`)
+    console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 仅解锁当前窗口，不影响其他窗口`)
 
-    windowLockedServer = null
-    windowLockTimestamp = null
-
-    // 同步更新全局变量
-    currentWebSocketServer = null
-    serverLockTimestamp = null
+    clearWindowServerLock()
 
     // 清理解锁检查定时器
     clearServerUnlockTimer()
@@ -838,9 +960,11 @@ function unlockServerForWindow() {
 
 // 🔧 强制解锁服务器（用于异常情况处理）
 function forceUnlockServerForWindow() {
-  if (windowLockedServer) {
-    console.log(`🚨 [${WINDOW_ID}] 强制解锁服务器: ${windowLockedServer}`)
+  const currentLock = getWindowServerLock()
+  if (currentLock) {
+    console.log(`🚨 [${WINDOW_ID}] 强制解锁服务器: ${currentLock.server}`)
     console.log(`⚠️ [${WINDOW_ID}] 当前仍有 ${windowTasks.size} 个待处理任务`)
+    console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 强制解锁仅影响当前窗口`)
     unlockServerForWindow()
     return true
   }
@@ -951,24 +1075,29 @@ function debugTaskStatus(promptId = null) {
 
 
 
-// 🔧 初始化 WebSocket 连接 - 修复版本（服务器锁定机制）
-async function initializeWebSocket() {
+// 🔧 初始化 WebSocket 连接 - 重构版本（解决多服务器消息路由错乱）
+async function initializeWebSocket(targetServer = null) {
   try {
-    // 检查现有连接
-    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-      console.log('🎯 WebSocket 已连接')
-      console.log('🔒 当前锁定服务器:', currentWebSocketServer)
-      return true
-    }
-
-    const config = getComfyUIConfig()
-
-    // 🔧 关键修复：窗口级别的服务器锁定机制
+    // 🔧 关键修复：支持指定目标服务器，确保任务-服务器绑定一致性
     let baseUrl
-    if (windowLockedServer) {
+    const currentLock = getWindowServerLock()
+
+    if (targetServer) {
+      // 🔧 新增：强制连接到指定服务器（用于任务执行时的服务器绑定）
+      baseUrl = targetServer
+      console.log(`🎯 [${WINDOW_ID}] 强制连接到指定服务器: ${baseUrl}`)
+      console.log(`🔗 [${WINDOW_ID}] 任务-服务器绑定: 确保WebSocket与任务执行服务器一致`)
+
+      // 如果指定服务器与当前锁定不同，需要更新锁定
+      if (!currentLock || currentLock.server !== baseUrl) {
+        lockServerForWindow(baseUrl)
+        console.log(`🔒 [${WINDOW_ID}] 更新服务器锁定: ${baseUrl}`)
+      }
+    } else if (currentLock && currentLock.server) {
       // 如果已有锁定的服务器，继续使用
-      baseUrl = windowLockedServer
+      baseUrl = currentLock.server
       console.log(`🔒 [${WINDOW_ID}] 使用已锁定的WebSocket服务器: ${baseUrl}`)
+      console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 使用当前窗口独立锁定的服务器`)
       logServerConsistency('使用已锁定的WebSocket服务器')
     } else {
       // 首次连接或重连时，选择最优服务器并锁定
@@ -979,7 +1108,8 @@ async function initializeWebSocket() {
         }
         lockServerForWindow(baseUrl)
         console.log(`🔒 [${WINDOW_ID}] 锁定WebSocket服务器: ${baseUrl}`)
-        console.log(`🕐 [${WINDOW_ID}] 锁定时间: ${new Date(windowLockTimestamp).toLocaleTimeString()}`)
+        console.log(`🕐 [${WINDOW_ID}] 锁定时间: ${new Date(getWindowServerLock().timestamp).toLocaleTimeString()}`)
+        console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 为当前窗口独立锁定服务器`)
         logServerConsistency('锁定新的WebSocket服务器')
       } catch (loadBalancerError) {
         console.error(`❌ [${WINDOW_ID}] 负载均衡器获取服务器失败:`, loadBalancerError)
@@ -987,9 +1117,26 @@ async function initializeWebSocket() {
       }
     }
 
+    // 🔧 检查现有连接是否与目标服务器一致
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+      const currentWsServer = currentWebSocketServer || getWindowServerLock()?.server
+      if (currentWsServer === baseUrl) {
+        console.log(`✅ [${WINDOW_ID}] WebSocket已连接到正确服务器: ${baseUrl}`)
+        return true
+      } else {
+        console.log(`🔄 [${WINDOW_ID}] WebSocket服务器不匹配，需要重连`)
+        console.log(`   当前连接: ${currentWsServer}`)
+        console.log(`   目标服务器: ${baseUrl}`)
+        // 关闭现有连接，建立新连接
+        wsConnection.close(1000, '切换到正确的服务器')
+        wsConnection = null
+        isWsConnected = false
+      }
+    }
+
     console.log(`🔌 [${WINDOW_ID}] 连接WebSocket: ${baseUrl}`)
 
-    // 🔧 构建WebSocket URL - 使用窗口唯一的clientId
+    // 🔧 构建WebSocket URL - 使用增强的唯一clientId
     let wsUrl
     if (baseUrl.startsWith('https://')) {
       wsUrl = baseUrl.replace('https://', 'wss://') + '/ws?clientId=' + WINDOW_CLIENT_ID
@@ -998,6 +1145,7 @@ async function initializeWebSocket() {
     }
 
     console.log(`🔗 [${WINDOW_ID}] WebSocket URL: ${wsUrl}`)
+    console.log(`🔑 [${WINDOW_ID}] 使用增强clientId: ${WINDOW_CLIENT_ID}`)
 
     // 简单的HTTP连接测试
     try {
@@ -1012,6 +1160,8 @@ async function initializeWebSocket() {
       throw new Error(`ComfyUI服务器不可达: ${httpError.message}`)
     }
 
+    // 🔧 记录即将连接的服务器，用于后续验证
+    currentWebSocketServer = baseUrl
     wsConnection = new WebSocket(wsUrl)
 
     return new Promise((resolve, reject) => {
@@ -1045,20 +1195,23 @@ async function initializeWebSocket() {
           logServerConsistency('WebSocket断开-保持锁定')
         }
 
-        // 重连策略 - 如果有待处理任务则立即重连
+        // 🔧 重连策略 - 确保重连到正确的服务器
         if (windowTasks.size > 0) {
-          console.log(`🔄 [${WINDOW_ID}] 检测到待处理任务，立即重连...`)
-          setTimeout(() => {
-            initializeWebSocket().catch(error => {
-              console.error(`❌ [${WINDOW_ID}] 重连失败:`, error)
-
-              // 🔧 只有在多次重连失败后才解锁服务器
-              console.log(`⚠️ [${WINDOW_ID}] 重连失败，但保持服务器锁定以便手动重试`)
-
-              // 给任务更多时间，不立即标记失败
-              console.log(`⏳ [${WINDOW_ID}] 任务将继续等待，可手动重连或等待超时`)
-            })
-          }, 2000) // 缩短重连间隔
+          console.log(`🔄 [${WINDOW_ID}] 检测到待处理任务，重连到锁定服务器...`)
+          const lockedServer = getWindowServerLock()?.server
+          if (lockedServer) {
+            console.log(`🎯 [${WINDOW_ID}] 重连目标服务器: ${lockedServer}`)
+            setTimeout(() => {
+              // 🔧 关键修复：重连时指定服务器，确保任务-服务器绑定一致性
+              initializeWebSocket(lockedServer).catch(error => {
+                console.error(`❌ [${WINDOW_ID}] 重连到锁定服务器失败:`, error)
+                console.log(`⚠️ [${WINDOW_ID}] 重连失败，但保持服务器锁定以便手动重试`)
+                console.log(`⏳ [${WINDOW_ID}] 任务将继续等待，可手动重连或等待超时`)
+              })
+            }, 2000) // 缩短重连间隔
+          } else {
+            console.error(`❌ [${WINDOW_ID}] 有待处理任务但没有锁定服务器，无法重连`)
+          }
         } else {
           console.log(`ℹ️ [${WINDOW_ID}] 没有待处理任务，不进行自动重连`)
         }
@@ -1128,20 +1281,66 @@ async function initializeWebSocket() {
   }
 }
 
+// 🔧 新增：确保WebSocket连接与任务执行服务器一致性
+async function ensureWebSocketServerConsistency(taskServer) {
+  try {
+    console.log(`🔍 [${WINDOW_ID}] 检查WebSocket服务器一致性...`)
+    console.log(`🎯 [${WINDOW_ID}] 任务执行服务器: ${taskServer}`)
+
+    const currentLock = getWindowServerLock()
+    const lockedServer = currentLock?.server
+    const wsServer = currentWebSocketServer
+
+    console.log(`🔒 [${WINDOW_ID}] 当前锁定服务器: ${lockedServer}`)
+    console.log(`🔗 [${WINDOW_ID}] WebSocket连接服务器: ${wsServer}`)
+
+    // 检查所有服务器是否一致
+    const serversMatch = taskServer === lockedServer && taskServer === wsServer
+
+    if (serversMatch && wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+      console.log(`✅ [${WINDOW_ID}] 服务器一致性验证通过`)
+      return true
+    }
+
+    // 服务器不一致，需要重新建立连接
+    console.log(`🔄 [${WINDOW_ID}] 服务器不一致，重新建立WebSocket连接`)
+    console.log(`   任务服务器: ${taskServer}`)
+    console.log(`   锁定服务器: ${lockedServer}`)
+    console.log(`   WebSocket服务器: ${wsServer}`)
+
+    // 关闭现有连接
+    if (wsConnection) {
+      wsConnection.close(1000, '服务器不一致，重新连接')
+      wsConnection = null
+      isWsConnected = false
+    }
+
+    // 重新初始化WebSocket连接到正确的服务器
+    await initializeWebSocket(taskServer)
+
+    console.log(`✅ [${WINDOW_ID}] WebSocket重新连接到正确服务器: ${taskServer}`)
+    return true
+
+  } catch (error) {
+    console.error(`❌ [${WINDOW_ID}] WebSocket服务器一致性检查失败:`, error)
+    throw error
+  }
+}
+
 // 🔧 新增：手动重置WebSocket服务器锁定的功能
 function resetWebSocketServer(force = false) {
   console.log('🔄 手动重置WebSocket服务器锁定')
   console.log('🔓 清除服务器锁定:', currentWebSocketServer)
 
-  if (!force && pendingTasks.size > 0) {
-    console.log(`⚠️ 有 ${pendingTasks.size} 个待处理任务，建议等待完成后再重置`)
+  if (!force && windowTasks.size > 0) {
+    console.log(`⚠️ 有 ${windowTasks.size} 个待处理任务，建议等待完成后再重置`)
     console.log('💡 如需强制重置，请调用: resetWebSocketServer(true)')
     return false
   }
 
   // 清除服务器锁定
   currentWebSocketServer = null
-  serverLockTimestamp = null
+  unlockServerForWindow()
 
   // 关闭现有WebSocket连接
   if (wsConnection) {
@@ -1152,15 +1351,15 @@ function resetWebSocketServer(force = false) {
   }
 
   // 清理所有待处理任务（如果强制重置）
-  if (force && pendingTasks.size > 0) {
-    console.log(`🧹 强制清理 ${pendingTasks.size} 个待处理任务`)
-    const taskIds = Array.from(pendingTasks.keys())
+  if (force && windowTasks.size > 0) {
+    console.log(`🧹 强制清理 ${windowTasks.size} 个待处理任务`)
+    const taskIds = Array.from(windowTasks.keys())
     for (const promptId of taskIds) {
-      const task = pendingTasks.get(promptId)
+      const task = windowTasks.get(promptId)
       if (task && task.onError) {
         task.onError('WebSocket服务器已强制重置')
       }
-      pendingTasks.delete(promptId)
+      windowTasks.delete(promptId)
     }
   }
 
@@ -1499,7 +1698,7 @@ function safeProgressCallback(promptId, task, message, percent) {
   }
 }
 
-// 🔥 官方标准WebSocket消息处理 - 基于官方API文档重构
+// 🔥 跨服务器隔离的WebSocket消息处理 - 基于官方API文档重构
 function handleWebSocketMessage(message) {
   try {
     if (!message || typeof message !== 'object') {
@@ -1512,6 +1711,26 @@ function handleWebSocketMessage(message) {
     if (type === 'crystools.monitor') {
       // 静默忽略crystools插件的监控消息
       return
+    }
+
+    // 🔥 跨服务器消息过滤：只处理属于当前窗口的消息
+    if (data && data.prompt_id) {
+      const task = getWindowTask(data.prompt_id)
+      if (!task) {
+        // 消息不属于当前窗口，忽略（避免跨服务器干扰）
+        console.log(`🔍 [${WINDOW_ID}] 忽略其他窗口/服务器的消息: ${type} (prompt_id: ${data.prompt_id})`)
+        return
+      }
+
+      // 🔥 验证消息来源服务器一致性
+      const currentLock = getWindowServerLock()
+      if (currentLock && task.executionServer && task.executionServer !== currentLock.server) {
+        console.warn(`⚠️ [${WINDOW_ID}] 跨服务器消息检测: 任务在 ${task.executionServer}, 当前锁定 ${currentLock.server}`)
+        // 仍然处理消息，但记录警告以便调试
+      }
+
+      // 🔥 记录消息处理日志（用于跨服务器调试）
+      console.log(`📨 [${WINDOW_ID}] 处理消息: ${type} (prompt_id: ${data.prompt_id}, 服务器: ${task.executionServer || '未知'})`)
     }
 
     // 🔥 新增：处理progress_state消息
@@ -1900,7 +2119,7 @@ function handleExecutingMessage(data) {
   }
 }
 
-// 官方标准任务完成处理 - 立即响应版本（消除延迟）
+// 🔥 跨服务器任务完成处理 - 立即响应版本（消除延迟）
 async function handleTaskCompletion(promptId) {
   // 🔧 只处理属于当前窗口的任务
   const task = getWindowTask(promptId)
@@ -1909,7 +2128,7 @@ async function handleTaskCompletion(promptId) {
     return
   }
 
-  console.log(`🚀 [${WINDOW_ID}] 开始立即处理任务完成: ${promptId}`)
+  console.log(`🚀 [${WINDOW_ID}] 开始立即处理任务完成: ${promptId} (服务器: ${task.executionServer || '未知'})`)
 
   try {
     // 🔧 立即更新进度到98%，表示正在获取结果
@@ -1917,10 +2136,33 @@ async function handleTaskCompletion(promptId) {
       task.onProgress('正在获取处理结果...', 98)
     }
 
-    console.log(`🔍 [${WINDOW_ID}] 立即获取任务历史记录: ${promptId}`)
+    console.log(`🔍 [${WINDOW_ID}] 立即获取任务历史记录: ${promptId} (服务器: ${task.executionServer || '未知'})`)
 
-    // 🔧 官方标准：立即获取历史记录（按照websockets_api_example.py第47行）
-    const history = await getTaskHistory(promptId)
+    // 🔥 跨服务器历史记录获取：优先使用任务绑定的服务器
+    let history
+    if (task.executionServer) {
+      try {
+        // 直接从任务绑定的服务器获取历史记录
+        const url = `${task.executionServer}/history/${promptId}`
+        console.log(`🔍 [${WINDOW_ID}] 从绑定服务器获取历史记录: ${url}`)
+
+        const response = await fetch(url)
+        if (response.ok) {
+          const fullHistory = await response.json()
+          history = fullHistory
+          console.log(`✅ [${WINDOW_ID}] 从绑定服务器获取历史记录成功: ${task.executionServer}`)
+        } else {
+          throw new Error(`绑定服务器历史记录获取失败: ${response.status}`)
+        }
+      } catch (error) {
+        console.warn(`⚠️ [${WINDOW_ID}] 从绑定服务器获取历史记录失败，回退到默认方法: ${error.message}`)
+        // 回退到默认的getTaskHistory方法
+        history = await getTaskHistory(promptId)
+      }
+    } else {
+      // 🔧 官方标准：立即获取历史记录（按照websockets_api_example.py第47行）
+      history = await getTaskHistory(promptId)
+    }
 
     console.log(`📊 [${WINDOW_ID}] 历史记录获取成功，开始提取结果: ${promptId}`)
 
@@ -2136,30 +2378,39 @@ async function getTaskHistory(promptId) {
   logServerConsistency('获取任务历史', promptId)
 
   try {
-    // 🔧 关键修复：验证服务器一致性
-    if (currentWebSocketServer) {
-      console.log(`🔒 [getTaskHistory] 使用锁定服务器查询历史: ${currentWebSocketServer}`)
+    // 🔥 跨服务器历史记录获取：优先使用任务绑定的服务器
+    const task = getWindowTask(promptId)
+    let apiBaseUrl = null
+
+    if (task && task.executionServer) {
+      // 使用任务绑定的服务器
+      apiBaseUrl = task.executionServer.replace(/\/$/, '')
+      console.log(`🔒 [${WINDOW_ID}] 使用任务绑定服务器查询历史: ${apiBaseUrl}`)
     } else {
-      console.warn(`⚠️ [getTaskHistory] 没有锁定服务器，可能导致任务查询失败`)
+      // 回退到当前锁定的服务器
+      const currentLock = getWindowServerLock()
+      if (currentLock) {
+        apiBaseUrl = currentLock.server.replace(/\/$/, '')
+        console.warn(`⚠️ [${WINDOW_ID}] 任务无绑定服务器，使用当前锁定服务器: ${apiBaseUrl}`)
+      } else {
+        // 最后回退到默认API
+        apiBaseUrl = await getApiBaseUrl()
+        console.warn(`⚠️ [${WINDOW_ID}] 无锁定服务器，使用默认API: ${apiBaseUrl}`)
+      }
     }
 
-    const apiBaseUrl = await getApiBaseUrl()
-
-    // 🔧 验证服务器一致性
-    validateServerConsistency('getTaskHistory', apiBaseUrl)
-
-    // 🔧 双重验证：确保使用锁定的服务器
-    if (currentWebSocketServer && apiBaseUrl !== currentWebSocketServer.replace(/\/$/, '')) {
-      console.error(`❌ [getTaskHistory] 服务器不一致！`)
-      console.error(`   锁定服务器: ${currentWebSocketServer}`)
-      console.error(`   API服务器: ${apiBaseUrl}`)
-      throw new Error(`服务器不一致：任务在 ${currentWebSocketServer} 上执行，但查询 ${apiBaseUrl}`)
+    // 🔧 验证服务器一致性（仅在有锁定服务器时）
+    const currentLock = getWindowServerLock()
+    if (currentLock && task && task.executionServer) {
+      if (task.executionServer !== currentLock.server) {
+        console.warn(`⚠️ [${WINDOW_ID}] 跨服务器历史查询: 任务在 ${task.executionServer}, 当前锁定 ${currentLock.server}`)
+      }
     }
 
     // 🔧 修复：使用正确的API端点格式（按照官方示例）
-    const url = `${apiBaseUrl}/api/history/${promptId}`
+    const url = `${apiBaseUrl}/history/${promptId}`
 
-    console.log(`📡 [OFFICIAL] 请求URL: ${url}`)
+    console.log(`📡 [OFFICIAL] 请求URL: ${url} (服务器: ${apiBaseUrl})`)
 
     const response = await fetch(url, {
       method: 'GET',
@@ -2169,27 +2420,27 @@ async function getTaskHistory(promptId) {
     })
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      throw new Error(`HTTP ${response.status}: ${response.statusText} (服务器: ${apiBaseUrl})`)
     }
 
     const history = await response.json()
-    console.log(`✅ [OFFICIAL] 历史记录获取成功，任务数: ${Object.keys(history).length}`)
+    console.log(`✅ [OFFICIAL] 历史记录获取成功，任务数: ${Object.keys(history).length} (服务器: ${apiBaseUrl})`)
 
     // 🔧 验证目标任务存在（按照官方示例第47行）
     if (!history[promptId]) {
-      throw new Error(`任务不存在于历史记录: ${promptId}`)
+      throw new Error(`任务不存在于历史记录: ${promptId} (服务器: ${apiBaseUrl})`)
     }
 
     console.log(`📊 [OFFICIAL] 任务 ${promptId} 输出节点:`, Object.keys(history[promptId].outputs || {}))
     return history
 
   } catch (error) {
-    console.error(`❌ [OFFICIAL] getTaskHistory失败: ${promptId}`, error.message)
+    console.error(`❌ [OFFICIAL] getTaskHistory失败: ${promptId} (服务器: ${apiBaseUrl || '未知'})`, error.message)
     throw error
   }
 }
 
-// 🔧 从历史记录中提取结果 - 官方标准机制（按照websockets_api_example.py第48-56行）
+// 🔥 跨服务器结果提取 - 官方标准机制（按照websockets_api_example.py第48-56行）
 async function extractTaskResults(history, promptId) {
   try {
     console.log(`📊 [OFFICIAL] 开始提取任务结果: ${promptId}`)
@@ -2206,17 +2457,58 @@ async function extractTaskResults(history, promptId) {
 
     console.log(`📋 [OFFICIAL] 任务输出节点:`, Object.keys(taskData.outputs))
 
+    // 🔥 获取任务绑定的服务器信息
+    const task = getWindowTask(promptId)
+    let executionServer = null
+
+    if (task && task.executionServer) {
+      executionServer = task.executionServer
+      console.log(`🔒 [${WINDOW_ID}] 使用任务绑定服务器: ${executionServer}`)
+    } else {
+      // 回退到当前锁定的服务器
+      const currentLock = getWindowServerLock()
+      if (currentLock) {
+        executionServer = currentLock.server
+        console.warn(`⚠️ [${WINDOW_ID}] 任务无绑定服务器，使用当前锁定服务器: ${executionServer}`)
+      } else {
+        console.warn(`⚠️ [${WINDOW_ID}] 无法确定执行服务器，图片URL可能不正确`)
+      }
+    }
+
     // 🔧 按照官方示例处理图片输出（第48-56行逻辑）
     const outputImages = {}
+    const imageUrls = [] // 🔥 新增：收集所有图片URL
+
     for (const nodeId in taskData.outputs) {
       const nodeOutput = taskData.outputs[nodeId]
       const imagesOutput = []
 
       if (nodeOutput.images && Array.isArray(nodeOutput.images)) {
         console.log(`📷 [OFFICIAL] 节点 ${nodeId} 包含 ${nodeOutput.images.length} 张图片`)
+
         for (const image of nodeOutput.images) {
-          // 保存图片信息，供后续getGeneratedImage函数使用
-          imagesOutput.push(image)
+          // 🔥 构建跨服务器安全的图片URL
+          let imageUrl = null
+          if (executionServer) {
+            const params = new URLSearchParams({
+              filename: image.filename,
+              type: image.type || 'output',
+              subfolder: image.subfolder || ''
+            })
+            imageUrl = `${executionServer}/view?${params.toString()}`
+            console.log(`🌐 [${WINDOW_ID}] 构建图片URL: ${imageUrl}`)
+          }
+
+          const imageData = {
+            ...image,
+            url: imageUrl, // 添加URL字段
+            server: executionServer // 记录服务器信息
+          }
+
+          imagesOutput.push(imageData)
+          if (imageUrl) {
+            imageUrls.push(imageUrl)
+          }
         }
       }
 
@@ -2225,14 +2517,18 @@ async function extractTaskResults(history, promptId) {
       }
     }
 
-    // 🔧 返回与现有代码兼容的格式，同时包含官方标准的图片数据
+    // 🔧 返回与现有代码兼容的格式，同时包含跨服务器信息
     const results = {
       outputs: taskData.outputs,
       outputImages: outputImages, // 新增：官方标准的图片数据格式
+      imageUrls: imageUrls, // 🔥 新增：所有图片URL列表
+      executionServer: executionServer, // 🔥 新增：执行服务器信息
       promptId: promptId
     }
 
-    console.log(`✅ [OFFICIAL] 任务结果提取完成: ${promptId}`)
+    console.log(`✅ [OFFICIAL] 任务结果提取完成: ${promptId} (服务器: ${executionServer})`)
+    console.log(`📷 [OFFICIAL] 提取到 ${imageUrls.length} 个图片URL`)
+
     return results
   } catch (error) {
     console.error(`❌ [OFFICIAL] 提取任务结果失败: ${promptId}`, error)
@@ -2256,23 +2552,46 @@ function getImageUrl(filename, subfolder, folderType, apiBaseUrl) {
   return url
 }
 
-// 🔧 简化版：确保WebSocket连接（技术层面错误降级为警告）
+// 🔧 确保WebSocket连接 - 重构版本（支持任务-服务器绑定一致性）
 // 🎯 错误处理策略：WebSocket连接问题属于技术层面，不显示用户弹窗，仅记录日志
-async function ensureWebSocketConnection() {
+async function ensureWebSocketConnection(taskServer = null) {
   console.log(`🔌 [${WINDOW_ID}] 确保WebSocket连接`)
 
-  // 如果已连接，直接返回（不强制要求服务器锁定）
+  if (taskServer) {
+    console.log(`🎯 [${WINDOW_ID}] 指定任务服务器: ${taskServer}`)
+
+    // 🔧 关键修复：如果指定了任务服务器，确保WebSocket连接到正确服务器
+    await ensureWebSocketServerConsistency(taskServer)
+    return true
+  }
+
+  // 如果已连接，检查服务器一致性
   if (wsConnection && wsConnection.readyState === WebSocket.OPEN && isWsConnected) {
     console.log(`✅ [${WINDOW_ID}] WebSocket已连接`)
 
     // 尝试锁定服务器，但失败不影响继续使用
-    if (!windowLockedServer) {
+    const currentLock = getWindowServerLock()
+    if (!currentLock) {
       try {
         const apiBaseUrl = await getApiBaseUrl()
         lockServerForWindow(apiBaseUrl)
         console.log(`🔒 [${WINDOW_ID}] 补充锁定服务器: ${apiBaseUrl}`)
+        console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 为当前窗口补充服务器锁定`)
       } catch (error) {
         console.warn(`⚠️ [${WINDOW_ID}] 服务器锁定失败，但继续使用连接:`, error.message)
+      }
+    } else {
+      console.log(`🔒 [${WINDOW_ID}] 服务器已锁定: ${currentLock.server}`)
+
+      // 🔧 验证WebSocket连接与锁定服务器的一致性
+      const wsServer = currentWebSocketServer
+      if (wsServer && wsServer !== currentLock.server) {
+        console.log(`🔄 [${WINDOW_ID}] WebSocket服务器与锁定服务器不一致，重新连接`)
+        console.log(`   WebSocket服务器: ${wsServer}`)
+        console.log(`   锁定服务器: ${currentLock.server}`)
+
+        // 重新连接到锁定的服务器
+        await initializeWebSocket(currentLock.server)
       }
     }
     return true
@@ -3123,6 +3442,109 @@ async function initializeComfyUIConnection() {
   }
 }
 
+// 🔥 新增：队列化的工作流处理函数
+async function processWorkflow(workflow, callbacks = {}) {
+  const { onProgress, onComplete, onError, workflowType = 'default', priority } = callbacks
+
+  console.log(`🎯 [${WINDOW_ID}] 任务提交到队列 (类型: ${workflowType})`)
+
+  // 检查队列管理器是否已初始化
+  if (!window.taskQueueManager) {
+    console.warn('⚠️ 队列管理器未初始化，使用传统处理方式')
+    // 回退到传统处理方式
+    return await processWorkflowTraditional(workflow, callbacks)
+  }
+
+  // 使用队列管理器处理任务
+  const taskId = window.taskQueueManager.enqueueTask({
+    workflow,
+    workflowType,
+    priority,
+    onProgress: (message, percent) => {
+      console.log(`📊 [${WINDOW_ID}] 队列任务进度: ${message} (${percent}%)`)
+      if (onProgress) onProgress(message, percent)
+    },
+    onComplete: (results) => {
+      console.log(`✅ [${WINDOW_ID}] 队列任务完成: ${taskId}`)
+      if (onComplete) onComplete(results)
+    },
+    onError: (error) => {
+      console.error(`❌ [${WINDOW_ID}] 队列任务失败: ${taskId}`, error)
+      if (onError) onError(error)
+    }
+  })
+
+  // 返回任务控制器
+  return {
+    taskId,
+    cancel: () => {
+      console.log(`🚫 取消队列任务: ${taskId}`)
+      return window.taskQueueManager.cancelTask(taskId)
+    },
+    getStatus: () => {
+      return window.taskQueueManager.getTaskStatus(taskId)
+    },
+    getQueuePosition: () => {
+      const detailed = window.taskQueueManager.getDetailedStatus()
+      const queuedTasks = detailed.queuedTasks
+      const position = queuedTasks.findIndex(task => task.id === taskId)
+      return position >= 0 ? position + 1 : null
+    }
+  }
+}
+
+// 🔧 传统工作流处理方式（作为回退）
+async function processWorkflowTraditional(workflow, callbacks = {}) {
+  const { onProgress, onComplete, onError, workflowType = 'default' } = callbacks
+
+  console.log(`🎯 [${WINDOW_ID}] 使用传统方式处理工作流 (类型: ${workflowType})`)
+
+  try {
+    // 生成promptId并提交工作流
+    const promptId = generatePromptId()
+    console.log(`🆔 [TRADITIONAL] 生成promptId: ${promptId}`)
+
+    // 创建临时任务对象
+    const tempTask = {
+      workflowType: workflowType,
+      createdAt: new Date().toISOString(),
+      onProgress: onProgress,
+      onComplete: null,
+      onError: null
+    }
+
+    // 提交工作流
+    const submittedPromptId = await submitWorkflow(workflow, promptId, tempTask)
+    console.log(`✅ [TRADITIONAL] 工作流提交成功: ${submittedPromptId}`)
+
+    // 等待任务完成
+    const result = await waitForTaskCompletion(submittedPromptId, onProgress, workflowType)
+
+    if (onComplete) {
+      onComplete(result)
+    }
+
+    return {
+      taskId: submittedPromptId,
+      cancel: () => {
+        console.log(`🚫 传统任务无法取消: ${submittedPromptId}`)
+        return false
+      },
+      getStatus: () => {
+        const task = getWindowTask(submittedPromptId)
+        return task ? { status: task.status, promptId: submittedPromptId } : null
+      }
+    }
+
+  } catch (error) {
+    console.error(`❌ [TRADITIONAL] 工作流处理失败:`, error)
+    if (onError) {
+      onError(error)
+    }
+    throw error
+  }
+}
+
 // 导出所有公共函数
 export {
   getCurrentConfig,
@@ -3135,6 +3557,8 @@ export {
   removeConfigChangeListener,
   processUndressImage,
   processFaceSwapImage,
+  processWorkflow, // 🔥 新增：队列化工作流处理
+  processWorkflowTraditional, // 🔧 新增：传统工作流处理（回退）
   checkComfyUIServerStatus,
   initializeWebSocket,
   initializeComfyUIConnection, // 🔧 新增：直连模式初始化函数
@@ -3150,6 +3574,7 @@ export {
   testOfficialStandardRefactored, // 🔥 新增：重构后的测试函数
   windowTasks as pendingTasks, // 🔧 导出窗口级别的任务队列用于调试
   resetWebSocketServer, // 🔧 新增：手动重置WebSocket服务器
+  ensureWebSocketServerConsistency, // 🔧 新增：WebSocket服务器一致性检查
   getWebSocketServerStatus, // 🔧 新增：获取WebSocket服务器状态
   debugWebSocketLock, // 🔧 新增：调试WebSocket锁定机制
   checkServerUnlockCondition, // 🔧 新增：检查服务器解锁条件
@@ -3235,6 +3660,298 @@ window.debugTaskTimeouts = function() {
   windowTasks.forEach((task, promptId) => {
     console.log(`- ${promptId}: ${task.timeoutCheckId ? '已设置超时检查' : '无超时检查'}`)
   })
+}
+
+// 🔥 新增：窗口隔离状态调试工具
+window.debugWindowIsolation = function() {
+  console.log('🪟 窗口隔离状态调试:')
+  console.log('=====================================')
+  console.log(`当前窗口ID: ${WINDOW_ID}`)
+  console.log(`当前客户端ID: ${WINDOW_CLIENT_ID}`)
+
+  const currentLock = getWindowServerLock()
+  console.log(`当前窗口锁定服务器: ${currentLock ? currentLock.server : '无'}`)
+  if (currentLock) {
+    console.log(`锁定时间: ${new Date(currentLock.timestamp).toLocaleString()}`)
+    console.log(`锁定持续时间: ${Math.round((Date.now() - currentLock.timestamp) / 1000)}秒`)
+  }
+
+  console.log(`当前窗口任务数: ${windowTasks.size}`)
+  if (windowTasks.size > 0) {
+    console.log('当前窗口任务列表:')
+    windowTasks.forEach((task, promptId) => {
+      console.log(`  - ${promptId}: ${task.workflowType || '未知类型'} (服务器: ${task.executionServer})`)
+    })
+  }
+
+  console.log(`全局服务器锁定状态:`)
+  console.log(`  总锁定数: ${WINDOW_SERVER_LOCKS.size}`)
+  WINDOW_SERVER_LOCKS.forEach((lock, windowId) => {
+    const isCurrent = windowId === WINDOW_ID
+    console.log(`  ${isCurrent ? '👉' : '  '} 窗口 ${windowId}: ${lock.server} (${new Date(lock.timestamp).toLocaleTimeString()})`)
+  })
+
+  console.log(`WebSocket连接状态:`)
+  console.log(`  连接存在: ${!!wsConnection}`)
+  console.log(`  连接状态: ${wsConnection ? wsConnection.readyState : 'N/A'} (1=OPEN)`)
+  console.log(`  isWsConnected: ${isWsConnected}`)
+}
+
+// 🔥 新增：跨窗口状态检查工具
+window.checkCrossWindowState = function() {
+  console.log('🔍 跨窗口状态检查:')
+  console.log('=====================================')
+
+  // 检查是否有服务器锁定冲突
+  const serverUsage = new Map()
+  WINDOW_SERVER_LOCKS.forEach((lock, windowId) => {
+    if (!serverUsage.has(lock.server)) {
+      serverUsage.set(lock.server, [])
+    }
+    serverUsage.get(lock.server).push(windowId)
+  })
+
+  console.log('服务器使用情况:')
+  serverUsage.forEach((windows, server) => {
+    const status = windows.length > 1 ? '⚠️ 多窗口使用' : '✅ 单窗口使用'
+    console.log(`  ${server}: ${status} (窗口: ${windows.join(', ')})`)
+  })
+
+  // 检查任务分布
+  console.log(`\n任务分布:`)
+  console.log(`  当前窗口 ${WINDOW_ID}: ${windowTasks.size} 个任务`)
+
+  return {
+    currentWindow: WINDOW_ID,
+    serverLocks: Array.from(WINDOW_SERVER_LOCKS.entries()),
+    serverUsage: Array.from(serverUsage.entries()),
+    currentTasks: windowTasks.size
+  }
+}
+
+// 🔥 新增：强制清理窗口状态工具
+window.forceCleanupWindow = function(windowId = WINDOW_ID) {
+  console.log(`🧹 强制清理窗口状态: ${windowId}`)
+
+  if (windowId === WINDOW_ID) {
+    // 清理当前窗口
+    console.log('清理当前窗口状态...')
+
+    // 清理服务器锁定
+    const currentLock = getWindowServerLock()
+    if (currentLock) {
+      console.log(`🔓 清理服务器锁定: ${currentLock.server}`)
+      clearWindowServerLock()
+    }
+
+    // 清理任务
+    if (windowTasks.size > 0) {
+      console.log(`🗑️ 清理 ${windowTasks.size} 个任务`)
+      windowTasks.clear()
+    }
+
+    console.log('✅ 当前窗口状态清理完成')
+  } else {
+    // 清理指定窗口（跨窗口清理）
+    console.log(`清理指定窗口状态: ${windowId}`)
+
+    if (WINDOW_SERVER_LOCKS.has(windowId)) {
+      const lock = WINDOW_SERVER_LOCKS.get(windowId)
+      console.log(`🔓 清理窗口 ${windowId} 的服务器锁定: ${lock.server}`)
+      WINDOW_SERVER_LOCKS.delete(windowId)
+    }
+
+    console.log(`✅ 窗口 ${windowId} 状态清理完成`)
+  }
+}
+
+// 🔥 新增：跨服务器任务状态监控工具
+window.debugCrossServerTasks = function() {
+  console.log('🌐 跨服务器任务状态监控:')
+  console.log('=====================================')
+
+  // 收集所有窗口的服务器锁定信息
+  const serverTaskMap = new Map()
+
+  WINDOW_SERVER_LOCKS.forEach((lock, windowId) => {
+    if (!serverTaskMap.has(lock.server)) {
+      serverTaskMap.set(lock.server, {
+        windows: [],
+        tasks: 0
+      })
+    }
+
+    const serverInfo = serverTaskMap.get(lock.server)
+    serverInfo.windows.push(windowId)
+
+    // 如果是当前窗口，统计任务数
+    if (windowId === WINDOW_ID) {
+      serverInfo.tasks = windowTasks.size
+    }
+  })
+
+  console.log('服务器使用分布:')
+  serverTaskMap.forEach((info, server) => {
+    const status = info.windows.length > 1 ? '⚠️ 多窗口共享' : '✅ 单窗口独占'
+    console.log(`  ${server}:`)
+    console.log(`    状态: ${status}`)
+    console.log(`    窗口: ${info.windows.join(', ')}`)
+    console.log(`    任务数: ${info.tasks}`)
+  })
+
+  // 检查当前窗口的任务详情
+  console.log(`\n当前窗口 ${WINDOW_ID} 任务详情:`)
+  if (windowTasks.size > 0) {
+    windowTasks.forEach((task, promptId) => {
+      console.log(`  📋 ${promptId}:`)
+      console.log(`    类型: ${task.workflowType || '未知'}`)
+      console.log(`    状态: ${task.status || '未知'}`)
+      console.log(`    服务器: ${task.executionServer || '未绑定'}`)
+      console.log(`    注册时间: ${task.registeredAt ? new Date(task.registeredAt).toLocaleTimeString() : '未知'}`)
+    })
+  } else {
+    console.log('  无任务')
+  }
+
+  return {
+    serverDistribution: Array.from(serverTaskMap.entries()),
+    currentWindowTasks: Array.from(windowTasks.entries()),
+    totalServers: serverTaskMap.size,
+    totalWindows: WINDOW_SERVER_LOCKS.size
+  }
+}
+
+// 🔥 新增：检测52.25%卡住问题的跨服务器工具
+window.detect5225CrossServerIssues = function() {
+  console.log('🚨 检测52.25%卡住问题 (跨服务器版本):')
+  console.log('=====================================')
+
+  const stuckTasks = []
+  const now = Date.now()
+
+  // 检查当前窗口的任务
+  windowTasks.forEach((task, promptId) => {
+    if (task.status === 'executing' || task.status === 'processing') {
+      const runningTime = now - (task.registeredAt || now)
+
+      // 检查是否可能卡在52.25%
+      if (runningTime > 60000) { // 运行超过1分钟
+        stuckTasks.push({
+          promptId,
+          server: task.executionServer,
+          workflowType: task.workflowType,
+          runningTime: Math.round(runningTime / 1000),
+          status: task.status
+        })
+      }
+    }
+  })
+
+  if (stuckTasks.length > 0) {
+    console.log('🚨 发现可能卡住的任务:')
+    stuckTasks.forEach(task => {
+      console.log(`  📋 ${task.promptId}:`)
+      console.log(`    服务器: ${task.server || '未知'}`)
+      console.log(`    类型: ${task.workflowType}`)
+      console.log(`    运行时间: ${task.runningTime}秒`)
+      console.log(`    状态: ${task.status}`)
+    })
+
+    console.log('\n🔧 建议操作:')
+    console.log('1. 运行 window.forceCompleteStuckTasks() 尝试自动恢复')
+    console.log('2. 运行 window.taskQueueManager?.checkTaskStuckAt5225() 触发队列恢复')
+    console.log('3. 检查对应服务器的状态')
+  } else {
+    console.log('✅ 未发现卡住的任务')
+  }
+
+  return stuckTasks
+}
+
+// 🔥 新增：跨服务器任务恢复工具
+window.recoverCrossServerTasks = async function() {
+  console.log('🔧 开始跨服务器任务恢复...')
+  console.log('=====================================')
+
+  const recoveryResults = []
+
+  for (const [promptId, task] of windowTasks) {
+    if (task.executionServer && (task.status === 'executing' || task.status === 'processing')) {
+      console.log(`🔍 检查任务 ${promptId} (服务器: ${task.executionServer})`)
+
+      try {
+        // 直接检查服务器上的任务状态
+        const url = `${task.executionServer}/history/${promptId}`
+        const response = await fetch(url)
+
+        if (response.ok) {
+          const history = await response.json()
+
+          if (history[promptId] && history[promptId].outputs) {
+            console.log(`✅ 发现任务 ${promptId} 在服务器 ${task.executionServer} 上已完成`)
+
+            // 触发任务完成处理
+            try {
+              await handleTaskCompletion(promptId)
+              recoveryResults.push({
+                promptId,
+                server: task.executionServer,
+                status: 'recovered',
+                message: '任务已恢复并完成'
+              })
+            } catch (error) {
+              console.error(`❌ 任务 ${promptId} 恢复失败:`, error)
+              recoveryResults.push({
+                promptId,
+                server: task.executionServer,
+                status: 'failed',
+                message: error.message
+              })
+            }
+          } else {
+            console.log(`⏳ 任务 ${promptId} 在服务器 ${task.executionServer} 上仍在处理`)
+            recoveryResults.push({
+              promptId,
+              server: task.executionServer,
+              status: 'still_processing',
+              message: '任务仍在处理中'
+            })
+          }
+        } else {
+          console.warn(`⚠️ 无法访问服务器 ${task.executionServer}: ${response.status}`)
+          recoveryResults.push({
+            promptId,
+            server: task.executionServer,
+            status: 'server_error',
+            message: `服务器访问失败: ${response.status}`
+          })
+        }
+      } catch (error) {
+        console.error(`❌ 检查任务 ${promptId} 失败:`, error)
+        recoveryResults.push({
+          promptId,
+          server: task.executionServer,
+          status: 'error',
+          message: error.message
+        })
+      }
+    }
+  }
+
+  console.log('\n📊 恢复结果汇总:')
+  recoveryResults.forEach(result => {
+    const statusIcon = {
+      'recovered': '✅',
+      'still_processing': '⏳',
+      'server_error': '🚫',
+      'failed': '❌',
+      'error': '💥'
+    }[result.status] || '❓'
+
+    console.log(`${statusIcon} ${result.promptId} (${result.server}): ${result.message}`)
+  })
+
+  return recoveryResults
 }
 
 // 🔧 调试工具：检查递归更新状态
