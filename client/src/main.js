@@ -9,11 +9,7 @@ import loadBalancer from './services/loadBalancer.js'
 import { initializeComfyUIConnection } from './services/comfyui.js'
 import { setupGlobalErrorHandler } from './services/globalErrorHandler.js'
 
-// 开发环境下引入测试工具
-if (import.meta.env.DEV) {
-  import('./utils/testPointsConsumption.js')
-  import('./utils/testSimpleLoadBalancer.js')
-}
+// 开发环境下的调试工具已移除，保持代码简洁
 
 // 引入Vant UI
 import Vant, { Toast } from 'vant'

@@ -1,2 +1,0 @@
-# 更新端口配置文件的校验和基线
-node scripts/protect-port-config.js update
