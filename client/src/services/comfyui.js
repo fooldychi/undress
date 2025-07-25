@@ -3442,67 +3442,16 @@ async function initializeComfyUIConnection() {
   }
 }
 
-// 🔥 新增：队列化的工作流处理函数
+// 🔧 简化的工作流处理函数（直接使用传统方式）
 async function processWorkflow(workflow, callbacks = {}) {
-  const { onProgress, onComplete, onError, workflowType = 'default', priority } = callbacks
-
-  console.log(`🎯 [${WINDOW_ID}] 任务提交到队列 (类型: ${workflowType})`)
-
-  // 检查队列管理器是否已初始化
-  if (!window.taskQueueManager) {
-    console.warn('⚠️ 队列管理器未初始化，使用传统处理方式')
-    // 回退到传统处理方式
-    return await processWorkflowTraditional(workflow, callbacks)
-  }
-
-  // 使用队列管理器处理任务
-  const taskId = window.taskQueueManager.enqueueTask({
-    workflow,
-    workflowType,
-    priority,
-    onProgress: (message, percent) => {
-      console.log(`📊 [${WINDOW_ID}] 队列任务进度: ${message} (${percent}%)`)
-      if (onProgress) onProgress(message, percent)
-    },
-    onComplete: (results) => {
-      console.log(`✅ [${WINDOW_ID}] 队列任务完成: ${taskId}`)
-      if (onComplete) onComplete(results)
-    },
-    onError: (error) => {
-      console.error(`❌ [${WINDOW_ID}] 队列任务失败: ${taskId}`, error)
-      if (onError) onError(error)
-    }
-  })
-
-  // 返回任务控制器
-  return {
-    taskId,
-    cancel: () => {
-      console.log(`🚫 取消队列任务: ${taskId}`)
-      return window.taskQueueManager.cancelTask(taskId)
-    },
-    getStatus: () => {
-      return window.taskQueueManager.getTaskStatus(taskId)
-    },
-    getQueuePosition: () => {
-      const detailed = window.taskQueueManager.getDetailedStatus()
-      const queuedTasks = detailed.queuedTasks
-      const position = queuedTasks.findIndex(task => task.id === taskId)
-      return position >= 0 ? position + 1 : null
-    }
-  }
-}
-
-// 🔧 传统工作流处理方式（作为回退）
-async function processWorkflowTraditional(workflow, callbacks = {}) {
   const { onProgress, onComplete, onError, workflowType = 'default' } = callbacks
 
-  console.log(`🎯 [${WINDOW_ID}] 使用传统方式处理工作流 (类型: ${workflowType})`)
+  console.log(`🎯 [${WINDOW_ID}] 处理工作流 (类型: ${workflowType})`)
 
   try {
     // 生成promptId并提交工作流
     const promptId = generatePromptId()
-    console.log(`🆔 [TRADITIONAL] 生成promptId: ${promptId}`)
+    console.log(`🆔 [WORKFLOW] 生成promptId: ${promptId}`)
 
     // 创建临时任务对象
     const tempTask = {
@@ -3515,7 +3464,7 @@ async function processWorkflowTraditional(workflow, callbacks = {}) {
 
     // 提交工作流
     const submittedPromptId = await submitWorkflow(workflow, promptId, tempTask)
-    console.log(`✅ [TRADITIONAL] 工作流提交成功: ${submittedPromptId}`)
+    console.log(`✅ [WORKFLOW] 工作流提交成功: ${submittedPromptId}`)
 
     // 等待任务完成
     const result = await waitForTaskCompletion(submittedPromptId, onProgress, workflowType)
@@ -3524,26 +3473,18 @@ async function processWorkflowTraditional(workflow, callbacks = {}) {
       onComplete(result)
     }
 
-    return {
-      taskId: submittedPromptId,
-      cancel: () => {
-        console.log(`🚫 传统任务无法取消: ${submittedPromptId}`)
-        return false
-      },
-      getStatus: () => {
-        const task = getWindowTask(submittedPromptId)
-        return task ? { status: task.status, promptId: submittedPromptId } : null
-      }
-    }
+    return result
 
   } catch (error) {
-    console.error(`❌ [TRADITIONAL] 工作流处理失败:`, error)
+    console.error(`❌ [WORKFLOW] 工作流处理失败:`, error)
     if (onError) {
       onError(error)
     }
     throw error
   }
 }
+
+
 
 // 导出所有公共函数
 export {
@@ -3557,8 +3498,7 @@ export {
   removeConfigChangeListener,
   processUndressImage,
   processFaceSwapImage,
-  processWorkflow, // 🔥 新增：队列化工作流处理
-  processWorkflowTraditional, // 🔧 新增：传统工作流处理（回退）
+  processWorkflow, // 🔧 工作流处理函数
   checkComfyUIServerStatus,
   initializeWebSocket,
   initializeComfyUIConnection, // 🔧 新增：直连模式初始化函数
@@ -3859,8 +3799,7 @@ window.detect5225CrossServerIssues = function() {
 
     console.log('\n🔧 建议操作:')
     console.log('1. 运行 window.forceCompleteStuckTasks() 尝试自动恢复')
-    console.log('2. 运行 window.taskQueueManager?.checkTaskStuckAt5225() 触发队列恢复')
-    console.log('3. 检查对应服务器的状态')
+    console.log('2. 检查对应服务器的状态')
   } else {
     console.log('✅ 未发现卡住的任务')
   }
