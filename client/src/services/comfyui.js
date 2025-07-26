@@ -300,8 +300,8 @@ async function getApiBaseUrl() {
       console.log('   - 有锁定服务器但WebSocket不健康且无待处理任务')
     }
 
-    // 使用负载均衡器选择最优服务器
-    const optimalServer = await loadBalancer.getOptimalServer()
+    // 🔧 使用更可靠的服务器获取方法
+    const optimalServer = await loadBalancer.getNextServer()
     console.log('🎯 负载均衡选择的服务器:', optimalServer)
 
     // 确保URL格式正确，移除末尾的斜杠
@@ -393,82 +393,107 @@ async function uploadImageToComfyUI(base64Image) {
   console.log('🔄 第一步：上传图片到ComfyUI服务器')
   console.log('📡 API地址:', `${apiBaseUrl}/upload/image`)
 
-  // 🔧 关键修复：确保WebSocket连接到与上传相同的服务器
-  await webSocketManager.ensureWebSocketConnection(apiBaseUrl)
+  try {
+    // 🔧 关键修复：确保WebSocket连接到与上传相同的服务器
+    // WebSocket连接失败不影响上传
+    await webSocketManager.ensureWebSocketConnection(apiBaseUrl).catch(error => {
+      console.warn('⚠️ WebSocket连接失败，但不影响图片上传:', error.message)
+    })
 
-  logServerConsistency('上传图片到ComfyUI')
+    logServerConsistency('上传图片到ComfyUI')
 
-  // 🔧 验证服务器一致性
-  validateServerConsistency('uploadImageToComfyUI', apiBaseUrl)
+    // 🔧 验证服务器一致性
+    validateServerConsistency('uploadImageToComfyUI', apiBaseUrl)
 
-  // 🔧 智能验证窗口级别的服务器一致性
-  const currentLock = webSocketManager.getWindowServerLock()
-  if (currentLock && apiBaseUrl !== currentLock.server.replace(/\/$/, '')) {
-    console.warn(`⚠️ [${WINDOW_ID}] [uploadImage] 服务器不一致，自动更新锁定`)
-    console.warn(`   锁定服务器: ${currentLock.server}`)
-    console.warn(`   上传服务器: ${apiBaseUrl}`)
-    webSocketManager.lockServerForWindow(apiBaseUrl)
-    console.log(`🔒 [${WINDOW_ID}] 已更新锁定服务器为: ${apiBaseUrl}`)
+    // 🔧 智能验证窗口级别的服务器一致性
+    const currentLock = webSocketManager.getWindowServerLock()
+    if (currentLock && apiBaseUrl !== currentLock.server.replace(/\/$/, '')) {
+      console.warn(`⚠️ [${WINDOW_ID}] [uploadImage] 服务器不一致，自动更新锁定`)
+      console.warn(`   锁定服务器: ${currentLock.server}`)
+      console.warn(`   上传服务器: ${apiBaseUrl}`)
+      webSocketManager.lockServerForWindow(apiBaseUrl)
+      console.log(`🔒 [${WINDOW_ID}] 已更新锁定服务器为: ${apiBaseUrl}`)
+    }
+
+    // 验证base64格式
+    if (!base64Image || !base64Image.startsWith('data:image/')) {
+      throw new Error('无效的base64图片格式')
+    }
+
+    // 从base64数据中提取图片信息
+    const base64Data = base64Image.split(',')[1]
+    const mimeType = base64Image.split(',')[0].split(':')[1].split(';')[0]
+    const extension = mimeType.split('/')[1] || 'jpg'
+
+    // 生成唯一文件名
+    const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`
+
+    // 将base64转换为Blob
+    const byteCharacters = atob(base64Data)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: mimeType })
+
+    console.log('📤 上传文件信息:', {
+      filename,
+      type: mimeType,
+      size: `${(blob.size / 1024).toFixed(2)} KB`
+    })
+
+    // 直连上传图片
+    const formData = new FormData()
+    formData.append('image', blob, filename)
+    formData.append('type', 'input')
+    formData.append('subfolder', '')
+    formData.append('overwrite', 'false')
+
+    console.log('🔄 开始上传图片...')
+
+    const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000) // 30秒超时
+    })
+
+    console.log('📥 上传响应状态:', response.status, response.statusText)
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText)
+      throw new Error(`上传失败: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    const result = await response.json()
+    console.log('✅ 图片上传成功:', result)
+
+    // 验证返回结果
+    if (!result.name) {
+      throw new Error('上传响应中缺少文件名')
+    }
+
+    return result.name
+
+  } catch (error) {
+    console.error('❌ 图片上传失败:', error)
+
+    // 🔧 修改：只有在明确的服务器错误时才记录失败
+    // 网络错误、CORS错误、超时等不应该标记服务器为不健康
+    const isServerError = error.message.includes('500') ||
+                         error.message.includes('502') ||
+                         error.message.includes('503') ||
+                         error.message.includes('504')
+
+    if (isServerError) {
+      console.log('📝 记录服务器错误:', apiBaseUrl)
+      await loadBalancer.recordFailure(apiBaseUrl, 'server_error')
+    } else {
+      console.log('⚠️ 网络或客户端错误，不记录服务器失败:', error.message)
+    }
+
+    throw new Error(`图片上传失败: ${error.message}`)
   }
-
-  // 验证base64格式
-  if (!base64Image || !base64Image.startsWith('data:image/')) {
-    throw new Error('无效的base64图片格式')
-  }
-
-  // 从base64数据中提取图片信息
-  const base64Data = base64Image.split(',')[1]
-  const mimeType = base64Image.split(',')[0].split(':')[1].split(';')[0]
-  const extension = mimeType.split('/')[1] || 'jpg'
-
-  // 生成唯一文件名
-  const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`
-
-  // 将base64转换为Blob
-  const byteCharacters = atob(base64Data)
-  const byteNumbers = new Array(byteCharacters.length)
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i)
-  }
-  const byteArray = new Uint8Array(byteNumbers)
-  const blob = new Blob([byteArray], { type: mimeType })
-
-  console.log('📤 上传文件信息:', {
-    filename,
-    type: mimeType,
-    size: `${(blob.size / 1024).toFixed(2)} KB`
-  })
-
-  // 直连上传图片
-  const formData = new FormData()
-  formData.append('image', blob, filename)
-  formData.append('type', 'input')
-  formData.append('subfolder', '')
-  formData.append('overwrite', 'false')
-
-  console.log('🔄 开始上传图片...')
-
-  const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
-    method: 'POST',
-    body: formData
-  })
-
-  console.log('📥 上传响应状态:', response.status, response.statusText)
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => response.statusText)
-    throw new Error(`上传失败: ${response.status} ${response.statusText} - ${errorText}`)
-  }
-
-  const result = await response.json()
-  console.log('✅ 图片上传成功:', result)
-
-  // 验证返回结果
-  if (!result.name) {
-    throw new Error('上传响应中缺少文件名')
-  }
-
-  return result.name
 }
 
 
@@ -480,7 +505,10 @@ async function submitWorkflow(workflowPrompt, promptId = null, tempTask = null) 
   const apiBaseUrl = await getApiBaseUrl()
 
   // 🔧 关键修复：确保WebSocket连接到与提交相同的服务器
-  await webSocketManager.ensureWebSocketConnection(apiBaseUrl)
+  const wsConnected = await webSocketManager.ensureWebSocketConnection(apiBaseUrl)
+  if (!wsConnected) {
+    console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接失败，任务将通过HTTP轮询监控`)
+  }
 
   // 🔧 智能验证窗口级别的服务器锁定状态
   let currentLock = webSocketManager.getWindowServerLock()
@@ -905,11 +933,10 @@ async function extractTaskResults(history, promptId) {
 async function waitForTaskCompletion(promptId, onProgress = null, workflowType = 'undress') {
   console.log(`⏳ [${WINDOW_ID}] 等待任务完成: ${promptId} (无超时限制)`)
 
-  // 🔧 尝试确保WebSocket连接，但失败不阻止继续
-  try {
-    await webSocketManager.ensureWebSocketConnection()
-  } catch (connectionError) {
-    console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接问题，但继续等待任务:`, connectionError.message)
+  // 🔧 尝试确保WebSocket连接，失败不阻止任务继续
+  const wsConnected = await webSocketManager.ensureWebSocketConnection()
+  if (!wsConnected) {
+    console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接失败，任务将通过HTTP轮询等待结果`)
   }
 
   return new Promise((resolve, reject) => {
@@ -997,9 +1024,24 @@ async function processUndressImage(base64Image, onProgress = null) {
 
   } catch (error) {
     console.error('❌ 换衣处理失败:', error)
+
+    // 改进错误消息处理
+    let errorMessage = error.message || '未知错误'
+
+    // 特殊处理不同类型的错误
+    if (errorMessage.includes('WebSocket连接失败')) {
+      errorMessage = '服务器连接失败，请稍后重试'
+    } else if (errorMessage.includes('连接超时')) {
+      errorMessage = '服务器响应超时，请检查网络连接'
+    } else if (errorMessage.includes('连接中断')) {
+      errorMessage = '处理过程中连接中断，请重新尝试'
+    } else if (errorMessage.includes('服务器可能不可用')) {
+      errorMessage = '服务器暂时不可用，请稍后重试'
+    }
+
     return {
       success: false,
-      error: error.message,
+      error: errorMessage,
       message: '换衣处理失败'
     }
   }

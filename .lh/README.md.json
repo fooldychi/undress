@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 13,
+            "activePatchIndex": 16,
             "patches": [
                 {
                     "date": 1752329615202,
@@ -60,6 +60,18 @@
                 {
                     "date": 1753545714689,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -225,11 +225,13 @@\n \r\n ## 📖 文档\r\n \r\n ### 前端开发\r\n+- [前端文档中心](./client/docs/README.md) - 完整的前端开发文档索引\r\n - [前端开发原则](./client/docs/FRONTEND_DEVELOPMENT_PRINCIPLES.md)\r\n - [项目概览](./client/docs/PROJECT_OVERVIEW.md)\r\n - [部署指南](./client/docs/DEPLOYMENT_GUIDE.md)\r\n+- [SVG图标系统](./client/docs/SVG_ICON_SYSTEM.md)\r\n - [SVG图标迁移指南](./client/docs/SVG_ICONS_MIGRATION.md)\r\n - [统一组件指南](./client/docs/UNIFIED_COMPONENTS_GUIDE.md)\r\n \r\n ### 系统架构\r\n"
+                },
+                {
+                    "date": 1753546610946,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -207,10 +207,9 @@\n ```\r\n \r\n ### 配置文件\r\n - `port-config.json` - 统一端口配置\r\n-- [端口管理指南](./docs/port-management/PORT_MANAGER_GUIDE.md) - 详细使用指南\r\n-- [端口保护指南](./docs/port-management/PORT_PROTECTION_GUIDE.md) - 端口配置保护指南\r\n+- [端口管理指南](./scripts/PORT_MANAGER_GUIDE.md) - 详细使用指南\r\n \r\n ### 🛡️ 配置保护机制\r\n ```bash\r\n # 检查端口配置完整性和硬编码问题\r\n"
+                },
+                {
+                    "date": 1753546623961,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -233,10 +233,9 @@\n - [SVG图标迁移指南](./client/docs/SVG_ICONS_MIGRATION.md)\r\n - [统一组件指南](./client/docs/UNIFIED_COMPONENTS_GUIDE.md)\r\n \r\n ### 系统架构\r\n-- [项目文档总览](./docs/README.md)\r\n-- [端口管理系统](./docs/port-management/README.md)\r\n+- [端口管理系统](./scripts/PORT_MANAGER_GUIDE.md)\r\n \r\n ### API文档\r\n - 用户认证: `/api/auth/*`\r\n - 用户管理: `/api/user/*`\r\n"
+                },
+                {
+                    "date": 1753546638560,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -46,9 +46,9 @@\n # 查看端口使用情况\r\n node scripts/port-config-manager.js availability\r\n ```\r\n \r\n-⚠️ **重要**: 端口配置由 `port-config.json` 统一管理，请勿随意修改。详见 [端口管理指南](./docs/port-management/PORT_MANAGER_GUIDE.md)\r\n+⚠️ **重要**: 端口配置由 `port-config.json` 统一管理，请勿随意修改。详见 [端口管理指南](./scripts/PORT_MANAGER_GUIDE.md)\r\n \r\n ## 📁 项目结构\r\n \r\n ```\r\n"
                 }
             ],
             "date": 1752329615202,

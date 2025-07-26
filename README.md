@@ -47,7 +47,7 @@ node scripts/port-config-manager.js fix
 node scripts/port-config-manager.js availability
 ```
 
-⚠️ **重要**: 端口配置由 `port-config.json` 统一管理，请勿随意修改。详见 [端口管理指南](./docs/port-management/PORT_MANAGER_GUIDE.md)
+⚠️ **重要**: 端口配置由 `port-config.json` 统一管理，请勿随意修改。详见 [端口管理指南](./scripts/PORT_MANAGER_GUIDE.md)
 
 ## 📁 项目结构
 
@@ -208,8 +208,7 @@ node scripts/port-manager.js start admin
 
 ### 配置文件
 - `port-config.json` - 统一端口配置
-- [端口管理指南](./docs/port-management/PORT_MANAGER_GUIDE.md) - 详细使用指南
-- [端口保护指南](./docs/port-management/PORT_PROTECTION_GUIDE.md) - 端口配置保护指南
+- [端口管理指南](./scripts/PORT_MANAGER_GUIDE.md) - 详细使用指南
 
 ### 🛡️ 配置保护机制
 ```bash
@@ -235,8 +234,7 @@ node scripts/install-git-hooks.js install
 - [统一组件指南](./client/docs/UNIFIED_COMPONENTS_GUIDE.md)
 
 ### 系统架构
-- [项目文档总览](./docs/README.md)
-- [端口管理系统](./docs/port-management/README.md)
+- [端口管理系统](./scripts/PORT_MANAGER_GUIDE.md)
 
 ### API文档
 - 用户认证: `/api/auth/*`

@@ -77,23 +77,36 @@ class SimpleWebSocketManager {
 
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error('连接超时'))
+          if (this.ws) {
+            this.ws.close()
+          }
+          this.isConnected = false
+          reject(new Error(`WebSocket连接超时: ${serverUrl}`))
         }, 10000)
 
         this.ws.onopen = () => {
           this.isConnected = true
           clearTimeout(timeout)
+          console.log(`✅ [${WINDOW_ID}] WebSocket连接成功`)
           resolve(true)
         }
 
         this.ws.onerror = (error) => {
           this.isConnected = false
           clearTimeout(timeout)
-          reject(error)
+          console.error(`❌ [${WINDOW_ID}] WebSocket连接错误:`, error)
+          // 改进：提供清晰的错误信息而不是原始Event对象
+          reject(new Error(`WebSocket连接失败: ${serverUrl} - 服务器可能不可用或网络异常`))
         }
 
-        this.ws.onclose = () => {
+        this.ws.onclose = (event) => {
           this.isConnected = false
+          console.log(`🔌 [${WINDOW_ID}] WebSocket连接关闭: ${event.code} ${event.reason}`)
+
+          // 如果是异常关闭且有等待的任务，通知它们
+          if (event.code !== 1000 && this.tasks.size > 0) {
+            this._handleConnectionLoss(`连接异常关闭: ${event.code} ${event.reason}`)
+          }
         }
 
         // 核心消息处理 - 基于官方样例
@@ -112,7 +125,8 @@ class SimpleWebSocketManager {
         }
       })
     } catch (error) {
-      throw error
+      this.isConnected = false
+      throw new Error(`WebSocket初始化失败: ${error.message}`)
     }
   }
 
@@ -217,6 +231,22 @@ class SimpleWebSocketManager {
       task.onError(new Error(errorMessage))
     }
     this.tasks.delete(promptId)
+    this._checkUnlock()
+  }
+
+  // 新增：处理连接丢失
+  _handleConnectionLoss(reason) {
+    console.error(`❌ [${WINDOW_ID}] 连接丢失: ${reason}`)
+
+    // 通知所有等待的任务连接失败
+    for (const [, task] of this.tasks.entries()) {
+      if (task.onError) {
+        task.onError(new Error(`连接中断: ${reason}`))
+      }
+    }
+
+    // 清理所有任务
+    this.tasks.clear()
     this._checkUnlock()
   }
 
@@ -333,7 +363,65 @@ class SimpleWebSocketManager {
       task.onWorkflowProgress = callbacks.onWorkflowProgress || null
 
       console.log(`⏳ [${WINDOW_ID}] 等待任务完成: ${promptId}`)
+
+      // 如果WebSocket未连接，启动HTTP轮询备用机制
+      if (!this.isConnected) {
+        console.log(`🔄 [${WINDOW_ID}] WebSocket未连接，启动HTTP轮询备用机制`)
+        this._startHttpPollingBackup(promptId, callbacks)
+      }
     })
+  }
+
+  // HTTP轮询备用机制
+  async _startHttpPollingBackup(promptId, callbacks) {
+    const maxAttempts = 120 // 最多轮询2分钟
+    const pollInterval = 1000 // 每秒轮询一次
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // 检查任务是否已被WebSocket处理完成
+        if (!this.tasks.has(promptId)) {
+          console.log(`✅ [${WINDOW_ID}] 任务已通过WebSocket完成: ${promptId}`)
+          return
+        }
+
+        // HTTP轮询检查任务状态
+        const historyResponse = await fetch(`${this.currentServer}/api/history/${promptId}`)
+        if (historyResponse.ok) {
+          const history = await historyResponse.json()
+
+          // 任务完成
+          if (history[promptId]) {
+            console.log(`✅ [${WINDOW_ID}] HTTP轮询检测到任务完成: ${promptId}`)
+            await this._handleTaskCompletion(promptId)
+            return
+          }
+        }
+
+        // 更新进度
+        if (callbacks.onProgress) {
+          const progress = Math.min((attempt / maxAttempts) * 100, 95)
+          callbacks.onProgress('处理中...', progress)
+        }
+
+        // 等待下次轮询
+        await new Promise(resolve => setTimeout(resolve, pollInterval))
+
+      } catch (error) {
+        console.warn(`⚠️ [${WINDOW_ID}] HTTP轮询失败 (${attempt + 1}/${maxAttempts}):`, error.message)
+
+        // 继续重试
+        await new Promise(resolve => setTimeout(resolve, pollInterval * 2))
+      }
+    }
+
+    // 轮询超时
+    const task = this.tasks.get(promptId)
+    if (task && task.onError) {
+      task.onError(new Error('任务处理超时'))
+    }
+    this.tasks.delete(promptId)
+    this._checkUnlock()
   }
 
   // 获取状态信息
@@ -359,13 +447,24 @@ class SimpleWebSocketManager {
   }
 
   async ensureWebSocketConnection(taskServer = null) {
-    const serverUrl = taskServer || this.currentServer
-    if (serverUrl && this.isConnected && this.currentServer === serverUrl) {
-      return true
+    try {
+      const serverUrl = taskServer || this.currentServer
+      if (serverUrl && this.isConnected && this.currentServer === serverUrl) {
+        return true
+      }
+
+      // 导入 getApiBaseUrl 函数
+      const { getApiBaseUrl } = await import('./comfyui.js')
+      const targetServer = serverUrl || await getApiBaseUrl()
+
+      console.log(`🔄 [${WINDOW_ID}] 确保WebSocket连接到: ${targetServer}`)
+      return await this.connectToServer(targetServer)
+
+    } catch (error) {
+      console.warn(`⚠️ [${WINDOW_ID}] WebSocket连接失败，但不阻止任务继续:`, error.message)
+      // 连接失败不抛出错误，让任务继续执行
+      return false
     }
-    // 导入 getApiBaseUrl 函数
-    const { getApiBaseUrl } = await import('./comfyui.js')
-    return await this.connectToServer(serverUrl || await getApiBaseUrl())
   }
 
   // 任务管理兼容方法

@@ -150,12 +150,8 @@ class LoadBalancer {
     if (healthyServers.length === 0) {
       console.warn('⚠️ 没有可用的健康服务器，使用第一个服务器')
 
-      // 🔧 修改：只有当真正没有可用服务器时才触发错误处理
-      // 如果有服务器配置但都不健康，才显示错误弹窗
-      if (this.serverList.length > 0) {
-        this.handleNoAvailableServers(this.serverList.length)
-      }
-
+      // 🔧 修改：不在这里触发错误弹窗，只返回可用的服务器
+      // 错误弹窗应该在实际无法获取任何服务器URL时才触发
       return this.serverList.length > 0 ? this.serverList[0].url : comfyUIConfig.BASE_URL
     }
 
@@ -239,10 +235,7 @@ class LoadBalancer {
 
   /**
    * 处理没有可用服务器的情况
-   *
-   * 🎯 修改后的错误处理策略：
-   * - 只有当确实没有任何健康服务器时才显示错误弹窗
-   * - 有可用服务器的情况下，不弹窗
+   * 🔧 修改：只有当确实无法获取任何服务器URL时才显示错误弹窗
    */
   handleNoAvailableServers(totalServers) {
     // 避免重复触发错误提示
@@ -250,13 +243,12 @@ class LoadBalancer {
       return
     }
 
-    // 🔧 修改：增加更严格的检查条件
-    // 只有当确实没有任何健康服务器且用户尝试操作时才显示错误
-    const healthyServers = this.serverList.filter(s => s.healthy === true)
+    // 🔧 修改：更严格的检查条件
+    // 检查是否真的无法获取任何服务器URL
+    const hasAnyServer = this.serverList.length > 0 || comfyUIConfig.BASE_URL
 
-    // 如果有健康服务器，不显示错误弹窗
-    if (healthyServers.length > 0) {
-      console.log(`✅ 发现 ${healthyServers.length} 个健康服务器，不显示错误弹窗`)
+    if (hasAnyServer) {
+      console.log('✅ 仍有可用的服务器URL，不显示错误弹窗')
       return
     }
 
@@ -268,7 +260,7 @@ class LoadBalancer {
 
     this.noServerErrorShown = true
 
-    console.log('🚨 确认所有服务器都不可用，显示用户提示')
+    console.log('🚨 确认无法获取任何服务器URL，显示用户提示')
 
     // 立即显示错误提示（业务层面的问题需要用户知晓）
     setTimeout(() => {
@@ -342,15 +334,30 @@ class LoadBalancer {
 
   /**
    * 记录服务器失败
+   * 🔧 修改：只有明确的服务器错误才标记为不健康
    */
   async recordFailure(serverUrl, errorType = 'unknown') {
     console.log(`📝 记录服务器失败: ${serverUrl} (${errorType})`)
+
+    // 🔧 只有明确的服务器错误才标记为不健康
+    // 网络错误、CORS错误、超时等不应该标记服务器为不健康
+    const isServerError = errorType.includes('500') ||
+                         errorType.includes('502') ||
+                         errorType.includes('503') ||
+                         errorType.includes('504') ||
+                         errorType.includes('server_error')
+
+    if (!isServerError) {
+      console.log(`⚠️ 非服务器错误 (${errorType})，不标记服务器为不健康`)
+      return
+    }
 
     // 找到对应的服务器并标记为不健康
     const server = this.serverList.find(s => s.url === serverUrl)
     if (server) {
       server.healthy = false
       server.lastCheck = Date.now()
+      console.log(`❌ 服务器 ${serverUrl} 已标记为不健康`)
     }
   }
 
@@ -646,9 +653,9 @@ class LoadBalancer {
     const healthyServers = results.filter(r => r.overall)
 
     if (healthyServers.length === 0) {
-      // 触发全局错误处理
-      this.handleNoAvailableServers(results.length)
-
+      // 🔧 修改：不在这里触发弹窗，只抛出错误
+      // 弹窗应该在调用方的预检查阶段处理
+      console.warn('🚨 没有找到健康的服务器，但不在此处弹窗')
       throw new Error('没有找到健康的服务器')
     }
 
@@ -656,6 +663,31 @@ class LoadBalancer {
     console.log(`✅ 选择服务器: ${selectedServer.url}`)
 
     return selectedServer.url
+  }
+
+  /**
+   * 获取下一个可用服务器 - 兼容性方法
+   * 🔧 确保总是能返回一个服务器URL，即使健康检查失败
+   */
+  async getNextServer() {
+    try {
+      // 优先尝试获取最优服务器
+      return await this.getOptimalServer()
+    } catch (error) {
+      console.warn('⚠️ 获取最优服务器失败，使用备用方案:', error.message)
+
+      // 备用方案：返回第一个配置的服务器或默认服务器
+      if (this.serverList.length > 0) {
+        const fallbackServer = this.serverList[0].url
+        console.log(`🔄 使用备用服务器: ${fallbackServer}`)
+        return fallbackServer
+      }
+
+      // 最后的备用方案：使用配置中的默认服务器
+      const defaultServer = comfyUIConfig.BASE_URL
+      console.log(`🔄 使用默认服务器: ${defaultServer}`)
+      return defaultServer
+    }
   }
 
 
