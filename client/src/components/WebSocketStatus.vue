@@ -29,7 +29,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { wsConnection, isWsConnected } from '../services/comfyui.js'
+import webSocketManager from '../services/webSocketManager.js'
 
 export default {
   name: 'WebSocketStatus',
@@ -44,7 +44,7 @@ export default {
 
     // 更新状态显示
     const updateStatus = () => {
-      if (isWsConnected) {
+      if (webSocketManager.isWsConnected) {
         statusClass.value = 'connected'
         statusText.value = 'ComfyUI 实时连接'
         showStatus.value = true
@@ -119,8 +119,8 @@ export default {
       window.addEventListener('comfyui-status', handleComfyUIStatus)
 
       // 监听 WebSocket 事件
-      if (wsConnection) {
-        wsConnection.addEventListener('open', () => {
+      if (webSocketManager.wsConnection) {
+        webSocketManager.wsConnection.addEventListener('open', () => {
           updateStatus()
           // 只在调试模式下显示连接成功通知
           if (import.meta.env.DEV) {
@@ -128,13 +128,13 @@ export default {
           }
         })
 
-        wsConnection.addEventListener('close', () => {
+        webSocketManager.wsConnection.addEventListener('close', () => {
           updateStatus()
           // 简化连接断开通知
           addNotification('连接已断开', 'warning')
         })
 
-        wsConnection.addEventListener('error', () => {
+        webSocketManager.wsConnection.addEventListener('error', () => {
           statusClass.value = 'error'
           statusText.value = 'ComfyUI 连接错误'
           showStatus.value = true

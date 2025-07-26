@@ -35,8 +35,8 @@
     <div class="messages-section">
       <h3>实时消息</h3>
       <div class="messages-container">
-        <div 
-          v-for="(message, index) in messages" 
+        <div
+          v-for="(message, index) in messages"
           :key="index"
           class="message-item"
           :class="message.type"
@@ -74,7 +74,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { wsConnection, isWsConnected, initializeWebSocket } from '../services/comfyui.js'
+import webSocketManager from '../services/webSocketManager.js'
 import { Toast } from 'vant'
 
 export default {
@@ -86,14 +86,14 @@ export default {
     const messageCount = ref(0)
     const taskCount = ref(0)
     const messages = ref([])
-    
+
     let statusCheckInterval = null
     let originalOnMessage = null
-    
+
     // 更新连接状态
     const updateConnectionStatus = () => {
-      isConnected.value = isWsConnected
-      if (isWsConnected) {
+      isConnected.value = webSocketManager.isWsConnected
+      if (webSocketManager.isWsConnected) {
         connectionStatus.value = 'connected'
         connectionText.value = '已连接'
       } else {
@@ -101,26 +101,26 @@ export default {
         connectionText.value = '未连接'
       }
     }
-    
+
     // 处理 WebSocket 消息
     const handleMessage = (event) => {
       try {
         const message = JSON.parse(event.data)
-        
+
         // 添加到消息列表
         messages.value.unshift({
           type: message.type || 'unknown',
           data: message.data || message,
           timestamp: Date.now()
         })
-        
+
         // 限制消息数量
         if (messages.value.length > 50) {
           messages.value = messages.value.slice(0, 50)
         }
-        
+
         messageCount.value++
-        
+
         // 统计任务相关消息
         if (message.type === 'executed' || message.type === 'execution_error') {
           taskCount.value++
@@ -129,72 +129,72 @@ export default {
         console.error('解析 WebSocket 消息失败:', error)
       }
     }
-    
+
     // 重新连接 WebSocket
     const reconnectWebSocket = async () => {
       try {
         Toast.loading('正在重新连接...')
-        await initializeWebSocket()
+        await webSocketManager.initializeWebSocket()
         Toast.success('重新连接成功')
       } catch (error) {
         Toast.fail('重新连接失败: ' + error.message)
       }
     }
-    
+
     // 清空消息
     const clearMessages = () => {
       messages.value = []
       messageCount.value = 0
       taskCount.value = 0
     }
-    
+
     // 格式化时间
     const formatTime = (timestamp) => {
       const date = new Date(timestamp)
       return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
     }
-    
+
     // 测试功能
     const testImageUpload = () => {
       Toast('测试图片上传功能（需要实现）')
     }
-    
+
     const testWorkflowSubmit = () => {
       Toast('测试工作流提交功能（需要实现）')
     }
-    
+
     const testTaskStatus = () => {
       Toast('测试任务状态查询功能（需要实现）')
     }
-    
+
     onMounted(() => {
       // 初始状态检查
       updateConnectionStatus()
-      
+
       // 定期检查连接状态
       statusCheckInterval = setInterval(updateConnectionStatus, 1000)
-      
+
       // 监听 WebSocket 消息
-      if (wsConnection) {
+      if (webSocketManager.wsConnection) {
         // 保存原始的 onmessage 处理器
-        originalOnMessage = wsConnection.onmessage
-        
+        originalOnMessage = webSocketManager.wsConnection.onmessage
+
         // 添加我们的消息处理器
-        wsConnection.addEventListener('message', handleMessage)
+        webSocketManager.wsConnection.addEventListener('message', handleMessage)
       }
     })
-    
+
     onUnmounted(() => {
       if (statusCheckInterval) {
         clearInterval(statusCheckInterval)
       }
-      
+
       // 恢复原始的消息处理器
-      if (wsConnection && originalOnMessage) {
-        wsConnection.removeEventListener('message', handleMessage)
+      if (webSocketManager.wsConnection && originalOnMessage) {
+        webSocketManager.wsConnection.removeEventListener('message', handleMessage)
       }
     })
-    
+
     return {
       isConnected,
       connectionStatus,
@@ -422,15 +422,15 @@ export default {
   .websocket-test {
     padding: 15px;
   }
-  
+
   .status-section {
     grid-template-columns: 1fr;
   }
-  
+
   .test-buttons {
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
   }
