@@ -2,22 +2,21 @@
 import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 import comfyUIConfig from '../config/comfyui.config.js'
-import pointsManager from '../utils/pointsManager.js'
 import levelCardPointsManager from '../utils/levelCardPointsManager.js'
 import { updateAPIConfig } from './api.js'
 import loadBalancer from './loadBalancer.js'
-import { getWorkflowNodeConfig, isWorkflowEnabled } from '../utils/workflowConfig.js'
+import { getWorkflowNodeConfig } from '../utils/workflowConfig.js'
 
 // 🔧 窗口唯一标识符生成机制
 function generateWindowId() {
-  return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 }
 
 // 🔧 为当前窗口生成唯一的clientId - 增强唯一性防止冲突
 function generateUniqueClientId() {
   const baseId = 'abc1373d4ad648a3a81d0587fbe5534b' // 基础clientId
   const timestamp = Date.now()
-  const random = Math.random().toString(36).substr(2, 9)
+  const random = Math.random().toString(36).substring(2, 11)
   const windowId = generateWindowId()
 
   // 🔧 增强唯一性：基础ID + 时间戳 + 随机数 + 窗口ID
@@ -144,7 +143,7 @@ async function updateProxyServerConfig(config) {
     })
 
     if (response.ok) {
-      const result = await response.json()
+      await response.json() // 读取响应但不使用
       return { success: true, message: '代理服务器配置更新成功' }
     } else {
       return { success: false, message: `代理服务器响应错误: ${response.status}` }
@@ -284,29 +283,7 @@ function buildUnifiedImageUrl(filename, subfolder = '', type = 'output', promptI
   }
 }
 
-// 🔧 兼容性函数：保持向后兼容
-function getComfyUIImageUrl(imageData) {
-  try {
-    // 如果已经是 ComfyUI 的 URL 格式，直接返回
-    if (typeof imageData === 'string' && imageData.includes('/view?')) {
-      console.log('🔗 已是 ComfyUI URL 格式:', imageData)
-      return imageData
-    }
 
-    // 如果是其他格式，尝试从全局变量获取最新的URL
-    if (window.lastComfyUIImageUrl) {
-      console.log('🔗 使用缓存的 ComfyUI URL:', window.lastComfyUIImageUrl)
-      return window.lastComfyUIImageUrl
-    }
-
-    console.warn('⚠️ 无法获取 ComfyUI URL')
-    return imageData // 返回原始数据作为兜底
-
-  } catch (error) {
-    console.error('❌ 获取 ComfyUI 图片URL失败:', error)
-    return imageData // 返回原始数据作为兜底
-  }
-}
 
 // 更新配置
 async function updateComfyUIConfig(newConfig) {
@@ -354,28 +331,17 @@ async function getApiBaseUrl() {
       }
     }
 
-    // 🔧 详细的状态检查和日志
-    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] 开始获取API基础URL...`)
-    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] 锁定服务器: ${lockedServer}`)
-    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] wsConnection存在: ${!!wsConnection}`)
-    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] wsConnection.readyState: ${wsConnection?.readyState} (1=OPEN)`)
-    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] isWsConnected: ${isWsConnected}`)
-    console.log(`🔍 [${WINDOW_ID}] [getApiBaseUrl] windowTasks.size: ${windowTasks.size}`)
+    // 🔧 简化状态检查日志
+    console.log(`🔍 [${WINDOW_ID}] 获取API基础URL (锁定: ${lockedServer || '无'}, 任务: ${windowTasks.size})`)
 
-    // 🔧 强化的锁定条件（窗口级别）：
-    // 1. 有锁定的服务器 AND
-    // 2. (WebSocket连接正常 OR 有待处理任务需要保持一致性)
+    // 🔧 简化的锁定条件：有锁定服务器就使用，不强制要求WebSocket健康
     const hasLockedServer = !!lockedServer
     const wsIsHealthy = wsConnection && wsConnection.readyState === WebSocket.OPEN
     const hasPendingTasks = windowTasks.size > 0
-    const shouldUseLocked = hasLockedServer && (wsIsHealthy || hasPendingTasks)
+    const shouldUseLocked = hasLockedServer // 简化条件，只要有锁定服务器就使用
 
     if (shouldUseLocked) {
-      console.log(`🔒 [${WINDOW_ID}] 使用WebSocket锁定的服务器:`, lockedServer)
-      console.log(`🕐 [${WINDOW_ID}] 服务器锁定时间:`, new Date(currentLock.timestamp).toLocaleTimeString())
-      console.log(`⏱️ [${WINDOW_ID}] 锁定持续时间:`, Math.round((Date.now() - currentLock.timestamp) / 1000) + '秒')
-      console.log(`📊 [${WINDOW_ID}] 锁定原因: WebSocket健康=${wsIsHealthy}, 待处理任务=${hasPendingTasks}`)
-      console.log(`🪟 [${WINDOW_ID}] 窗口隔离: 使用当前窗口独立锁定的服务器`)
+      console.log(`🔒 [${WINDOW_ID}] 使用锁定服务器: ${lockedServer}`)
 
       // 确保URL格式正确，移除末尾的斜杠
       let baseUrl = lockedServer
@@ -383,7 +349,6 @@ async function getApiBaseUrl() {
         baseUrl = baseUrl.slice(0, -1)
       }
 
-      console.log(`✅ [${WINDOW_ID}] [getApiBaseUrl] 返回锁定的服务器URL:`, baseUrl)
       return baseUrl
     }
 
@@ -438,19 +403,16 @@ function validateServerConsistency(operation, currentServer) {
   const currentLock = getWindowServerLock()
   const lockedServer = currentLock ? currentLock.server : null
 
-  // 🔧 智能处理：服务器切换时给出警告但允许合理切换
+  // 🔧 简化处理：减少过度警告，只在真正需要时进行服务器切换
   if (windowTasks.size > 0 && lockedServer && currentServer !== lockedServer) {
-    console.warn(`⚠️ [${WINDOW_ID}] 服务器切换检测：${operation} 尝试使用 ${currentServer}，但当前窗口锁定服务器为 ${lockedServer}`)
-    console.warn(`📊 [${WINDOW_ID}] 当前窗口任务数: ${windowTasks.size}`)
-    console.warn(`� [${WINDOW_ID}] 锁定信息:`, currentLock)
-
-    // 检查是否是合理的服务器切换（例如负载均衡）
-    const isReasonableSwitch = Math.abs(Date.now() - currentLock.timestamp) > 60000 // 超过1分钟的锁定
+    // 检查是否是合理的服务器切换（例如负载均衡或长时间锁定）
+    const isReasonableSwitch = Math.abs(Date.now() - currentLock.timestamp) > 300000 // 超过5分钟的锁定
     if (isReasonableSwitch) {
-      console.log(`� [${WINDOW_ID}] 检测到长时间锁定，允许服务器切换`)
+      console.log(`🔄 [${WINDOW_ID}] 检测到长时间锁定，允许服务器切换到 ${currentServer}`)
       lockServerForWindow(currentServer)
     } else {
-      console.warn(`⚠️ [${WINDOW_ID}] 服务器切换可能影响任务一致性，但继续执行`)
+      // 减少警告频率，只在调试模式下显示详细信息
+      console.log(`🔍 [${WINDOW_ID}] ${operation} 使用不同服务器: ${currentServer} (锁定: ${lockedServer})`)
     }
   }
 
@@ -461,9 +423,7 @@ function validateServerConsistency(operation, currentServer) {
     lockServerForWindow(currentServer)
   }
 
-  console.log(`✅ [${WINDOW_ID}] ${operation} 服务器一致性验证完成: ${currentServer}`)
-  console.log(`🔒 [${WINDOW_ID}] 当前锁定: ${getWindowServerLock()?.server || '无'}`)
-  console.log(`📊 [${WINDOW_ID}] 任务数: ${windowTasks.size}`)
+  // 简化日志输出，只在有问题时记录详细信息
 }
 
 // 重置为默认配置
@@ -783,53 +743,9 @@ async function getTaskBoundImageUrl(promptId, taskResult, workflowType = 'undres
   }
 }
 
-// 🔧 提取的服务器获取逻辑
-async function getTaskExecutionServer(promptId) {
-  let executionServer = null
+// 🔧 注意：getTaskExecutionServer 函数已被 getUnifiedServerUrl 替代，此处移除重复代码
 
-  // 优先从任务结果中获取服务器信息
-  const task = getWindowTask(promptId)
-  if (task && task.executionServer) {
-    executionServer = task.executionServer
-    console.log(`📋 [${WINDOW_ID}] 从当前任务中获取执行服务器: ${executionServer}`)
-  }
-
-  // 如果都没有，尝试使用当前锁定的服务器作为回退
-  if (!executionServer) {
-    console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 无执行服务器信息，尝试使用当前锁定服务器`)
-
-    if (windowLockedServer) {
-      executionServer = windowLockedServer
-      console.log(`🔄 [${WINDOW_ID}] 使用当前锁定服务器: ${executionServer}`)
-    } else {
-      // 最后的回退：使用当前API服务器
-      console.warn(`⚠️ [${WINDOW_ID}] 没有锁定服务器，使用当前API服务器`)
-      executionServer = await getApiBaseUrl()
-      console.log(`🌐 [${WINDOW_ID}] 使用当前API服务器: ${executionServer}`)
-    }
-  }
-
-  if (!executionServer) {
-    throw new Error(`任务 ${promptId} 无法确定执行服务器`)
-  }
-
-  return executionServer.replace(/\/$/, '')
-}
-
-// 🔧 重构后的服务器指定URL构建函数（保持向后兼容）- 使用统一服务器地址
-async function buildImageUrlWithServer(apiBaseUrl, taskResult, workflowType = 'undress', promptId = null) {
-  try {
-    // 如果没有指定服务器，使用统一的服务器地址获取函数
-    const finalServer = apiBaseUrl || getUnifiedServerUrl(promptId)
-    const imageInfo = await findImageInTaskResult(taskResult, workflowType)
-    const imageUrl = ImageUrlBuilder.buildFromImageInfo(finalServer, imageInfo)
-    console.log(`🌐 [${WINDOW_ID}] 构建图片URL: ${imageUrl}`)
-    return imageUrl
-  } catch (error) {
-    console.error('构建图片URL失败:', error)
-    throw error
-  }
-}
+// 🔧 注意：buildImageUrlWithServer 函数已被统一的 ImageUrlBuilder 替代，此处移除重复代码
 
 // WebSocket 连接管理 - 修复版本（服务器锁定机制）
 let wsConnection = null
@@ -959,13 +875,13 @@ function registerWindowTask(promptId, task) {
 
 function getWindowTask(promptId) {
   const task = windowTasks.get(promptId)
-  if (task && task.windowId === WINDOW_ID) {
+  if (task) {
+    // 🔧 简化检测：如果任务存在就返回，不严格检查窗口归属
+    // 这样可以避免因窗口ID不匹配导致的任务丢失
+    if (task.windowId !== WINDOW_ID) {
+      console.log(`🔍 [${WINDOW_ID}] 使用其他窗口的任务: ${promptId} (原窗口: ${task.windowId})`)
+    }
     return task
-  }
-
-  // 如果任务不属于当前窗口，记录日志但不返回
-  if (task && task.windowId !== WINDOW_ID) {
-    console.log(`🔍 [${WINDOW_ID}] 忽略其他窗口的任务: ${promptId} (属于窗口: ${task.windowId})`)
   }
 
   return null
@@ -1121,38 +1037,7 @@ function showNotification(message, type = 'info') {
   }
 }
 
-// 调试辅助函数 - 用于诊断任务状态问题（窗口隔离版本）
-function debugTaskStatus(promptId = null) {
-  console.log(`🔍 [${WINDOW_ID}] ===== 任务状态调试信息 =====`)
-  console.log(`🪟 [${WINDOW_ID}] 窗口客户端ID: ${WINDOW_CLIENT_ID}`)
-  console.log(`📊 [${WINDOW_ID}] 待处理任务总数: ${windowTasks.size}`)
-  console.log(`🔗 [${WINDOW_ID}] WebSocket 连接状态: ${isWsConnected ? '已连接' : '未连接'}`)
-  console.log(`📡 [${WINDOW_ID}] WebSocket 就绪状态: ${wsConnection?.readyState || '无连接'}`)
-  console.log(`🔒 [${WINDOW_ID}] 锁定服务器: ${windowLockedServer || '无'}`)
 
-  if (windowTasks.size > 0) {
-    console.log(`📋 [${WINDOW_ID}] 所有待处理任务:`)
-    for (const [taskId, task] of windowTasks.entries()) {
-      console.log(`  - ${taskId}: ${task.workflowType || 'unknown'} (创建于: ${task.createdAt || 'unknown'}) (窗口: ${task.windowId || 'unknown'})`)
-    }
-  }
-
-  if (promptId) {
-    const task = getWindowTask(promptId)
-    console.log(`🎯 [${WINDOW_ID}] 指定任务 ${promptId}:`, {
-      exists: !!task,
-      belongsToWindow: task?.windowId === WINDOW_ID,
-      hasOnComplete: !!(task?.onComplete),
-      hasOnError: !!(task?.onError),
-      hasOnProgress: !!(task?.onProgress),
-      workflowType: task?.workflowType,
-      createdAt: task?.createdAt,
-      windowId: task?.windowId
-    })
-  }
-
-  console.log(`🔍 [${WINDOW_ID}] ===== 调试信息结束 =====`)
-}
 
 
 
@@ -1448,26 +1333,17 @@ function resetWebSocketServer(force = false) {
   return true
 }
 
-// 🔧 将重置函数暴露到全局，方便调试和故障恢复（窗口隔离版本）
+// 🔧 暴露核心管理函数到全局，用于故障恢复
 if (typeof window !== 'undefined') {
   window.resetWebSocketServer = resetWebSocketServer
   window.getWebSocketServerStatus = getWebSocketServerStatus
-  window.debugWebSocketLock = debugWebSocketLock
   window.getApiBaseUrl = getApiBaseUrl
-  window.checkServerUnlockCondition = checkServerUnlockCondition
-  window.validateServerConsistency = validateServerConsistency
-  window.debugTaskStatus = debugTaskStatus
-  window.checkTaskStatusManually = checkTaskStatusManually
-  window.forceCompleteTask = forceCompleteTask
-  window.checkAllPendingTasks = checkAllPendingTasks
   window.pendingTasks = windowTasks // 🔧 暴露窗口级别的任务队列
 
-  // 🔧 新增：动态锁定管理函数
+  // 🔧 动态锁定管理函数
   window.forceUnlockServerForWindow = forceUnlockServerForWindow
-  window.scheduleServerUnlockCheck = scheduleServerUnlockCheck
-  window.clearServerUnlockTimer = clearServerUnlockTimer
 
-  console.log(`🔧 [${WINDOW_ID}] WebSocket管理函数已暴露到全局`)
+  console.log(`🔧 [${WINDOW_ID}] 核心管理函数已暴露到全局`)
 }
 
 // 🔧 新增：获取当前WebSocket服务器状态的函数（窗口隔离版本）
@@ -1484,50 +1360,7 @@ function getWebSocketServerStatus() {
   }
 }
 
-// 🔧 新增：调试WebSocket锁定机制的函数（窗口隔离版本）
-function debugWebSocketLock() {
-  console.log(`🔍 [${WINDOW_ID}] ===== WebSocket服务器锁定状态调试 =====`)
-  console.log(`🪟 [${WINDOW_ID}] 窗口客户端ID: ${WINDOW_CLIENT_ID}`)
-  console.log(`🔗 [${WINDOW_ID}] WebSocket连接状态: ${isWsConnected ? '已连接' : '未连接'}`)
-  console.log(`📡 [${WINDOW_ID}] WebSocket就绪状态: ${wsConnection?.readyState || '无连接'} (0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)`)
-  console.log(`🔒 [${WINDOW_ID}] 锁定的服务器: ${windowLockedServer || '无'}`)
-  console.log(`🕐 [${WINDOW_ID}] 锁定时间: ${windowLockTimestamp ? new Date(windowLockTimestamp).toLocaleString() : '无'}`)
-  console.log(`⏱️ [${WINDOW_ID}] 锁定持续时间: ${windowLockTimestamp ? Math.round((Date.now() - windowLockTimestamp) / 1000) + '秒' : '无'}`)
-  console.log(`📊 [${WINDOW_ID}] 待处理任务数: ${windowTasks.size}`)
 
-  if (windowTasks.size > 0) {
-    console.log(`📋 [${WINDOW_ID}] 待处理任务列表:`)
-    for (const [promptId, task] of windowTasks.entries()) {
-      console.log(`   - ${promptId}: ${task.workflowType || 'unknown'} (窗口: ${task.windowId || 'unknown'})`)
-    }
-  }
-
-  // 检查锁定条件
-  const lockCondition = windowLockedServer && wsConnection && wsConnection.readyState === WebSocket.OPEN
-  console.log(`✅ [${WINDOW_ID}] 锁定条件满足: ${lockCondition ? '是' : '否'}`)
-
-  if (!lockCondition) {
-    console.log(`❌ [${WINDOW_ID}] 锁定条件不满足的原因:`)
-    if (!windowLockedServer) console.log('   - 没有锁定的服务器')
-    if (!wsConnection) console.log('   - WebSocket连接对象不存在')
-    if (wsConnection && wsConnection.readyState !== WebSocket.OPEN) {
-      console.log(`   - WebSocket未处于OPEN状态 (当前: ${wsConnection.readyState})`)
-    }
-  }
-
-  console.log(`🔍 [${WINDOW_ID}] ===== 调试信息结束 =====`)
-
-  return {
-    windowId: WINDOW_ID,
-    clientId: WINDOW_CLIENT_ID,
-    isConnected: isWsConnected,
-    lockedServer: windowLockedServer,
-    lockTimestamp: windowLockTimestamp,
-    lockConditionMet: lockCondition,
-    wsReadyState: wsConnection?.readyState,
-    pendingTasksCount: windowTasks.size
-  }
-}
 
 // 🔧 动态解锁检查机制
 let serverUnlockTimer = null
@@ -1657,12 +1490,11 @@ function handleWebSocketMessage(message) {
       return
     }
 
-    // 🔥 跨服务器消息过滤：只处理属于当前窗口的消息
+    // 🔥 简化消息过滤：如果找到任务就处理，不严格限制窗口归属
     if (data && data.prompt_id) {
       const task = getWindowTask(data.prompt_id)
       if (!task) {
-        // 消息不属于当前窗口，忽略（避免跨服务器干扰）
-        console.log(`🔍 [${WINDOW_ID}] 忽略其他窗口/服务器的消息: ${type} (prompt_id: ${data.prompt_id})`)
+        // 任务不存在，可能是其他窗口的消息，静默忽略
         return
       }
 
@@ -2230,7 +2062,7 @@ async function getTaskHistory(promptId) {
     return history
 
   } catch (error) {
-    console.error(`❌ [OFFICIAL] getTaskHistory失败: ${promptId} (服务器: ${apiBaseUrl || '未知'})`, error.message)
+    console.error(`❌ [OFFICIAL] getTaskHistory失败: ${promptId}`, error.message)
     throw error
   }
 }
@@ -2331,19 +2163,7 @@ async function extractTaskResults(history, promptId) {
   }
 }
 
-// 🔧 重构后的图片URL获取函数 - 使用统一服务器地址（保持向后兼容）
-function getImageUrl(filename, subfolder, folderType, apiBaseUrl, promptId = null) {
-  try {
-    // 如果没有指定服务器，使用统一的服务器地址获取函数
-    const finalServer = apiBaseUrl || getUnifiedServerUrl(promptId)
-    const url = ImageUrlBuilder.buildUrl(finalServer, filename, subfolder || '', folderType || 'output')
-    console.log(`🔗 [OFFICIAL] 构建图片URL: ${filename} -> ${url}`)
-    return url
-  } catch (error) {
-    console.error('❌ 构建图片URL失败:', error)
-    throw error
-  }
-}
+// 🔧 注意：getImageUrl 函数已被 ImageUrlBuilder.buildUrl 替代，此处移除重复代码
 
 // 🔧 确保WebSocket连接 - 重构版本（支持任务-服务器绑定一致性）
 // 🎯 错误处理策略：WebSocket连接问题属于技术层面，不显示用户弹窗，仅记录日志
@@ -2474,110 +2294,13 @@ async function waitForTaskCompletion(promptId, onProgress = null, workflowType =
   })
 }
 
-// 手动检查任务状态 - 仅用于调试（窗口隔离版本）
-async function checkTaskStatusManually(promptId) {
-  try {
-    console.log(`🔍 [${WINDOW_ID}] 手动检查任务状态: ${promptId}`)
 
-    // 直接尝试获取历史记录
-    const history = await getTaskHistory(promptId)
 
-    if (history[promptId] && history[promptId].outputs) {
-      console.log(`✅ [${WINDOW_ID}] 发现已完成的任务，触发完成处理: ${promptId}`)
-      await handleTaskCompletion(promptId)
-    } else {
-      console.log(`📋 [${WINDOW_ID}] 任务 ${promptId} 仍在处理中`)
-    }
-  } catch (error) {
-    console.error(`❌ [${WINDOW_ID}] 手动检查任务状态失败: ${promptId}`, error)
-    // 如果是404错误，说明任务可能已被清理，从待处理列表中移除
-    if (error.message.includes('404')) {
-      console.log(`🧹 [${WINDOW_ID}] 任务 ${promptId} 不存在，从待处理列表中移除`)
-      removeWindowTask(promptId)
-    }
-  }
-}
 
-// 🔧 新增：强制完成任务的调试函数（窗口隔离版本）
-function forceCompleteTask(promptId) {
-  console.log(`🚀 [${WINDOW_ID}] 强制完成任务: ${promptId}`)
 
-  const task = getWindowTask(promptId)
-  if (!task) {
-    console.error(`❌ [${WINDOW_ID}] 任务不存在或不属于当前窗口: ${promptId}`)
-    return false
-  }
 
-  console.log(`🎯 [${WINDOW_ID}] 找到任务，强制触发完成: ${promptId}`)
 
-  // 模拟接收到完成信号
-  const mockExecutingData = {
-    prompt_id: promptId,
-    node: null  // null表示完成
-  }
 
-  console.log(`📨 [${WINDOW_ID}] 模拟executing消息: ${JSON.stringify(mockExecutingData)}`)
-  handleExecutingMessage(mockExecutingData)
-
-  return true
-}
-
-// 🔧 新增：任务服务器地址一致性验证函数（重命名避免冲突）
-function validateTaskServerConsistency(promptId, taskResult) {
-  console.log(`🔍 [${WINDOW_ID}] 开始验证任务服务器地址一致性: ${promptId}`)
-
-  try {
-    // 检查任务绑定的服务器
-    const task = getWindowTask(promptId)
-    const taskBoundServer = task ? task.executionServer : null
-
-    // 检查任务结果中的服务器
-    const resultServer = taskResult ? taskResult.executionServer : null
-
-    // 检查统一服务器获取函数的结果
-    const unifiedServer = getUnifiedServerUrl(promptId)
-
-    console.log(`📊 [${WINDOW_ID}] 服务器地址对比:`)
-    console.log(`  - 任务绑定服务器: ${taskBoundServer}`)
-    console.log(`  - 结果中的服务器: ${resultServer}`)
-    console.log(`  - 统一获取的服务器: ${unifiedServer}`)
-
-    // 验证一致性
-    const servers = [taskBoundServer, resultServer, unifiedServer].filter(Boolean)
-    const uniqueServers = [...new Set(servers)]
-
-    if (uniqueServers.length === 1) {
-      console.log(`✅ [${WINDOW_ID}] 服务器地址一致: ${uniqueServers[0]}`)
-      return { consistent: true, server: uniqueServers[0] }
-    } else {
-      console.warn(`⚠️ [${WINDOW_ID}] 服务器地址不一致:`, uniqueServers)
-      return { consistent: false, servers: uniqueServers }
-    }
-  } catch (error) {
-    console.error(`❌ [${WINDOW_ID}] 服务器一致性验证失败:`, error)
-    return { consistent: false, error: error.message }
-  }
-}
-
-// 🔧 新增：检查所有待处理任务状态的函数（窗口隔离版本）
-async function checkAllPendingTasks() {
-  console.log(`🔍 [${WINDOW_ID}] 检查所有待处理任务状态`)
-  console.log(`📊 [${WINDOW_ID}] 当前待处理任务数: ${windowTasks.size}`)
-
-  if (windowTasks.size === 0) {
-    console.log(`ℹ️ [${WINDOW_ID}] 没有待处理任务`)
-    return
-  }
-
-  for (const [promptId] of windowTasks.entries()) {
-    console.log(`🔍 [${WINDOW_ID}] 检查任务: ${promptId}`)
-    try {
-      await checkTaskStatusManually(promptId)
-    } catch (error) {
-      console.error(`❌ [${WINDOW_ID}] 检查任务失败: ${promptId}`, error)
-    }
-  }
-}
 
 // 主要的换衣API函数 - 两步流程
 async function processUndressImage(base64Image, onProgress = null) {
@@ -2663,10 +2386,11 @@ async function processUndressImage(base64Image, onProgress = null) {
       console.warn(`⚠️ [${WINDOW_ID}] 任务 ${submittedPromptId} 缺少执行服务器信息`)
     }
 
-    // 🔧 新增：验证服务器地址一致性
-    const consistencyCheck = validateTaskServerConsistency(submittedPromptId, taskResult)
-    if (!consistencyCheck.consistent) {
-      console.warn(`⚠️ [${WINDOW_ID}] 检测到服务器地址不一致，可能导致图片404错误`)
+    // 🔧 简化：基本的服务器一致性检查
+    if (task && task.executionServer && taskResult && taskResult.executionServer) {
+      if (task.executionServer !== taskResult.executionServer) {
+        console.warn(`⚠️ [${WINDOW_ID}] 检测到服务器地址不一致，可能导致图片404错误`)
+      }
     }
 
     // 获取生成的图片URL（使用任务绑定的服务器）
@@ -2734,48 +2458,16 @@ async function checkComfyUIServerStatus() {
       console.log('✅ 服务器状态正常')
       return { status: 'ok', endpoint: '/api/system_stats' }
     } else {
-      // 🔧 即使system_stats失败，尝试其他端点
-      console.log('⚠️ system_stats失败，尝试其他检查')
-      return await fallbackServerCheck(apiBaseUrl)
+      console.log('⚠️ system_stats失败，但服务器可能仍然可用')
+      return { status: 'warning', endpoint: '/api/system_stats', note: '部分功能可能不可用' }
     }
   } catch (error) {
-    console.log('⚠️ 主要检查失败，尝试备用检查:', error.message)
-    return await fallbackServerCheck()
+    console.log('⚠️ 服务器检查失败:', error.message)
+    return { status: 'error', error: error.message, note: '服务器可能不可用' }
   }
 }
 
-// 🔧 备用检查方法
-async function fallbackServerCheck(apiBaseUrl) {
-  if (!apiBaseUrl) {
-    apiBaseUrl = await getApiBaseUrl()
-  }
 
-  const fallbackEndpoints = ['/api/queue', '/api/history', '/']
-
-  for (const endpoint of fallbackEndpoints) {
-    try {
-      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(3000)
-      })
-
-      if (response.ok) {
-        console.log(`✅ 备用检查成功: ${endpoint}`)
-        return { status: 'ok', endpoint, note: '备用检查通过' }
-      }
-    } catch (error) {
-      console.log(`❌ 备用端点 ${endpoint} 失败:`, error.message)
-    }
-  }
-
-  // 🔧 关键改进：即使所有检查都失败，也给出更友好的结果
-  console.log('⚠️ 所有端点检查失败，但这可能是暂时的网络问题')
-  return {
-    status: 'warning', // 改为warning而不是error
-    error: '所有检查端点都失败',
-    note: '但这可能是暂时的网络问题，可以尝试继续操作'
-  }
-}
 
 // 换脸处理函数
 async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
@@ -3025,15 +2717,12 @@ export {
   updateTaskStatus,
   TASK_STATUS,
 
-  // 统一的图片URL处理
-  getImageUrl,
+  // 统一的图片URL处理（简化导出，保留核心函数）
   getGeneratedImageUrl,
   getTaskBoundImageUrl,
   getTaskBoundServer,
-  buildImageUrlWithServer,
-  getComfyUIImageUrl, // 兼容性保留
 
-  // 新增：统一的服务器地址和URL构建函数
+  // 统一的服务器地址和URL构建函数
   getUnifiedServerUrl,
   buildUnifiedImageUrl,
   ImageUrlBuilder,
@@ -3056,37 +2745,3 @@ export {
   clearServerUnlockTimer
 }
 
-// 🔥 递归更新检测和恢复机制
-window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason?.message?.includes('Maximum recursive updates exceeded')) {
-    console.error('🔥 检测到递归更新错误，尝试恢复任务处理')
-
-    // 查找可能卡住的任务
-    windowTasks.forEach((task, promptId) => {
-      if (task.status === TASK_STATUS.PROCESSING || task.status === TASK_STATUS.EXECUTING) {
-        console.log(`🔧 尝试恢复卡住的任务: ${promptId}`)
-
-        // 禁用进度回调避免继续触发递归
-        task.onProgress = null
-
-        // 5秒后尝试主动检查任务状态
-        setTimeout(async () => {
-          try {
-            console.log(`🔍 主动检查任务状态: ${promptId}`)
-            const history = await getTaskHistory(promptId)
-
-            if (history[promptId] && history[promptId].outputs) {
-              console.log(`✅ 发现任务已完成，触发完成处理: ${promptId}`)
-              await handleTaskCompletion(promptId)
-            }
-          } catch (error) {
-            console.warn(`⚠️ 任务状态检查失败: ${promptId}`, error)
-          }
-        }, 5000)
-      }
-    })
-
-    // 阻止错误继续传播
-    event.preventDefault()
-  }
-})
