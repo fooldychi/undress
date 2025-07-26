@@ -471,40 +471,7 @@ async function uploadImageToComfyUI(base64Image) {
   return result.name
 }
 
-// 创建工作流提示词，将用户图片关联到配置的节点
-async function createUndressWorkflowPrompt(uploadedImageName) {
-  try {
-    // 获取节点配置
-    const nodeConfig = await getWorkflowNodeConfig('undress')
 
-    // 深拷贝工作流
-    const workflow = JSON.parse(JSON.stringify(undressWorkflow))
-
-    // 将上传的图片文件名设置到配置的主图片节点
-    const mainImageNodeId = nodeConfig.inputNodes.mainImage
-    if (workflow[mainImageNodeId] && workflow[mainImageNodeId].class_type === 'LoadImage') {
-      workflow[mainImageNodeId].inputs.image = uploadedImageName
-      console.log(`节点${mainImageNodeId}图片设置为:`, uploadedImageName)
-    } else {
-      throw new Error(`工作流中未找到节点${mainImageNodeId}或节点类型不正确`)
-    }
-
-    // 随机化种子以获得不同的结果
-    const seedNodeId = nodeConfig.inputNodes.seedNode
-    if (workflow[seedNodeId] && workflow[seedNodeId].inputs) {
-      const newSeed = Math.floor(Math.random() * 1000000000000000)
-      workflow[seedNodeId].inputs.noise_seed = newSeed
-      console.log(`随机种子设置为:`, newSeed)
-    }
-
-    console.log('工作流配置完成')
-    return workflow
-
-  } catch (error) {
-    console.error('工作流创建失败:', error)
-    throw new Error(`工作流创建失败: ${error.message}`)
-  }
-}
 
 // 官方标准工作流提交 - 重构版本（任务-服务器绑定一致性）
 async function submitWorkflow(workflowPrompt, promptId = null, tempTask = null) {
@@ -585,19 +552,44 @@ async function submitWorkflow(workflowPrompt, promptId = null, tempTask = null) 
 
 
 
-// 🔧 重构后的图片URL获取函数 - 使用统一服务器地址
+// 🔧 统一的图片URL获取函数 - 合并 getGeneratedImageUrl 和 getTaskBoundImageUrl
 async function getGeneratedImageUrl(taskResult, workflowType = 'undress', promptId = null) {
   try {
-    // 使用统一的服务器地址获取函数
-    const apiBaseUrl = getUnifiedServerUrl(promptId)
-    console.log(`🔒 [${WINDOW_ID}] 使用统一服务器获取图片: ${apiBaseUrl}`)
+    console.log('🖼️ 获取生成图片URL:', { workflowType, promptId })
+
+    // 优先使用任务绑定的执行服务器（更可靠，避免404错误）
+    let apiBaseUrl = null
+    let executionServer = null
+
+    if (taskResult && taskResult.executionServer) {
+      executionServer = taskResult.executionServer
+      apiBaseUrl = executionServer.replace(/\/$/, '')
+      console.log(`🎯 [${WINDOW_ID}] 使用任务绑定的执行服务器: ${apiBaseUrl}`)
+    } else {
+      // 备用：从窗口锁定服务器获取
+      const currentLock = webSocketManager.getWindowServerLock()
+      if (currentLock && currentLock.server) {
+        executionServer = currentLock.server
+        apiBaseUrl = executionServer.replace(/\/$/, '')
+        console.log(`🔒 [${WINDOW_ID}] 使用窗口锁定服务器: ${apiBaseUrl}`)
+      } else {
+        // 最后回退到统一服务器策略
+        apiBaseUrl = getUnifiedServerUrl(promptId)
+        console.log(`🌐 [${WINDOW_ID}] 回退到统一服务器地址: ${apiBaseUrl}`)
+      }
+    }
 
     // 查找图片信息
     const imageInfo = await findImageInTaskResult(taskResult, workflowType)
+    console.log('🔍 找到图片信息:', imageInfo)
+
+    if (!imageInfo) {
+      throw new Error('未找到生成的图片')
+    }
 
     // 使用统一构建器构建URL
     const imageUrl = ImageUrlBuilder.buildFromImageInfo(apiBaseUrl, imageInfo)
-    console.log('🌐 直接返回图片URL:', imageUrl)
+    console.log('✅ 构建的图片URL:', imageUrl)
 
     // 保存 ComfyUI 原始URL到全局变量，供积分扣除时使用
     window.lastComfyUIImageUrl = imageUrl
@@ -606,7 +598,7 @@ async function getGeneratedImageUrl(taskResult, workflowType = 'undress', prompt
     return imageUrl
 
   } catch (error) {
-    console.error('图片URL获取失败:', error)
+    console.error('❌ 获取生成图片URL失败:', error)
     throw new Error(`图片URL获取失败: ${error.message}`)
   }
 }
@@ -656,46 +648,7 @@ async function findImageInTaskResult(taskResult, workflowType) {
   return imageInfo
 }
 
-// 🔧 简化的任务绑定图片URL获取函数 - 确保使用任务执行服务器
-async function getTaskBoundImageUrl(promptId, taskResult, workflowType = 'undress') {
-  try {
-    // 🔧 简化逻辑：优先从任务结果获取执行服务器，确保一致性
-    let executionServer = null
 
-    if (taskResult && taskResult.executionServer) {
-      executionServer = taskResult.executionServer
-      console.log(`🎯 [${WINDOW_ID}] 使用任务结果中的执行服务器: ${executionServer}`)
-    } else {
-      // 如果任务结果中没有服务器信息，说明有问题，记录警告
-      console.warn(`⚠️ [${WINDOW_ID}] 任务结果缺少执行服务器信息，这可能导致图片404`)
-
-      // 尝试从窗口锁定服务器获取（作为备用方案）
-      const currentLock = webSocketManager.getWindowServerLock()
-      if (currentLock && currentLock.server) {
-        executionServer = currentLock.server
-        console.log(`🔒 [${WINDOW_ID}] 使用窗口锁定服务器作为备用: ${executionServer}`)
-      } else {
-        throw new Error('无法确定任务执行服务器，图片URL构建失败')
-      }
-    }
-
-    // 确保URL格式正确
-    if (executionServer && executionServer.endsWith('/')) {
-      executionServer = executionServer.slice(0, -1)
-    }
-
-    // 查找图片信息并构建URL
-    const imageInfo = await findImageInTaskResult(taskResult, workflowType)
-    const imageUrl = ImageUrlBuilder.buildFromImageInfo(executionServer, imageInfo)
-
-    console.log(`🎉 [${WINDOW_ID}] 任务绑定图片URL构建完成: ${imageUrl}`)
-    return imageUrl
-
-  } catch (error) {
-    console.error(`❌ [${WINDOW_ID}] 获取任务绑定图片URL失败:`, error)
-    throw error
-  }
-}
 
 // 🔧 注意：getTaskExecutionServer 函数已被 getUnifiedServerUrl 替代，此处移除重复代码
 
@@ -1052,146 +1005,7 @@ async function processUndressImage(base64Image, onProgress = null) {
   }
 }
 
-// 🔧 保留原始实现作为备用（可选）
-async function processUndressImageLegacy(base64Image, onProgress = null) {
-  try {
-    console.log('🚀 开始处理换衣请求 (传统实现)')
 
-    // 🔧 预检查改为警告而非阻断
-    if (onProgress) onProgress('正在检查服务器状态...', 5)
-
-    try {
-      const serverStatus = await checkComfyUIServerStatus()
-      if (serverStatus.status === 'error') {
-        console.warn('⚠️ 服务器预检查失败，但尝试继续处理:', serverStatus.error)
-        // 不要立即抛出错误，给用户一个尝试的机会
-      } else if (serverStatus.status === 'warning') {
-        console.warn('⚠️ 服务器状态警告，但继续尝试:', serverStatus.note)
-      }
-    } catch (preCheckError) {
-      console.warn('⚠️ 预检查异常，但继续尝试处理:', preCheckError.message)
-    }
-
-    // 检查积分（优先使用等级卡系统）
-    if (onProgress) onProgress('正在检查积分...', 10)
-
-    const pointsStatus = await levelCardPointsManager.getPointsStatus()
-    if (!pointsStatus.canGenerate) {
-      throw new Error(`积分不足！当前积分: ${pointsStatus.current}，需要: ${pointsStatus.generationCost}`)
-    }
-
-    // 验证图片数据格式
-    if (onProgress) onProgress('正在验证图片格式...', 15)
-
-    if (!base64Image || !base64Image.startsWith('data:image/')) {
-      throw new Error('无效的图片数据格式')
-    }
-
-    // 第一步：上传图片到ComfyUI服务器
-    if (onProgress) onProgress('正在上传图片到ComfyUI...', 20)
-
-    const uploadedImageName = await uploadImageToComfyUI(base64Image)
-    console.log('✅ 图片上传完成:', uploadedImageName)
-
-    // 创建工作流提示词，将上传的图片关联到节点49
-    if (onProgress) onProgress('正在配置工作流...', 30)
-
-    const workflowPrompt = await createUndressWorkflowPrompt(uploadedImageName)
-
-    // 官方标准：提交工作流
-    if (onProgress) onProgress('正在提交工作流到ComfyUI...', 40)
-
-    // 🔧 关键修复：预先创建任务对象，在提交前注册
-    const promptId = generatePromptId()
-    console.log(`🆔 [OFFICIAL] 生成promptId: ${promptId}`)
-
-    // 🔧 创建临时任务对象，用于预注册
-    const tempTask = {
-      workflowType: 'undress',
-      createdAt: new Date().toISOString(),
-      onProgress: onProgress,  // 🔧 修复：直接传递进度回调
-      onComplete: null,
-      onError: null
-    }
-
-    const submittedPromptId = await submitWorkflow(workflowPrompt, promptId, tempTask)
-    console.log(`✅ [OFFICIAL] 工作流提交完成: ${submittedPromptId}`)
-
-    // 等待任务完成
-    if (onProgress) onProgress('正在等待ComfyUI处理...', 50)
-
-    const taskResult = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
-      if (onProgress) {
-        const adjustedProgress = Math.min(95, Math.max(50, 50 + (progress * 0.45)))
-        onProgress(status, adjustedProgress)
-      }
-    }, 'undress')
-    console.log('✅ 任务处理完成')
-
-    // 🔧 关键修复：确保任务执行服务器信息被正确保存
-    const task = getWindowTask(submittedPromptId)
-    if (task && task.executionServer) {
-      console.log(`💾 [${WINDOW_ID}] 保存任务执行服务器信息到结果: ${task.executionServer}`)
-    } else {
-      console.warn(`⚠️ [${WINDOW_ID}] 任务 ${submittedPromptId} 缺少执行服务器信息`)
-    }
-
-    // 🔧 简化：基本的服务器一致性检查
-    if (task && task.executionServer && taskResult && taskResult.executionServer) {
-      if (task.executionServer !== taskResult.executionServer) {
-        console.warn(`⚠️ [${WINDOW_ID}] 检测到服务器地址不一致，可能导致图片404错误`)
-      }
-    }
-
-    // 获取生成的图片URL（使用任务绑定的服务器）
-    if (onProgress) onProgress('正在获取处理结果...', 96)
-
-    const resultImageUrl = await getTaskBoundImageUrl(submittedPromptId, taskResult, 'undress')
-    console.log('🎉 换衣处理成功! 图片URL:', resultImageUrl)
-
-    // 消耗积分（从等级卡扣除）
-    if (onProgress) onProgress('正在更新积分...', 98)
-
-    // 直接使用图片URL进行积分扣除
-    const pointsResult = await levelCardPointsManager.consumePoints(20, '一键换衣', resultImageUrl)
-
-    // 🔧 简化：使用任务结果中的执行服务器构建原图URL
-    let originalImage = null
-    try {
-      if (taskResult && taskResult.executionServer) {
-        // 使用任务执行服务器构建原图URL，确保与结果图使用相同服务器
-        originalImage = ImageUrlBuilder.buildUrl(taskResult.executionServer, uploadedImageName, '', 'input')
-        console.log(`📷 [${WINDOW_ID}] 原图URL（使用任务执行服务器）: ${originalImage}`)
-      } else {
-        console.warn('⚠️ 任务结果缺少执行服务器信息，无法构建原图URL')
-      }
-    } catch (error) {
-      console.warn('⚠️ 获取原图失败:', error)
-    }
-
-    // 最终完成
-    if (onProgress) onProgress('处理完成', 100)
-
-    return {
-      success: true,
-      resultImage: resultImageUrl,  // 直接返回URL
-      originalImage: originalImage, // 新增：节点49的原图
-      promptId: promptId,
-      uploadedImageName: uploadedImageName,
-      pointsConsumed: pointsResult.consumed,
-      pointsRemaining: pointsResult.remaining,
-      message: '换衣处理完成'
-    }
-
-  } catch (error) {
-    console.error('❌ 换衣处理失败:', error)
-    return {
-      success: false,
-      error: error.message,
-      message: '换衣处理失败'
-    }
-  }
-}
 
 // 🔧 简化版：检查ComfyUI服务器状态（更宽松的检查策略）
 async function checkComfyUIServerStatus() {
@@ -1538,7 +1352,7 @@ class UniversalWorkflowProcessor {
     if (onProgress) onProgress('正在获取处理结果...', 96)
 
     // 获取结果图片URL
-    const resultImageUrl = await getTaskBoundImageUrl(result.promptId, result.taskResult, this.config.type)
+    const resultImageUrl = await getGeneratedImageUrl(result.taskResult, this.config.type, result.promptId)
     console.log(`🎉 ${this.config.displayName}处理成功! 图片URL:`, resultImageUrl)
 
     // 消耗积分
@@ -1969,7 +1783,6 @@ export {
   // 图片处理
   uploadImageToComfyUI,
   getGeneratedImageUrl,
-  getTaskBoundImageUrl,
   buildUnifiedImageUrl,
 
   // 服务器管理
