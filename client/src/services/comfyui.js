@@ -5,7 +5,7 @@ import comfyUIConfig from '../config/comfyui.config.js'
 import levelCardPointsManager from '../utils/levelCardPointsManager.js'
 import { updateAPIConfig } from './api.js'
 import loadBalancer from './loadBalancer.js'
-import { getWorkflowNodeConfig } from '../utils/workflowConfig.js'
+import { getWorkflowNodeConfig, getWorkflowInfo } from '../utils/workflowConfig.js'
 // 🔧 新增：导入独立的 WebSocket 管理器（已整合连接和消息处理功能）
 import webSocketManager, { WINDOW_ID, CLIENT_ID as WINDOW_CLIENT_ID } from './webSocketManager.js'
 
@@ -1011,10 +1011,51 @@ async function waitForTaskCompletion(promptId, onProgress = null, workflowType =
 
 
 
-// 主要的换衣API函数 - 两步流程
+// 🔧 重构后的换衣API函数 - 使用通用工作流处理器，保持向后兼容
 async function processUndressImage(base64Image, onProgress = null) {
   try {
-    console.log('🚀 开始处理换衣请求')
+    console.log('🚀 开始处理换衣请求 (使用通用处理器)')
+
+    // 验证图片数据格式
+    if (!base64Image || !base64Image.startsWith('data:image/')) {
+      throw new Error('无效的图片数据格式')
+    }
+
+    // 使用通用工作流处理器
+    const result = await processWorkflowUniversal('undress', {
+      mainImage: base64Image
+    }, onProgress)
+
+    // 保持向后兼容的返回格式
+    if (result.success) {
+      return {
+        success: true,
+        resultImage: result.resultImage,
+        originalImage: result.originalImage,
+        promptId: result.promptId,
+        uploadedImageName: result.uploadedImageName || 'unknown', // 兼容性字段
+        pointsConsumed: result.pointsConsumed,
+        pointsRemaining: result.pointsRemaining,
+        message: result.message
+      }
+    } else {
+      return result
+    }
+
+  } catch (error) {
+    console.error('❌ 换衣处理失败:', error)
+    return {
+      success: false,
+      error: error.message,
+      message: '换衣处理失败'
+    }
+  }
+}
+
+// 🔧 保留原始实现作为备用（可选）
+async function processUndressImageLegacy(base64Image, onProgress = null) {
+  try {
+    console.log('🚀 开始处理换衣请求 (传统实现)')
 
     // 🔧 预检查改为警告而非阻断
     if (onProgress) onProgress('正在检查服务器状态...', 5)
@@ -1179,26 +1220,10 @@ async function checkComfyUIServerStatus() {
 
 
 
-// 换脸处理函数
+// 🔧 重构后的换脸处理函数 - 使用通用工作流处理器，保持向后兼容
 async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
   try {
-    console.log('🚀 开始换脸处理')
-
-    // 检查积分（优先使用等级卡系统）
-    const pointsStatus = await levelCardPointsManager.getPointsStatus()
-    if (!pointsStatus.canGenerate) {
-      throw new Error(`积分不足！当前积分: ${pointsStatus.current}，需要: ${pointsStatus.generationCost}`)
-    }
-
-    if (onProgress) onProgress('正在检查服务器状态...', 5)
-
-    // 检查ComfyUI服务器状态
-    const serverStatus = await checkComfyUIServerStatus()
-    if (serverStatus.status === 'error') {
-      throw new Error(`ComfyUI服务器不可用: ${serverStatus.error || serverStatus.code}`)
-    }
-
-    if (onProgress) onProgress('正在准备工作流...', 10)
+    console.log('🚀 开始换脸处理 (使用通用处理器)')
 
     // 验证输入
     if (!facePhotos || facePhotos.length !== 4) {
@@ -1215,120 +1240,39 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
       throw new Error('请上传4张人脸照片')
     }
 
-    if (onProgress) onProgress('正在上传人脸照片...', 20)
-
-    // 上传4张人脸照片
-    const uploadedFacePhotos = []
+    // 验证图片格式
     for (let i = 0; i < facePhotos.length; i++) {
-      const photo = facePhotos[i]
-      if (onProgress) onProgress(`正在上传人脸照片 ${i + 1}/4...`, 20 + (i * 10))
-
-      const uploadedFilename = await uploadImageToComfyUI(photo)
-      uploadedFacePhotos.push(uploadedFilename)
-    }
-
-    if (onProgress) onProgress('正在上传目标图片...', 60)
-
-    // 上传目标图片
-    const targetUploadedFilename = await uploadImageToComfyUI(targetImage)
-
-    if (onProgress) onProgress('正在准备换脸工作流...', 70)
-
-    // 获取节点配置
-    const nodeConfig = await getWorkflowNodeConfig('faceswap')
-
-    // 准备工作流
-    const workflow = JSON.parse(JSON.stringify(faceSwapWorkflow))
-
-    // 更新工作流中的图片节点（使用配置化的节点ID）
-    const facePhotoNodes = [
-      nodeConfig.inputNodes.facePhoto1,
-      nodeConfig.inputNodes.facePhoto2,
-      nodeConfig.inputNodes.facePhoto3,
-      nodeConfig.inputNodes.facePhoto4
-    ]
-
-    // 设置人脸照片节点
-    facePhotoNodes.forEach((nodeId, index) => {
-      if (workflow[nodeId] && uploadedFacePhotos[index]) {
-        workflow[nodeId].inputs.image = uploadedFacePhotos[index]
-        console.log(`设置人脸照片${index + 1}到节点${nodeId}:`, uploadedFacePhotos[index])
+      if (!facePhotos[i] || !facePhotos[i].startsWith('data:image/')) {
+        throw new Error(`人脸照片${i + 1}格式无效`)
       }
-    })
-
-    // 设置目标图片节点
-    const targetImageNodeId = nodeConfig.inputNodes.targetImage
-    if (workflow[targetImageNodeId]) {
-      workflow[targetImageNodeId].inputs.image = targetUploadedFilename
-      console.log(`设置目标图片到节点${targetImageNodeId}:`, targetUploadedFilename)
     }
 
-    if (onProgress) onProgress('正在提交换脸任务...', 80)
-
-    // 🔧 官方标准：预先创建任务对象并提交
-    const promptId = generatePromptId()
-    console.log(`🆔 [OFFICIAL] 生成换脸promptId: ${promptId}`)
-    logServerConsistency('生成换脸任务', promptId)
-
-    // 🔧 创建临时任务对象，用于预注册
-    const tempTask = {
-      workflowType: 'faceswap',
-      createdAt: new Date().toISOString(),
-      onProgress: onProgress,  // 🔧 修复：直接传递进度回调
-      onComplete: null,
-      onError: null
+    if (!targetImage || !targetImage.startsWith('data:image/')) {
+      throw new Error('目标图片格式无效')
     }
 
-    const submittedPromptId = await submitWorkflow(workflow, promptId, tempTask)
+    // 使用通用工作流处理器
+    const result = await processWorkflowUniversal('faceswap', {
+      facePhoto1: facePhotos[0],
+      facePhoto2: facePhotos[1],
+      facePhoto3: facePhotos[2],
+      facePhoto4: facePhotos[3],
+      targetImage: targetImage
+    }, onProgress)
 
-    if (onProgress) onProgress('正在处理换脸...', 85)
-
-    // 等待任务完成（无超时限制）
-    const taskResult = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
-      if (onProgress) {
-        const adjustedProgress = Math.min(95, Math.max(85, 85 + (progress * 0.1)))
-        onProgress(status, adjustedProgress)
+    // 保持向后兼容的返回格式
+    if (result.success) {
+      return {
+        success: true,
+        imageUrl: result.resultImage, // 兼容旧字段名
+        targetImageUrl: result.targetImageUrl,
+        promptId: result.promptId,
+        pointsConsumed: result.pointsConsumed,
+        pointsRemaining: result.pointsRemaining,
+        message: result.message
       }
-    }, 'faceswap')
-    console.log('✅ 换脸任务处理完成')
-
-    if (onProgress) onProgress('正在获取处理结果...', 95)
-
-    // 获取结果图片URL（使用任务绑定的服务器）
-    const imageUrl = await getTaskBoundImageUrl(submittedPromptId, taskResult, 'faceswap')
-
-    // 消耗积分（从等级卡扣除）
-    // 直接使用图片URL进行积分扣除
-    const pointsResult = await levelCardPointsManager.consumePoints(20, '极速换脸', imageUrl)
-
-    // 🔧 简化：使用任务结果中的执行服务器构建目标图片URL
-    let targetImageUrl = null
-    try {
-      if (taskResult && taskResult.executionServer) {
-        // 使用任务执行服务器构建目标图片URL，确保与结果图使用相同服务器
-        targetImageUrl = ImageUrlBuilder.buildUrl(taskResult.executionServer, targetUploadedFilename, '', 'input')
-        console.log(`📷 [${WINDOW_ID}] 目标图片URL（使用任务执行服务器）: ${targetImageUrl}`)
-      } else {
-        console.warn('⚠️ 任务结果缺少执行服务器信息，使用原始目标图片')
-        targetImageUrl = targetImage
-      }
-    } catch (error) {
-      console.warn('⚠️ 获取目标图片URL失败:', error)
-      // 回退到原始目标图片
-      targetImageUrl = targetImage
-    }
-
-    if (onProgress) onProgress('换脸完成！', 100)
-
-    console.log('✅ 换脸处理完成')
-    return {
-      success: true,
-      imageUrl: imageUrl,
-      targetImageUrl: targetImageUrl, // 🔧 修复：使用服务器一致的目标图片URL
-      promptId: promptId,
-      pointsConsumed: pointsResult.consumed,
-      pointsRemaining: pointsResult.remaining,
-      message: '换脸处理完成'
+    } else {
+      return result
     }
 
   } catch (error) {
@@ -1398,47 +1342,665 @@ async function processWorkflow(workflow, callbacks = {}) {
 
 
 
-// 🔧 重构后的导出接口 - 简化并整理
+// ========================================
+// � 通用工作流处理器 - 配置驱动架构
+// ========================================
+
+/**
+ * 通用工作流处理器类 - 消除重复代码，支持配置驱动
+ * 所有工作流都使用相同的处理流程，只需配置不同的参数
+ */
+class UniversalWorkflowProcessor {
+  constructor(workflowConfig) {
+    this.config = workflowConfig
+    this.nodeConfig = null
+    this.uploadedFiles = new Map() // 存储上传的文件名，用于构建额外图片URL
+  }
+
+  /**
+   * 通用工作流处理入口
+   * @param {Object} inputs - 输入参数
+   * @param {Function} onProgress - 进度回调
+   * @returns {Promise<Object>} 处理结果
+   */
+  async process(inputs, onProgress = null) {
+    try {
+      console.log(`🚀 开始处理${this.config.displayName}请求`)
+
+      // 1. 预检查阶段
+      await this.preCheck(onProgress)
+
+      // 2. 输入处理阶段
+      const processedInputs = await this.processInputs(inputs, onProgress)
+
+      // 3. 工作流构建阶段
+      const workflow = await this.buildWorkflow(processedInputs, onProgress)
+
+      // 4. 执行阶段
+      const result = await this.executeWorkflow(workflow, onProgress)
+
+      // 5. 后处理阶段
+      return await this.postProcess(result, onProgress)
+
+    } catch (error) {
+      return this.handleError(error)
+    }
+  }
+
+  /**
+   * 通用预检查 - 服务器状态和积分验证
+   */
+  async preCheck(onProgress) {
+    // 服务器状态检查
+    if (onProgress) onProgress('正在检查服务器状态...', 5)
+
+    if (this.config.checkServer) {
+      try {
+        const serverStatus = await checkComfyUIServerStatus()
+        if (serverStatus.status === 'error') {
+          console.warn('⚠️ 服务器预检查失败，但尝试继续处理:', serverStatus.error)
+        } else if (serverStatus.status === 'warning') {
+          console.warn('⚠️ 服务器状态警告，但继续尝试:', serverStatus.note)
+        }
+      } catch (preCheckError) {
+        console.warn('⚠️ 预检查异常，但继续尝试处理:', preCheckError.message)
+      }
+    }
+
+    // 积分检查
+    if (onProgress) onProgress('正在检查积分...', 10)
+
+    const pointsStatus = await levelCardPointsManager.getPointsStatus()
+    if (!pointsStatus.canGenerate) {
+      throw new Error(`积分不足！当前积分: ${pointsStatus.current}，需要: ${pointsStatus.generationCost}`)
+    }
+  }
+
+  /**
+   * 动态输入处理 - 根据配置自动处理不同类型的输入
+   */
+  async processInputs(inputs, onProgress) {
+    const processedInputs = {}
+
+    // 验证必需输入
+    for (const [key, config] of Object.entries(this.config.inputSchema)) {
+      if (config.required && !inputs[key]) {
+        throw new Error(`缺少必需的输入参数: ${config.description || key}`)
+      }
+    }
+
+    // 处理图片输入
+    const imageInputs = Object.entries(this.config.inputSchema)
+      .filter(([key, config]) => config.type === 'image' && inputs[key])
+
+    if (imageInputs.length > 0) {
+      if (onProgress) onProgress('正在上传图片...', 20)
+
+      for (const [key, config] of imageInputs) {
+        const imageData = inputs[key]
+
+        // 验证图片格式
+        if (!imageData || !imageData.startsWith('data:image/')) {
+          throw new Error(`无效的图片数据格式: ${config.description || key}`)
+        }
+
+        // 上传图片
+        const uploadedName = await uploadImageToComfyUI(imageData)
+        processedInputs[key] = uploadedName
+        this.uploadedFiles.set(key, uploadedName) // 保存文件名用于后续构建URL
+        console.log(`📤 上传${config.description || key}成功:`, uploadedName)
+      }
+    }
+
+    // 处理其他类型输入
+    for (const [key, value] of Object.entries(inputs)) {
+      if (!processedInputs[key] && this.config.inputSchema[key]?.type !== 'image') {
+        processedInputs[key] = value
+      }
+    }
+
+    return processedInputs
+  }
+
+  /**
+   * 动态工作流构建 - 根据配置自动构建工作流
+   */
+  async buildWorkflow(processedInputs, onProgress) {
+    if (onProgress) onProgress('正在配置工作流...', 40)
+
+    // 获取节点配置
+    this.nodeConfig = await getWorkflowNodeConfig(this.config.type)
+
+    // 加载工作流模板
+    const workflow = JSON.parse(JSON.stringify(this.config.workflowTemplate))
+
+    // 设置输入节点
+    for (const [inputKey, nodeKey] of Object.entries(this.config.inputMapping)) {
+      const nodeId = this.nodeConfig.inputNodes[nodeKey]
+      const inputValue = processedInputs[inputKey]
+
+      if (inputValue && workflow[nodeId]) {
+        const inputField = this.getInputFieldForNode(workflow[nodeId])
+        workflow[nodeId].inputs[inputField] = inputValue
+        console.log(`🔧 设置节点 ${nodeId} (${nodeKey}): ${inputField} = ${inputValue}`)
+      }
+    }
+
+    // 随机化种子节点
+    if (this.config.randomizeSeed) {
+      this.randomizeSeedNodes(workflow)
+    }
+
+    return workflow
+  }
+
+  /**
+   * 通用工作流执行
+   */
+  async executeWorkflow(workflow, onProgress) {
+    if (onProgress) onProgress(`正在提交${this.config.displayName}任务...`, 50)
+
+    // 生成任务ID
+    const promptId = generatePromptId()
+    console.log(`🆔 [${this.config.type.toUpperCase()}] 生成promptId: ${promptId}`)
+
+    // 创建任务对象
+    const tempTask = {
+      workflowType: this.config.type,
+      createdAt: new Date().toISOString(),
+      onProgress: onProgress,
+      onComplete: null,
+      onError: null
+    }
+
+    // 提交工作流
+    const submittedPromptId = await submitWorkflow(workflow, promptId, tempTask)
+    console.log(`✅ [${this.config.type.toUpperCase()}] 工作流提交完成: ${submittedPromptId}`)
+
+    // 等待任务完成
+    if (onProgress) onProgress(`正在处理${this.config.displayName}...`, 60)
+
+    const taskResult = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
+      if (onProgress) {
+        const adjustedProgress = Math.min(95, Math.max(60, 60 + (progress * 0.35)))
+        onProgress(status, adjustedProgress)
+      }
+    }, this.config.type)
+
+    console.log(`✅ ${this.config.displayName}任务处理完成`)
+    return { promptId: submittedPromptId, taskResult }
+  }
+
+  /**
+   * 通用后处理 - 获取结果和扣除积分
+   */
+  async postProcess(result, onProgress) {
+    if (onProgress) onProgress('正在获取处理结果...', 96)
+
+    // 获取结果图片URL
+    const resultImageUrl = await getTaskBoundImageUrl(result.promptId, result.taskResult, this.config.type)
+    console.log(`🎉 ${this.config.displayName}处理成功! 图片URL:`, resultImageUrl)
+
+    // 消耗积分
+    if (onProgress) onProgress('正在更新积分...', 98)
+    const pointsResult = await levelCardPointsManager.consumePoints(
+      this.config.pointsCost,
+      this.config.displayName,
+      resultImageUrl
+    )
+
+    // 构建额外的图片URL（如原图等）
+    const additionalImages = await this.buildAdditionalImageUrls(result)
+
+    if (onProgress) onProgress('处理完成', 100)
+
+    return {
+      success: true,
+      resultImage: resultImageUrl,
+      ...additionalImages,
+      promptId: result.promptId,
+      pointsConsumed: pointsResult.consumed,
+      pointsRemaining: pointsResult.remaining,
+      message: `${this.config.displayName}处理完成`
+    }
+  }
+
+  /**
+   * 构建额外的图片URL（如原图、目标图等）
+   */
+  async buildAdditionalImageUrls(result) {
+    const additionalImages = {}
+
+    try {
+      if (result.taskResult && result.taskResult.executionServer) {
+        const server = result.taskResult.executionServer
+
+        // 根据工作流类型构建不同的额外图片
+        if (this.config.type === 'undress' && this.config.originalImageKey) {
+          const originalImage = ImageUrlBuilder.buildUrl(server, this.config.originalImageKey, '', 'input')
+          additionalImages.originalImage = originalImage
+          console.log(`📷 原图URL: ${originalImage}`)
+        }
+
+        if (this.config.type === 'faceswap' && this.config.targetImageKey) {
+          const targetImageUrl = ImageUrlBuilder.buildUrl(server, this.config.targetImageKey, '', 'input')
+          additionalImages.targetImageUrl = targetImageUrl
+          console.log(`📷 目标图片URL: ${targetImageUrl}`)
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ 构建额外图片URL失败:', error)
+    }
+
+    return additionalImages
+  }
+
+  /**
+   * 根据节点类型推断输入字段
+   */
+  getInputFieldForNode(node) {
+    const classType = node.class_type
+    const fieldMappings = {
+      'LoadImage': 'image',
+      'KSampler': 'seed',
+      'CLIPTextEncode': 'text',
+      'VAEDecode': 'samples',
+      'SaveImage': 'images'
+    }
+    return fieldMappings[classType] || 'image'
+  }
+
+  /**
+   * 随机化种子节点
+   */
+  randomizeSeedNodes(workflow) {
+    for (const [nodeId, node] of Object.entries(workflow)) {
+      if (node.class_type === 'KSampler' && node.inputs && 'seed' in node.inputs) {
+        const newSeed = Math.floor(Math.random() * 1000000000000000)
+        node.inputs.seed = newSeed
+        console.log(`🎲 随机化种子节点 ${nodeId}: ${newSeed}`)
+      }
+      if (node.class_type === 'KSampler' && node.inputs && 'noise_seed' in node.inputs) {
+        const newSeed = Math.floor(Math.random() * 1000000000000000)
+        node.inputs.noise_seed = newSeed
+        console.log(`🎲 随机化噪声种子节点 ${nodeId}: ${newSeed}`)
+      }
+    }
+  }
+
+  /**
+   * 统一错误处理
+   */
+  handleError(error) {
+    console.error(`❌ ${this.config.displayName}处理失败:`, error)
+    return {
+      success: false,
+      error: error.message,
+      message: `${this.config.displayName}处理失败`
+    }
+  }
+}
+
+// ========================================
+// 🔧 工作流配置管理器 - 配置驱动架构
+// ========================================
+
+/**
+ * 工作流配置管理器 - 管理所有工作流的配置
+ */
+class WorkflowConfigManager {
+  constructor() {
+    this.configs = new Map()
+    this.initialized = false
+  }
+
+  /**
+   * 初始化工作流配置
+   */
+  async initialize() {
+    if (this.initialized) return
+
+    // 注册内置工作流配置
+    await this.registerBuiltinWorkflows()
+    this.initialized = true
+    console.log('✅ 工作流配置管理器初始化完成')
+  }
+
+  /**
+   * 注册内置工作流
+   */
+  async registerBuiltinWorkflows() {
+    // 注册一键褪衣工作流
+    this.registerWorkflow('undress', {
+      type: 'undress',
+      displayName: '一键褪衣',
+      pointsCost: 20,
+      checkServer: true,
+      randomizeSeed: true,
+      workflowTemplate: undressWorkflow,
+      inputSchema: {
+        mainImage: {
+          type: 'image',
+          required: true,
+          description: '主图片'
+        }
+      },
+      inputMapping: {
+        mainImage: 'mainImage'
+      },
+      outputMapping: {
+        primary: 'primary',
+        secondary: 'secondary'
+      }
+    })
+
+    // 注册换脸工作流
+    this.registerWorkflow('faceswap', {
+      type: 'faceswap',
+      displayName: '极速换脸',
+      pointsCost: 20,
+      checkServer: true,
+      randomizeSeed: false,
+      workflowTemplate: faceSwapWorkflow,
+      inputSchema: {
+        facePhoto1: {
+          type: 'image',
+          required: true,
+          description: '人脸照片1'
+        },
+        facePhoto2: {
+          type: 'image',
+          required: true,
+          description: '人脸照片2'
+        },
+        facePhoto3: {
+          type: 'image',
+          required: true,
+          description: '人脸照片3'
+        },
+        facePhoto4: {
+          type: 'image',
+          required: true,
+          description: '人脸照片4'
+        },
+        targetImage: {
+          type: 'image',
+          required: true,
+          description: '目标图片'
+        }
+      },
+      inputMapping: {
+        facePhoto1: 'facePhoto1',
+        facePhoto2: 'facePhoto2',
+        facePhoto3: 'facePhoto3',
+        facePhoto4: 'facePhoto4',
+        targetImage: 'targetImage'
+      },
+      outputMapping: {
+        primary: 'primary',
+        secondary: 'secondary'
+      }
+    })
+
+    console.log('📋 内置工作流注册完成:', Array.from(this.configs.keys()))
+  }
+
+  /**
+   * 注册工作流配置
+   */
+  registerWorkflow(type, config) {
+    this.configs.set(type, config)
+    console.log(`📝 注册工作流配置: ${type} - ${config.displayName}`)
+  }
+
+  /**
+   * 获取工作流配置
+   */
+  getWorkflowConfig(type) {
+    const config = this.configs.get(type)
+    if (!config) {
+      throw new Error(`未找到工作流配置: ${type}`)
+    }
+    return config
+  }
+
+  /**
+   * 获取所有工作流类型
+   */
+  getAvailableWorkflows() {
+    return Array.from(this.configs.keys())
+  }
+
+  /**
+   * 检查工作流是否存在
+   */
+  hasWorkflow(type) {
+    return this.configs.has(type)
+  }
+
+  /**
+   * 从数据库动态加载工作流配置（扩展功能）
+   */
+  async loadWorkflowFromDatabase(type) {
+    try {
+      console.log(`🔄 从数据库加载工作流配置: ${type}`)
+
+      // 获取工作流基础信息
+      const workflowInfo = await getWorkflowInfo(type)
+      if (!workflowInfo.enabled) {
+        throw new Error(`工作流 ${type} 已禁用`)
+      }
+
+      // 获取节点配置
+      const nodeConfig = await getWorkflowNodeConfig(type)
+
+      // 动态加载工作流文件
+      const workflowResponse = await fetch(`/${workflowInfo.filePath}`)
+      if (!workflowResponse.ok) {
+        throw new Error(`无法加载工作流文件: ${workflowInfo.filePath}`)
+      }
+      const workflowTemplate = await workflowResponse.json()
+
+      // 构建配置对象
+      const config = {
+        type: type,
+        displayName: workflowInfo.name,
+        pointsCost: 20, // 默认积分消耗，可以从数据库配置
+        checkServer: true,
+        randomizeSeed: type === 'undress', // 根据类型决定是否随机化种子
+        workflowTemplate: workflowTemplate,
+        inputSchema: this.buildInputSchemaFromNodeConfig(nodeConfig),
+        inputMapping: this.buildInputMappingFromNodeConfig(nodeConfig),
+        outputMapping: {
+          primary: 'primary',
+          secondary: 'secondary'
+        }
+      }
+
+      // 注册配置
+      this.registerWorkflow(type, config)
+      console.log(`✅ 动态加载工作流配置成功: ${type}`)
+
+      return config
+    } catch (error) {
+      console.error(`❌ 动态加载工作流配置失败 [${type}]:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * 从节点配置构建输入模式
+   */
+  buildInputSchemaFromNodeConfig(nodeConfig) {
+    const schema = {}
+
+    // 根据输入节点构建模式
+    for (const [key] of Object.entries(nodeConfig.inputNodes)) {
+      if (key === 'seedNode') continue // 跳过种子节点
+
+      schema[key] = {
+        type: 'image',
+        required: true,
+        description: this.getNodeDescription(key)
+      }
+    }
+
+    return schema
+  }
+
+  /**
+   * 从节点配置构建输入映射
+   */
+  buildInputMappingFromNodeConfig(nodeConfig) {
+    const mapping = {}
+
+    for (const [key] of Object.entries(nodeConfig.inputNodes)) {
+      if (key === 'seedNode') continue // 跳过种子节点
+      mapping[key] = key
+    }
+
+    return mapping
+  }
+
+  /**
+   * 获取节点描述
+   */
+  getNodeDescription(nodeKey) {
+    const descriptions = {
+      mainImage: '主图片',
+      facePhoto1: '人脸照片1',
+      facePhoto2: '人脸照片2',
+      facePhoto3: '人脸照片3',
+      facePhoto4: '人脸照片4',
+      targetImage: '目标图片'
+    }
+    return descriptions[nodeKey] || nodeKey
+  }
+}
+
+// 创建全局工作流配置管理器实例
+const workflowConfigManager = new WorkflowConfigManager()
+
+/**
+ * 通用工作流处理函数 - 统一入口
+ * @param {string} workflowType - 工作流类型
+ * @param {Object} inputs - 输入参数
+ * @param {Function} onProgress - 进度回调
+ * @returns {Promise<Object>} 处理结果
+ */
+async function processWorkflowUniversal(workflowType, inputs, onProgress = null) {
+  try {
+    // 确保配置管理器已初始化
+    await workflowConfigManager.initialize()
+
+    // 获取工作流配置
+    let config
+    try {
+      config = workflowConfigManager.getWorkflowConfig(workflowType)
+    } catch (error) {
+      // 如果内置配置不存在，尝试从数据库动态加载
+      console.log(`🔄 内置配置不存在，尝试动态加载: ${workflowType}`)
+      config = await workflowConfigManager.loadWorkflowFromDatabase(workflowType)
+    }
+
+    // 创建处理器并执行
+    const processor = new UniversalWorkflowProcessor(config)
+    return await processor.process(inputs, onProgress)
+
+  } catch (error) {
+    console.error(`❌ 通用工作流处理失败 [${workflowType}]:`, error)
+    return {
+      success: false,
+      error: error.message,
+      message: `${workflowType}处理失败`
+    }
+  }
+}
+
+// ========================================
+// 🔧 辅助函数和兼容性支持
+// ========================================
+
+/**
+ * 获取窗口任务 - 兼容性函数
+ */
+function getWindowTask(promptId) {
+  return webSocketManager.getWindowTask(promptId)
+}
+
+/**
+ * 获取窗口服务器锁定状态 - 兼容性函数
+ */
+function getWindowServerLock() {
+  return webSocketManager.getWindowServerLock()
+}
+
+// ========================================
+// 🔧 导出语句
+// ========================================
+
+// 导出主要的API函数（保持向后兼容）
 export {
-  // 核心配置管理
-  getCurrentConfig,
+  // 主要工作流处理函数
+  processUndressImage,
+  processFaceSwapImage,
+
+  // 通用工作流处理器
+  processWorkflowUniversal,
+  UniversalWorkflowProcessor,
+  WorkflowConfigManager,
+  workflowConfigManager,
+
+  // 配置管理
   updateComfyUIConfig,
+  getCurrentConfig,
+  getComfyUIConfig,
+  saveComfyUIConfig,
   resetToDefaultConfig,
 
-  // 基础工具函数
-  generateClientId,
-  generatePromptId,
+  // 连接管理
+  initializeComfyUIConnection,
+
+  // 工作流处理
+  processWorkflow,
+  submitWorkflow,
+  waitForTaskCompletion,
+
+  // 图片处理
+  uploadImageToComfyUI,
+  getGeneratedImageUrl,
+  getTaskBoundImageUrl,
+  buildUnifiedImageUrl,
+
+  // 服务器管理
+  checkComfyUIServerStatus,
   getApiBaseUrl,
+  getUnifiedServerUrl,
+
+  // 任务管理
+  getTaskHistory,
+  extractTaskResults,
+
+  // 工具函数
+  generatePromptId,
+  generateClientId,
+  ImageUrlBuilder,
+
+  // 配置监听
   addConfigChangeListener,
   removeConfigChangeListener,
 
-  // 主要业务函数
-  processUndressImage,
-  processFaceSwapImage,
-  processWorkflow,
-
-  // 连接和状态管理
-  checkComfyUIServerStatus,
-  initializeComfyUIConnection,
-  // 🔧 WebSocket 连接变量现在由 webSocketManager 提供
-
-  // 任务处理
-  getTaskHistory,
-  extractTaskResults,
-  waitForTaskCompletion,
-  // 🔧 任务状态管理现在由 webSocketManager 提供
-
-  // 统一的图片URL处理（简化导出，保留核心函数）
-  getGeneratedImageUrl,
-  getTaskBoundImageUrl,
-  // 🔧 getTaskBoundServer 现在由 webSocketManager 提供
-
-  // 统一的服务器地址和URL构建函数
-  getUnifiedServerUrl,
-  buildUnifiedImageUrl,
-  ImageUrlBuilder,
-
-  // 🔧 WebSocket 相关功能现在由 webSocketManager 模块提供
-  // 可通过 webSocketManager 访问所有 WebSocket 功能
+  // 兼容性函数
+  getWindowTask,
+  getWindowServerLock
 }
 
+// 默认导出主要处理函数
+export default {
+  processUndressImage,
+  processFaceSwapImage,
+  processWorkflowUniversal,
+  initializeComfyUIConnection,
+  updateComfyUIConfig,
+  getCurrentConfig
+}

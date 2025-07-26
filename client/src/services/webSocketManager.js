@@ -102,6 +102,11 @@ class SimpleWebSocketManager {
         // 核心消息处理 - 基于官方样例
         this.ws.onmessage = (event) => {
           try {
+            // 忽略 Blob 类型消息（图片预览等二进制数据）
+            if (event.data instanceof Blob) {
+              return
+            }
+
             const message = JSON.parse(event.data)
             this._handleMessage(message)
           } catch (error) {
@@ -125,11 +130,9 @@ class SimpleWebSocketManager {
 
       // 任务完成检测：node 为 null 表示执行完成
       if (node === null && prompt_id) {
-        console.log(`🎉 [${WINDOW_ID}] 任务完成: ${prompt_id}`)
         this._handleTaskCompletion(prompt_id)
       } else if (node && prompt_id) {
-        // 任务执行中
-        console.log(`🔄 [${WINDOW_ID}] 执行节点: ${node} (任务: ${prompt_id})`)
+        // 任务执行中，更新进度
         this._handleTaskProgress(prompt_id, `执行节点: ${node}`, 50)
       }
     }
@@ -167,25 +170,19 @@ class SimpleWebSocketManager {
       // 提取结果 - 基于官方样例第48-56行
       const result = this._extractResults(history, promptId)
 
-      // 🔧 关键修复：确保任务执行服务器信息被正确保存
+      // 保存任务执行服务器信息
       if (result && task && task.server) {
         result.executionServer = task.server
         result.promptId = promptId
         result.taskStartTime = task.startTime
-        console.log(`💾 [${WINDOW_ID}] 保存任务执行服务器信息: ${task.server}`)
       } else {
-        // 🔧 尝试从当前锁定服务器获取
+        // 尝试从当前锁定服务器获取
         const currentLock = this.getWindowServerLock()
         if (currentLock && currentLock.server) {
           result.executionServer = currentLock.server
           result.promptId = promptId
-          console.log(`💾 [${WINDOW_ID}] 使用锁定服务器作为执行服务器: ${currentLock.server}`)
-        } else {
-          console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 无法确定执行服务器`)
         }
       }
-
-      console.log(`✅ [${WINDOW_ID}] 任务结果获取成功: ${promptId}`)
 
       // 调用完成回调
       if (task.onComplete) {
@@ -224,50 +221,21 @@ class SimpleWebSocketManager {
     return await response.json()
   }
 
-  // 提取结果 - 完全基于官方样例第47-56行
+  // 提取结果 - 基于官方样例第47-56行
   _extractResults(history, promptId) {
     const taskData = history[promptId]
     if (!taskData || !taskData.outputs) {
-      console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 没有输出数据`)
       return { outputs: {} }
     }
 
-    console.log(`📋 [${WINDOW_ID}] 原始历史数据结构:`)
-    console.log(`📋 [${WINDOW_ID}] - 任务状态: ${taskData.status?.status_str || '未知'}`)
-    console.log(`📋 [${WINDOW_ID}] - 输出节点数量: ${Object.keys(taskData.outputs).length}`)
-    console.log(`📋 [${WINDOW_ID}] - 节点列表: [${Object.keys(taskData.outputs).join(', ')}]`)
-
-    // 🔧 关键修复：确保完整保留所有节点输出数据
+    // 保留完整的输出数据结构
     const results = {
-      outputs: taskData.outputs,  // 保持原始的 outputs 结构
+      outputs: taskData.outputs,
       promptId: promptId,
-      status: taskData.status,    // 保留状态信息
-      meta: taskData.meta || {}   // 保留元数据
+      status: taskData.status,
+      meta: taskData.meta || {}
     }
 
-    // 详细记录每个节点的输出内容和类型
-    for (const nodeId in taskData.outputs) {
-      const nodeOutput = taskData.outputs[nodeId]
-      console.log(`� [${WINDOW_ID}] 节点 ${nodeId}:`)
-      console.log(`   - 输出类型: ${Object.keys(nodeOutput).join(', ')}`)
-
-      // 特别记录图片输出
-      if (nodeOutput.images && Array.isArray(nodeOutput.images)) {
-        console.log(`   - 图片数量: ${nodeOutput.images.length}`)
-        nodeOutput.images.forEach((img, idx) => {
-          console.log(`   - 图片${idx + 1}: ${img.filename} (${img.type || 'output'})`)
-        })
-      }
-
-      // 记录其他类型的输出
-      Object.keys(nodeOutput).forEach(key => {
-        if (key !== 'images') {
-          console.log(`   - ${key}: ${typeof nodeOutput[key]} (${Array.isArray(nodeOutput[key]) ? nodeOutput[key].length + ' items' : 'single value'})`)
-        }
-      })
-    }
-
-    console.log(`✅ [${WINDOW_ID}] 结果提取完成，保留所有 ${Object.keys(taskData.outputs).length} 个节点的输出`)
     return results
   }
 
@@ -275,7 +243,6 @@ class SimpleWebSocketManager {
   async _selectBestServer() {
     try {
       const bestServer = await loadBalancer.getBestServer()
-      console.log(`🎯 [${WINDOW_ID}] 选择服务器: ${bestServer}`)
       return bestServer
     } catch (error) {
       console.error(`❌ [${WINDOW_ID}] 服务器选择失败:`, error)
@@ -288,14 +255,12 @@ class SimpleWebSocketManager {
     if (!this.lockedServer) {
       this.lockedServer = serverUrl
       this.lockTimestamp = Date.now()
-      console.log(`🔒 [${WINDOW_ID}] 锁定服务器: ${serverUrl}`)
     }
   }
 
   // 检查解锁条件
   _checkUnlock() {
     if (this.tasks.size === 0 && this.lockedServer) {
-      console.log(`🔓 [${WINDOW_ID}] 解锁服务器: ${this.lockedServer}`)
       this.lockedServer = null
       this.lockTimestamp = null
     }
@@ -377,6 +342,7 @@ class SimpleWebSocketManager {
       taskCount: this.tasks.size
     }
   }
+
   // ==================== 兼容性方法 ====================
 
   // 兼容原有接口
@@ -440,7 +406,7 @@ class SimpleWebSocketManager {
   }
 
   // 进度回调安全包装
-  safeProgressCallback(promptId, task, message, progress) {
+  safeProgressCallback(task, message, progress) {
     if (task && task.onProgress) {
       try {
         task.onProgress(message, progress)
@@ -505,8 +471,6 @@ if (typeof window !== 'undefined') {
 
   console.log(`🔧 [${WINDOW_ID}] 兼容性接口已设置`)
 }
-
-
 
 // 导出
 export default webSocketManager
