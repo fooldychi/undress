@@ -1,7 +1,7 @@
 // 极简版 WebSocket 管理器 - 基于官方 websockets_api_example.py
 // 支持多用户多窗口、服务器选择、任务锁定机制
 
-import loadBalancer from './loadBalancer.js'
+
 
 // 生成唯一标识符
 function generateId() {
@@ -239,16 +239,7 @@ class SimpleWebSocketManager {
     return results
   }
 
-  // 选择最佳服务器
-  async _selectBestServer() {
-    try {
-      const bestServer = await loadBalancer.getBestServer()
-      return bestServer
-    } catch (error) {
-      console.error(`❌ [${WINDOW_ID}] 服务器选择失败:`, error)
-      throw error
-    }
-  }
+
 
   // 锁定服务器
   _lockServer(serverUrl) {
@@ -270,7 +261,12 @@ class SimpleWebSocketManager {
   async submitTask(workflow, promptId, callbacks = {}) {
     try {
       // 选择服务器
-      const serverUrl = this.lockedServer || await this._selectBestServer()
+      let serverUrl = this.lockedServer
+      if (!serverUrl) {
+        // 导入 getApiBaseUrl 函数
+        const { getApiBaseUrl } = await import('./comfyui.js')
+        serverUrl = await getApiBaseUrl()
+      }
 
       // 连接到服务器
       await this.connectToServer(serverUrl)
@@ -347,7 +343,9 @@ class SimpleWebSocketManager {
 
   // 兼容原有接口
   async initializeWebSocket(targetServer = null) {
-    const serverUrl = targetServer || this.lockedServer || await this._selectBestServer()
+    // 导入 getApiBaseUrl 函数
+    const { getApiBaseUrl } = await import('./comfyui.js')
+    const serverUrl = targetServer || this.lockedServer || await getApiBaseUrl()
     return await this.connectToServer(serverUrl)
   }
 
@@ -356,7 +354,9 @@ class SimpleWebSocketManager {
     if (serverUrl && this.isConnected && this.currentServer === serverUrl) {
       return true
     }
-    return await this.connectToServer(serverUrl || await this._selectBestServer())
+    // 导入 getApiBaseUrl 函数
+    const { getApiBaseUrl } = await import('./comfyui.js')
+    return await this.connectToServer(serverUrl || await getApiBaseUrl())
   }
 
   // 任务管理兼容方法
