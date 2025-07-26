@@ -12,9 +12,10 @@
     :process-button-icon="processButtonIcon"
     :progress="progress"
     :processing-title="config.processingTitle"
-    :processing-description="config.processingDescription"
+    :processing-description="dynamicProcessingDescription"
     :processing-info="processingInfo"
     :result-data="resultData"
+    :points-cost="config.pointsCost"
     @login="$emit('login', $event)"
     @logout="$emit('logout', $event)"
     @process="$emit('process')"
@@ -125,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, h } from 'vue'
 import { Toast } from 'vant'
 import {
   AIProcessingTemplate,
@@ -133,6 +134,7 @@ import {
 } from '../mobile'
 import ImageComparison from '../ImageComparison.vue'
 import UnifiedImageUploadPanel from '../common/UnifiedImageUploadPanel.vue'
+import { SvgIcon } from '../icons'
 import { getImageProcessingConfig, fetchImageProcessingConfigFromAPI } from '../../config/imageProcessingConfigs.js'
 
 // Props
@@ -145,6 +147,10 @@ const props = defineProps({
     type: [Object, String],
     default: null
   },
+  titleIconName: {
+    type: String,
+    default: ''
+  },
   titleIconColor: {
     type: String,
     default: 'var(--van-primary-color)'
@@ -153,6 +159,10 @@ const props = defineProps({
     type: [Object, String],
     default: null
   },
+  processButtonIconName: {
+    type: String,
+    default: ''
+  },
   isProcessing: {
     type: Boolean,
     default: false
@@ -160,6 +170,10 @@ const props = defineProps({
   progress: {
     type: Number,
     default: 0
+  },
+  processingDescription: {
+    type: String,
+    default: ''
   },
   processingInfo: {
     type: Object,
@@ -184,7 +198,7 @@ const config = ref({
   description: '',
   processButtonText: '开始处理',
   processingTitle: '正在处理...',
-  processingDescription: '请耐心等待',
+  processingDescription: '',
   uploadPanels: [],
   inputPanels: [],
   resultConfig: {}
@@ -196,6 +210,44 @@ const configLoaded = ref(false)
 // 计算属性
 const isDevelopment = computed(() => {
   return import.meta.env.DEV
+})
+
+// 动态处理描述 - 优先使用传入的processingDescription，否则使用配置中的
+const dynamicProcessingDescription = computed(() => {
+  return props.processingDescription || config.value.processingDescription || ''
+})
+
+// 图标处理 - 支持组件对象和图标名称
+const titleIcon = computed(() => {
+  if (props.titleIcon) {
+    return props.titleIcon
+  }
+  if (props.titleIconName) {
+    return {
+      render: () => h(SvgIcon, {
+        name: props.titleIconName,
+        size: 24,
+        color: props.titleIconColor
+      })
+    }
+  }
+  return null
+})
+
+const processButtonIcon = computed(() => {
+  if (props.processButtonIcon) {
+    return props.processButtonIcon
+  }
+  if (props.processButtonIconName) {
+    return {
+      render: () => h(SvgIcon, {
+        name: props.processButtonIconName,
+        size: 18,
+        color: 'white'
+      })
+    }
+  }
+  return null
 })
 
 const canProcess = computed(() => {

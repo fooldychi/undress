@@ -1,6 +1,7 @@
 // 自定义图标统一导出
 export { default as UndressWomanIcon } from './UndressWomanIcon.vue'
 export { default as FaceSwapIcon } from './FaceSwapIcon.vue'
+export { default as SvgIcon } from './SvgIcon.vue'
 
 // 图标配置映射
 export const ICON_CONFIG = {

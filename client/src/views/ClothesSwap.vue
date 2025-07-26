@@ -1,11 +1,12 @@
 <template>
   <UnifiedImageProcessingTemplate
     function-id="clothes-swap"
-    :title-icon="UndressWomanIcon"
+    title-icon-name="undress-woman"
     title-icon-color="var(--van-primary-color)"
-    :process-button-icon="UndressWomanIcon"
+    process-button-icon-name="undress-woman"
     :is-processing="isLoading"
     :progress="progressPercent"
+    :processing-description="processingStatus"
     :processing-info="{ promptId, processingTime }"
     :result-data="resultImage"
     :original-image-for-comparison="originalImageForComparison"
@@ -24,7 +25,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
-import { UndressWomanIcon } from '../components/icons'
+
 import { processUndressImage } from '../services/comfyui.js'
 import { handleError } from '../services/globalErrorHandler.js'
 
@@ -62,29 +63,21 @@ const processImage = async () => {
   }
 
   isLoading.value = true
-  processingStatus.value = '正在初始化WebSocket连接...'
-  progressPercent.value = 5
+  processingStatus.value = '正在初始化...'
   startTime.value = Date.now()
 
   try {
     console.log('🚀 开始一键褪衣处理')
 
-    processingStatus.value = '正在上传图片到ComfyUI...'
-    progressPercent.value = 15
-
     // 调用褪衣处理服务，传入进度回调函数
     const result = await processUndressImage(
       selectedImage.value,
-      // 进度回调函数 - 接收WebSocket实时更新
+      // 进度回调函数 - 接收实际阶段状态更新
       (status, progress) => {
         // 更新前端显示
         processingStatus.value = status
-        progressPercent.value = Math.max(progress, progressPercent.value) // 确保进度不倒退
-
-        // 显示明显的进度标记
-        if (progress >= 100) {
-          processingStatus.value = '正在获取处理结果...'
-        }
+        progressPercent.value = progress || 0
+        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
       }
     )
 
@@ -103,7 +96,7 @@ const processImage = async () => {
 
       // 显示成功toast
       const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
-      Toast.success(`🎉 处理完成！${pointsInfo}可以拖拽中间线对比原图和处理结果`)
+      Toast.success(`🎉 处理完成！${pointsInfo}`)
 
       console.log('✅ 褪衣处理完成')
     } else {
@@ -169,6 +162,12 @@ const handleUserLogin = (data) => {
   console.log('用户登录成功:', data)
   // 可以在这里触发一些需要登录状态的操作
   // 比如刷新积分信息等
+}
+
+// 用户登出回调
+const handleUserLogout = () => {
+  console.log('用户已登出')
+  // 可以在这里清理一些用户相关的状态
 }
 
 // 生命周期

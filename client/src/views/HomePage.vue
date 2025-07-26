@@ -31,11 +31,19 @@
         @click="navigateTo(feature)"
         class="feature-card"
       >
+        <!-- 标题前的图标 -->
         <template #icon>
           <div class="feature-icon" :class="feature.iconClass">
-            <!-- 自定义SVG图标 -->
+            <!-- SVG图标 -->
+            <SvgIcon
+              v-if="feature.icon.type === 'svg'"
+              :name="feature.icon.name"
+              :size="feature.icon.size"
+              :color="feature.icon.color"
+            />
+            <!-- 自定义组件图标 -->
             <component
-              v-if="feature.icon.type === 'custom'"
+              v-else-if="feature.icon.type === 'custom'"
               :is="feature.icon.component"
               :size="feature.icon.size"
               :color="feature.icon.color"
@@ -50,6 +58,7 @@
           </div>
         </template>
 
+        <!-- 卡片内容 -->
         <div class="feature-content">
           <div class="feature-description">
             {{ feature.description }}
@@ -85,6 +94,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Toast } from 'vant'
 import { MobilePageContainer, MobileCard } from '../components/mobile'
+import { SvgIcon } from '../components/icons'
 import { authApi } from '../services/api.js'
 import { fetchFeaturesFromAPI } from '../config/features.js'
 import { generateIconStyle, isDarkTheme, injectCSS, createCSSRule } from '../utils/styleGenerator.js'
@@ -235,13 +245,15 @@ const handleUserLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
+  min-width: 40px; /* 确保图标不会被压缩 */
+  min-height: 40px; /* 确保图标不会被压缩 */
 }
 
 .feature-icon::before {
@@ -354,6 +366,29 @@ const handleUserLogout = () => {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+/* 大屏幕优化 */
+@media (min-width: 1200px) {
+  .features-section {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* 中等屏幕优化 */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .features-section {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
 /* 移动端优化 */
 @media (max-width: 768px) {
   .home-header {
@@ -375,15 +410,15 @@ const handleUserLogout = () => {
   }
 
   .feature-icon {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 12px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .feature-description {
     font-size: 14px;
   }
-
 }
 
 /* 深色主题适配 */

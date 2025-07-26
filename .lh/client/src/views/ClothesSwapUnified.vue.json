@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 13,
             "patches": [
                 {
                     "date": 1752395497153,
@@ -32,6 +32,34 @@
                 {
                     "date": 1752946678632,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,9 +23,9 @@\n import { ref, onMounted, onUnmounted } from 'vue'\n import { Toast } from 'vant'\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\n import { UndressWomanIcon } from '../components/icons'\n-import { processUndressImage } from '../services/comfyui-refactored.js'\n+import { processUndressImage } from '../services/comfyui.js'\n import { handleError } from '../services/globalErrorHandler.js'\n \n console.log('ClothesSwapUnified组件已加载，ComfyUI服务已导入')\n \n"
+                },
+                {
+                    "date": 1753532225361,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,9 +4,9 @@\n     :title-icon=\"UndressWomanIcon\"\n     title-icon-color=\"var(--van-primary-color)\"\n     :process-button-icon=\"UndressWomanIcon\"\n     :is-processing=\"isLoading\"\n-    :progress=\"progressPercent\"\n+    :progress=\"0\"\n     :processing-info=\"{ promptId, processingTime }\"\n     :result-data=\"resultImage\"\n     :original-image-for-comparison=\"originalImageForComparison\"\n     @login=\"handleUserLogin\"\n"
+                },
+                {
+                    "date": 1753532237885,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -58,21 +58,20 @@\n     return\n   }\n \n   isLoading.value = true\n-  processingStatus.value = '正在加载服务...'\n-  progressPercent.value = 10\n+  processingStatus.value = '正在初始化...'\n   startTime.value = Date.now()\n \n   try {\n     console.log('🚀 开始一键褪衣处理')\n \n-    processingStatus.value = '正在上传图片...'\n-    progressPercent.value = 30\n+    // 调用褪衣处理服务，传入进度回调\n+    const result = await processUndressImage(selectedImage.value, (status) => {\n+      processingStatus.value = status\n+      console.log(`📊 处理状态: ${status}`)\n+    })\n \n-    // 调用褪衣处理服务\n-    const result = await processUndressImage(selectedImage.value)\n-\n     if (result.success && result.resultImage) {\n       resultImage.value = result.resultImage\n       // 保存原图用于对比\n       originalImageForComparison.value = result.originalImage || selectedImage.value\n"
+                },
+                {
+                    "date": 1753532848650,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,9 +4,9 @@\n     :title-icon=\"UndressWomanIcon\"\n     title-icon-color=\"var(--van-primary-color)\"\n     :process-button-icon=\"UndressWomanIcon\"\n     :is-processing=\"isLoading\"\n-    :progress=\"0\"\n+    :progress=\"progressPercent\"\n     :processing-info=\"{ promptId, processingTime }\"\n     :result-data=\"resultImage\"\n     :original-image-for-comparison=\"originalImageForComparison\"\n     @login=\"handleUserLogin\"\n"
+                },
+                {
+                    "date": 1753532860753,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -65,11 +65,12 @@\n   try {\n     console.log('🚀 开始一键褪衣处理')\n \n     // 调用褪衣处理服务，传入进度回调\n-    const result = await processUndressImage(selectedImage.value, (status) => {\n+    const result = await processUndressImage(selectedImage.value, (status, progress) => {\n       processingStatus.value = status\n-      console.log(`📊 处理状态: ${status}`)\n+      progressPercent.value = progress || 0\n+      console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\n     })\n \n     if (result.success && result.resultImage) {\n       resultImage.value = result.resultImage\n"
+                },
+                {
+                    "date": 1753533633698,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,8 +5,9 @@\n     title-icon-color=\"var(--van-primary-color)\"\n     :process-button-icon=\"UndressWomanIcon\"\n     :is-processing=\"isLoading\"\n     :progress=\"progressPercent\"\n+    :processing-description=\"processingStatus\"\n     :processing-info=\"{ promptId, processingTime }\"\n     :result-data=\"resultImage\"\n     :original-image-for-comparison=\"originalImageForComparison\"\n     @login=\"handleUserLogin\"\n"
+                },
+                {
+                    "date": 1753543847320,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,10 +1,10 @@\n <template>\n   <UnifiedImageProcessingTemplate\n     function-id=\"clothes-swap\"\n-    :title-icon=\"UndressWomanIcon\"\n+    title-icon-name=\"undress-woman\"\n     title-icon-color=\"var(--van-primary-color)\"\n-    :process-button-icon=\"UndressWomanIcon\"\n+    process-button-icon-name=\"undress-woman\"\n     :is-processing=\"isLoading\"\n     :progress=\"progressPercent\"\n     :processing-description=\"processingStatus\"\n     :processing-info=\"{ promptId, processingTime }\"\n"
+                },
+                {
+                    "date": 1753543854611,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,9 +23,9 @@\n <script setup>\n import { ref, onMounted, onUnmounted } from 'vue'\n import { Toast } from 'vant'\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\n-import { UndressWomanIcon } from '../components/icons'\n+\n import { processUndressImage } from '../services/comfyui.js'\n import { handleError } from '../services/globalErrorHandler.js'\n \n console.log('ClothesSwapUnified组件已加载，ComfyUI服务已导入')\n"
                 }
             ],
             "date": 1752395497153,

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/src/components/icons/index.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753543495678,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753543495678,
+            "name": "Commit-0",
+            "content": "// 自定义图标统一导出\r\nexport { default as UndressWomanIcon } from './UndressWomanIcon.vue'\r\nexport { default as FaceSwapIcon } from './FaceSwapIcon.vue'\r\nexport { default as SvgIcon } from './SvgIcon.vue'\r\n\r\n// 图标配置映射\r\nexport const ICON_CONFIG = {\r\n  'undress-woman': {\r\n    component: 'UndressWomanIcon',\r\n    description: '女性褪衣图标',\r\n    category: 'custom'\r\n  },\r\n  'face-swap': {\r\n    component: 'FaceSwapIcon',\r\n    description: '换脸图标',\r\n    category: 'custom'\r\n  }\r\n}\r\n\r\n// 获取图标组件的辅助函数\r\nexport function getCustomIcon(name) {\r\n  const config = ICON_CONFIG[name]\r\n  if (!config) {\r\n    console.warn(`Custom icon \"${name}\" not found`)\r\n    return null\r\n  }\r\n  return config.component\r\n}\r\n"
+        }
+    ]
+}

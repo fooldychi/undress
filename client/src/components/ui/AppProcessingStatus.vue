@@ -1,10 +1,8 @@
 <template>
   <div class="app-processing-status" :class="containerClasses">
     <AppProgressBar
-      :percentage="percentage"
       :status-text="statusText"
       :show-status="showStatus"
-      :show-percentage="showPercentage"
       :variant="variant"
       :animated="animated"
     >

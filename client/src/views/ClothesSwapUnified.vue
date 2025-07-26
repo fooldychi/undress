@@ -1,11 +1,12 @@
 <template>
   <UnifiedImageProcessingTemplate
     function-id="clothes-swap"
-    :title-icon="UndressWomanIcon"
+    title-icon-name="undress-woman"
     title-icon-color="var(--van-primary-color)"
-    :process-button-icon="UndressWomanIcon"
+    process-button-icon-name="undress-woman"
     :is-processing="isLoading"
     :progress="progressPercent"
+    :processing-description="processingStatus"
     :processing-info="{ promptId, processingTime }"
     :result-data="resultImage"
     :original-image-for-comparison="originalImageForComparison"
@@ -23,7 +24,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
-import { UndressWomanIcon } from '../components/icons'
+
 import { processUndressImage } from '../services/comfyui.js'
 import { handleError } from '../services/globalErrorHandler.js'
 
@@ -59,18 +60,18 @@ const processImage = async () => {
   }
 
   isLoading.value = true
-  processingStatus.value = '正在加载服务...'
-  progressPercent.value = 10
+  processingStatus.value = '正在初始化...'
   startTime.value = Date.now()
 
   try {
     console.log('🚀 开始一键褪衣处理')
 
-    processingStatus.value = '正在上传图片...'
-    progressPercent.value = 30
-
-    // 调用褪衣处理服务
-    const result = await processUndressImage(selectedImage.value)
+    // 调用褪衣处理服务，传入进度回调
+    const result = await processUndressImage(selectedImage.value, (status, progress) => {
+      processingStatus.value = status
+      progressPercent.value = progress || 0
+      console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
+    })
 
     if (result.success && result.resultImage) {
       resultImage.value = result.resultImage

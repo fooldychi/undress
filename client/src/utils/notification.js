@@ -18,13 +18,6 @@ export function showNotification(message, type = 'info') {
   // 控制台输出
   console.log(`${typeEmoji[type] || 'ℹ️'} [${timestamp}] ${message}`)
 
-  // 触发自定义事件供Vue组件监听
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('comfyui-status', {
-      detail: { message, type, timestamp }
-    }))
-  }
-
   // 如果有Vant Toast可用，也使用Toast显示
   if (typeof window !== 'undefined' && window.vant && window.vant.Toast) {
     const toastType = type === 'error' ? 'fail' : type === 'success' ? 'success' : 'loading'

@@ -10,16 +10,30 @@
     <!-- 卡片头部 -->
     <div v-if="title || $slots.header" class="mobile-card-header">
       <div v-if="title" class="mobile-card-title">
+        <!-- 自定义图标插槽 -->
+        <div v-if="$slots.icon" class="mobile-card-custom-icon">
+          <slot name="icon" />
+        </div>
+        <!-- Vant图标（向后兼容） -->
         <van-icon
-          v-if="icon"
+          v-else-if="icon"
           :name="icon"
           :size="iconSize"
           :color="iconColor"
           class="mobile-card-icon"
         />
-        <span>{{ title }}</span>
+        <span class="mobile-card-title-text">{{ title }}</span>
       </div>
       <slot name="header" />
+
+      <!-- 右箭头（在标题区域内） -->
+      <van-icon
+        v-if="clickable && showArrow"
+        name="arrow"
+        size="16"
+        color="var(--van-text-color-3, #c8c9cc)"
+        class="mobile-card-arrow-in-header"
+      />
     </div>
 
     <!-- 卡片内容 -->
@@ -32,9 +46,9 @@
       <slot name="footer" />
     </div>
 
-    <!-- 右箭头（可点击时显示） -->
+    <!-- 右箭头（当没有标题时显示） -->
     <van-icon
-      v-if="clickable && showArrow"
+      v-if="clickable && showArrow && !title && !$slots.header"
       name="arrow"
       size="16"
       color="var(--van-text-color-3, #c8c9cc)"
@@ -128,18 +142,32 @@ const handleClick = () => {
 }
 
 .mobile-card-header {
-  padding: 20px 20px 0 20px;
+  padding: 20px 20px 20px 20px; /* 恢复正常padding */
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  position: relative; /* 为箭头定位提供参考 */
+  display: flex; /* 使用flex布局 */
+  align-items: center; /* 垂直居中 */
+  justify-content: space-between; /* 标题和箭头分别在两端 */
+  min-height: 60px; /* 确保标题区域有足够高度 */
 }
 
 .mobile-card-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 17px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  width: 100%; /* 确保标题占满可用宽度 */
+  flex: 1; /* 占据剩余空间 */
+}
+
+.mobile-card-custom-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-card-icon {
@@ -147,8 +175,19 @@ const handleClick = () => {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
+.mobile-card-title-text {
+  flex: 1;
+}
+
+.mobile-card-arrow-in-header {
+  color: rgba(255, 255, 255, 0.6);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
 .mobile-card-content {
-  padding: 20px;
+  padding: 12px 20px 20px 20px; /* 增加顶部padding，避免内容太靠上 */
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -167,18 +206,19 @@ const handleClick = () => {
   transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.6);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-}
-
-/* 当有标题时，调整箭头位置 */
-.mobile-card-header + .mobile-card-content ~ .mobile-card-arrow {
-  top: 40px;
+  z-index: 2;
+  pointer-events: none; /* 防止箭头阻挡点击事件 */
 }
 
 /* 移动端优化 */
 @media (max-width: 768px) {
-  .mobile-card-header,
+  .mobile-card-header {
+    padding: 16px 16px 16px 16px; /* 调整移动端的padding */
+    min-height: 52px; /* 移动端稍微减小高度 */
+  }
+
   .mobile-card-content {
-    padding: 16px;
+    padding: 10px 16px 16px 16px; /* 增加顶部padding */
   }
 
   .mobile-card-footer {

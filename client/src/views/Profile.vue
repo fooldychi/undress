@@ -191,22 +191,7 @@
           </template>
         </MobileCard>
 
-        <!-- 测试按钮 -->
-        <MobileCard
-          title="测试功能"
-          icon="setting-o"
-          :inset="true"
-        >
-          <MobileActionButton
-            type="primary"
-            size="small"
-            variant="ghost"
-            @click="testResultModal"
-            block
-          >
-            测试图片预览
-          </MobileActionButton>
-        </MobileCard>
+
 
         <!-- 操作按钮 -->
         <div class="action-buttons">
@@ -451,17 +436,7 @@ export default {
       showResultModal.value = true
     }
 
-    // 测试结果弹窗
-    const testResultModal = () => {
-      const testData = {
-        id: 'test-1',
-        description: '测试图片预览',
-        mediaUrl: 'https://picsum.photos/400/300?random=1',
-        createdAt: new Date().toISOString()
-      }
-      console.log('测试数据:', testData)
-      handleViewResult(testData)
-    }
+
 
     // 查看全部记录
     const viewAllRecords = () => {
@@ -568,7 +543,6 @@ export default {
       loadRecentRecords,
       handleViewResult,
       viewAllRecords,
-      testResultModal,
 
       initializeData
     }

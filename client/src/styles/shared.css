@@ -1,32 +1,6 @@
 /* 共享样式 - 统一应用中的提示性组件样式 */
 
-/* 处理状态样式 */
-.processing-status {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.status-text {
-  color: white;
-  margin-bottom: 12px;
-  font-weight: 500;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), #4ecdc4);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
+/* 旧的处理状态样式已删除，现在使用SimpleProgressDisplay组件 */
 
 /* Toast提示样式 - 统一风格 */
 .toast {

@@ -244,12 +244,8 @@ const handleAuthSuccess = async (data) => {
 // 处理左侧点击事件
 const handleLeftClick = () => {
   if (showBackButton.value) {
-    // 返回上一页
-    if (window.history.length > 1) {
-      router.go(-1)
-    } else {
-      router.push('/')
-    }
+    // 直接跳转到首页
+    router.push('/')
   }
 }
 

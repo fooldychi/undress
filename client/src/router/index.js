@@ -6,7 +6,6 @@ const ClothesSwap = () => import('../views/ClothesSwap.vue')
 
 const FaceSwap = () => import('../views/FaceSwap.vue')
 const Profile = () => import('../views/Profile.vue')
-const WebSocketTest = () => import('../views/WebSocketTest.vue')
 
 
 
@@ -43,14 +42,6 @@ const routes = [
     component: Profile,
     meta: {
       title: '个人中心 - Imagic'
-    }
-  },
-  {
-    path: '/websocket-test',
-    name: 'WebSocketTest',
-    component: WebSocketTest,
-    meta: {
-      title: 'WebSocket 测试 - Imagic'
     }
   },
 

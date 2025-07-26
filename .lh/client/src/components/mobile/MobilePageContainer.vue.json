@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 15,
+            "activePatchIndex": 18,
             "patches": [
                 {
                     "date": 1752384723098,
@@ -68,6 +68,18 @@
                 {
                     "date": 1753017836194,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -29,10 +29,14 @@\n   </div>\n </template>\n \n <script setup>\n+import { ref } from 'vue'\n import TopNavigation from '../TopNavigation.vue'\n \n+// TopNavigation 组件引用\n+const topNavigationRef = ref(null)\n+\n // Props\n defineProps({\n   title: {\n     type: String,\n@@ -45,8 +49,17 @@\n })\n \n // Events\n defineEmits(['login', 'logout'])\n+\n+// 暴露给父组件的方法\n+defineExpose({\n+  showLoginModal: () => {\n+    if (topNavigationRef.value) {\n+      topNavigationRef.value.showLoginModal()\n+    }\n+  }\n+})\n </script>\n \n <style scoped>\n .mobile-page {\n"
+                },
+                {
+                    "date": 1753537792319,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -112,9 +112,9 @@\n   box-shadow: none;\n }\n \n .mobile-page-main {\n-  padding: 20px;\n+  padding: 0 20px 20px 20px;\n   flex: 1;\n }\n \n .mobile-page-footer {\n"
+                },
+                {
+                    "date": 1753538007646,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -113,8 +113,9 @@\n }\n \n .mobile-page-main {\n   padding: 0 20px 20px 20px;\n+  padding-top: 0;\n   flex: 1;\n }\n \n .mobile-page-footer {\n@@ -183,4 +184,5 @@\n \n \n \n \n+\n"
+                },
+                {
+                    "date": 1753538185576,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -135,8 +135,9 @@\n   }\n \n   .mobile-page-main {\n     padding: 16px;\n+    padding-top: 0;\n   }\n \n   .mobile-page-header,\n   .mobile-page-footer {\n@@ -185,4 +186,5 @@\n \n \n \n \n+\n"
                 }
             ],
             "date": 1752384723098,

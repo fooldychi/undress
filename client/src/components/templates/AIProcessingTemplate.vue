@@ -56,12 +56,11 @@
       </div>
     </div>
 
-    <!-- 固定顶部处理状态 -->
-    <MobileFixedStatusBar
+    <!-- 处理状态显示 -->
+    <SimpleProgressDisplay
       v-if="isProcessing"
       :visible="isProcessing"
       status="loading"
-      :title="processingTitle"
       :description="processingStatusDescription"
       :progress="progress"
       :show-progress="showProgress"
@@ -94,12 +93,21 @@
         重新选择
       </van-button>
     </div>
+
+    <!-- 底部固定积分消耗提醒 - 用户上传图片前显示，上传图片后隐藏 -->
+    <div v-if="shouldShowBottomPointsNotice" class="bottom-points-notice">
+      <div class="points-notice-content">
+        <span>{{ title }}将消耗 <strong>{{ pointsCost }}</strong> 积分</span>
+      </div>
+    </div>
+
+
   </MobilePageContainer>
 </template>
 
 <script setup>
 import { computed, watch, onMounted, onUnmounted } from 'vue'
-import { MobilePageContainer, MobileActionButton, MobileStatusCard, MobileFixedStatusBar } from '../mobile'
+import { MobilePageContainer, MobileActionButton, MobileStatusCard, SimpleProgressDisplay } from '../mobile'
 
 // Props
 const props = defineProps({
@@ -164,7 +172,7 @@ const props = defineProps({
   },
   processingDescription: {
     type: String,
-    default: '请耐心等待，处理时间可能需要几分钟'
+    default: ''
   },
   processingInfo: {
     type: Object,
@@ -181,6 +189,12 @@ const props = defineProps({
   downloadLoading: {
     type: Boolean,
     default: false
+  },
+
+  // 积分消耗
+  pointsCost: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -191,10 +205,18 @@ defineEmits(['login', 'logout', 'process', 'download', 'reprocess'])
 const processingStatusDescription = computed(() => {
   if (!props.isProcessing) return ''
 
-  const baseDescription = props.processingDescription || '请耐心等待，处理时间可能需要几分钟'
+  const baseDescription = props.processingDescription || ''
   const warningText = '⚠️请不要离开当前页面，等待处理完成后可自行下载'
 
-  return `${baseDescription} ${warningText}`
+  return baseDescription ? `${baseDescription} ${warningText}` : warningText
+})
+
+// 控制底部积分提醒显示时机：用户上传图片前显示，上传图片后隐藏，避免遮挡提交按钮
+const shouldShowBottomPointsNotice = computed(() => {
+  return props.pointsCost > 0 && // 有积分消耗
+         !props.isProcessing && // 未在处理中
+         !props.resultData && // 没有结果
+         !props.canProcess // 用户还未上传图片（不能处理时才显示）
 })
 
 // 页面离开警告
@@ -246,7 +268,7 @@ onUnmounted(() => {
   /* backdrop-filter: blur(10px); - Removed */
   /* -webkit-backdrop-filter: blur(10px); - Removed */
   border-radius: 16px;
-  margin-bottom: 20px;
+  /* margin-bottom removed */
 }
 
 .page-title {
@@ -267,9 +289,28 @@ onUnmounted(() => {
   gap: 20px;
 }
 
+
+
 .action-section {
-  padding: 0 16px;
-  margin-top: 24px;
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 15, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 30, 60, 0.3);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 上传提示样式 */
@@ -316,13 +357,106 @@ onUnmounted(() => {
   margin-top: 24px;
 }
 
-/* 结果操作按钮样式 */
+/* 结果操作按钮样式 - 固定底部显示 */
 .result-actions {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-top: 20px;
-  padding: 0 16px;
+  padding: 16px;
+  background: rgba(15, 15, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 30, 60, 0.3);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 底部固定积分消耗提醒样式 - 圆角提示浮层，与进度条配色一致 */
+.bottom-points-notice {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 1000;
+  /* 与进度条配色保持一致 */
+  background: rgba(15, 15, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 30, 60, 0.3);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: slideUpIn 0.3s ease-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.points-notice-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.points-notice-content strong {
+  /* 使用与进度条一致的渐变色 */
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* 确保页面内容不被底部积分提醒遮挡 */
+.ai-processing-template:has(.bottom-points-notice) .mobile-page-main {
+  padding-bottom: 100px;
+}
+
+/* 确保页面内容不被底部按钮遮挡 */
+.ai-processing-template:has(.result-actions) .mobile-page-main {
+  padding-bottom: 120px;
+}
+
+@keyframes slideUpIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .action-section {
+    margin: 0 12px 12px 12px;
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .ai-processing-template:has(.action-section) .mobile-page-main {
+    padding-bottom: 110px;
+  }
 }
 
 .result-action-btn {
@@ -337,7 +471,6 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .ai-page-header {
     padding: 12px 0;
-    margin-bottom: 16px;
   }
 
   .page-title {

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/src/components/icons/FaceSwapIcon.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753543482751,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753543482751,
+            "name": "Commit-0",
+            "content": "<template>\r\n  <SvgIcon\r\n    name=\"face-swap\"\r\n    :size=\"size\"\r\n    :color=\"color\"\r\n  />\r\n</template>\r\n\r\n<script setup>\r\nimport SvgIcon from './SvgIcon.vue'\r\n\r\ndefineProps({\r\n  size: {\r\n    type: [String, Number],\r\n    default: 24\r\n  },\r\n  color: {\r\n    type: String,\r\n    default: '#8A8AA3'\r\n  }\r\n})\r\n</script>\r\n"
+        }
+    ]
+}

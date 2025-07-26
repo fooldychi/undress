@@ -3,9 +3,6 @@
     <router-view />
     <!-- VantUI Toast 会自动处理，无需手动添加容器 -->
 
-    <!-- WebSocket 连接状态指示器 -->
-    <WebSocketStatus />
-
     <!-- 全局错误弹窗 -->
     <GlobalErrorModal
       :visible="errorState.visible"
@@ -17,7 +14,6 @@
 </template>
 
 <script setup>
-import WebSocketStatus from './components/WebSocketStatus.vue'
 import GlobalErrorModal from './components/GlobalErrorModal.vue'
 import { getErrorState, hideGlobalError } from './services/globalErrorHandler.js'
 

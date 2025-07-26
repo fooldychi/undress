@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1752383670124,
@@ -20,6 +20,10 @@
                 {
                     "date": 1752499585668,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,8 +2,9 @@\n export { default as MobilePageContainer } from './MobilePageContainer.vue'\n export { default as MobileCard } from './MobileCard.vue'\n export { default as MobileActionButton } from './MobileActionButton.vue'\n export { default as MobileStatusCard } from './MobileStatusCard.vue'\n+export { default as MobileFixedStatusBar } from './MobileFixedStatusBar.vue'\n \n // 通用组件 (保留旧组件以兼容性)\n export { default as VantImageUpload } from '../common/VantImageUpload.vue'\n export { default as VantMultiImageUpload } from '../common/VantMultiImageUpload.vue'\n"
+                },
+                {
+                    "date": 1753534751271,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n export { default as MobilePageContainer } from './MobilePageContainer.vue'\n export { default as MobileCard } from './MobileCard.vue'\n export { default as MobileActionButton } from './MobileActionButton.vue'\n export { default as MobileStatusCard } from './MobileStatusCard.vue'\n-export { default as MobileFixedStatusBar } from './MobileFixedStatusBar.vue'\n+export { default as SimpleProgressDisplay } from './SimpleProgressDisplay.vue'\n \n // 通用组件 (保留旧组件以兼容性)\n export { default as VantImageUpload } from '../common/VantImageUpload.vue'\n export { default as VantMultiImageUpload } from '../common/VantMultiImageUpload.vue'\n"
                 }
             ],
             "date": 1752383670124,

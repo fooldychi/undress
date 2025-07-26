@@ -1169,6 +1169,8 @@ class UniversalWorkflowProcessor {
     this.config = workflowConfig
     this.nodeConfig = null
     this.uploadedFiles = new Map() // 存储上传的文件名，用于构建额外图片URL
+    this.progressManager = null // 进度管理器
+    this.totalNodes = 0 // 工作流总节点数
   }
 
   /**
@@ -1180,6 +1182,9 @@ class UniversalWorkflowProcessor {
   async process(inputs, onProgress = null) {
     try {
       console.log(`🚀 开始处理${this.config.displayName}请求`)
+
+      // 初始化进度管理器
+      await this.initializeProgressManager(onProgress)
 
       // 1. 预检查阶段
       await this.preCheck(onProgress)
@@ -1202,24 +1207,34 @@ class UniversalWorkflowProcessor {
   }
 
   /**
-   * 通用预检查 - 服务器状态和积分验证
+   * 初始化进度管理器
+   */
+  async initializeProgressManager(onProgress) {
+    try {
+      // 同步导入进度管理器
+      const { createProgressStageManager, PROGRESS_STAGES } = await import('../utils/progressStageManager.js')
+      this.progressManager = createProgressStageManager()
+      this.PROGRESS_STAGES = PROGRESS_STAGES
+
+      // 添加进度回调
+      if (onProgress) {
+        this.progressManager.addCallback((_, message, workflowProgress) => {
+          onProgress(message, workflowProgress.percentage || 0)
+        })
+      }
+
+      console.log('✅ 进度管理器初始化成功')
+    } catch (error) {
+      console.warn('❌ 进度管理器初始化失败:', error)
+    }
+  }
+
+  /**
+   * 通用预检查 - 积分验证（移除服务器检测）
    */
   async preCheck(onProgress) {
-    // 服务器状态检查
-    if (onProgress) onProgress('正在检查服务器状态...', 5)
-
-    if (this.config.checkServer) {
-      try {
-        const serverStatus = await checkComfyUIServerStatus()
-        if (serverStatus.status === 'error') {
-          console.warn('⚠️ 服务器预检查失败，但尝试继续处理:', serverStatus.error)
-        } else if (serverStatus.status === 'warning') {
-          console.warn('⚠️ 服务器状态警告，但继续尝试:', serverStatus.note)
-        }
-      } catch (preCheckError) {
-        console.warn('⚠️ 预检查异常，但继续尝试处理:', preCheckError.message)
-      }
-    }
+    // 🔧 移除服务器状态检查 - 改为页面加载时检测
+    // 服务器检测现在在页面加载时进行，不在任务提交时检测
 
     // 积分检查
     if (onProgress) onProgress('正在检查积分...', 10)
@@ -1248,7 +1263,12 @@ class UniversalWorkflowProcessor {
       .filter(([key, config]) => config.type === 'image' && inputs[key])
 
     if (imageInputs.length > 0) {
-      if (onProgress) onProgress('正在上传图片...', 20)
+      // 设置上传阶段
+      if (this.progressManager && this.PROGRESS_STAGES) {
+        this.progressManager.setStage(this.PROGRESS_STAGES.UPLOADING)
+      } else if (onProgress) {
+        onProgress('图片上传中...', 20)
+      }
 
       for (const [key, config] of imageInputs) {
         const imageData = inputs[key]
@@ -1280,13 +1300,26 @@ class UniversalWorkflowProcessor {
    * 动态工作流构建 - 根据配置自动构建工作流
    */
   async buildWorkflow(processedInputs, onProgress) {
-    if (onProgress) onProgress('正在配置工作流...', 40)
+    // 设置提交阶段
+    if (this.progressManager && this.PROGRESS_STAGES) {
+      this.progressManager.setStage(this.PROGRESS_STAGES.SUBMITTING)
+    } else if (onProgress) {
+      onProgress('提交任务中...', 40)
+    }
 
     // 获取节点配置
     this.nodeConfig = await getWorkflowNodeConfig(this.config.type)
 
     // 加载工作流模板
     const workflow = JSON.parse(JSON.stringify(this.config.workflowTemplate))
+
+    // 获取所有节点ID并设置到进度管理器
+    this.allNodeIds = this.getWorkflowNodeIds(workflow)
+    this.totalNodes = this.allNodeIds.length
+
+    if (this.progressManager) {
+      this.progressManager.setWorkflowNodes(this.allNodeIds)
+    }
 
     // 设置输入节点
     for (const [inputKey, nodeKey] of Object.entries(this.config.inputMapping)) {
@@ -1331,25 +1364,94 @@ class UniversalWorkflowProcessor {
     const submittedPromptId = await submitWorkflow(workflow, promptId, tempTask)
     console.log(`✅ [${this.config.type.toUpperCase()}] 工作流提交完成: ${submittedPromptId}`)
 
-    // 等待任务完成
-    if (onProgress) onProgress(`正在处理${this.config.displayName}...`, 60)
-
-    const taskResult = await waitForTaskCompletion(submittedPromptId, (status, progress) => {
-      if (onProgress) {
-        const adjustedProgress = Math.min(95, Math.max(60, 60 + (progress * 0.35)))
-        onProgress(status, adjustedProgress)
-      }
-    }, this.config.type)
+    // 等待任务完成 - 使用新的进度管理系统
+    const taskResult = await this.waitForTaskCompletionWithProgress(submittedPromptId, onProgress)
 
     console.log(`✅ ${this.config.displayName}任务处理完成`)
     return { promptId: submittedPromptId, taskResult }
   }
 
   /**
+   * 等待任务完成 - 使用新的进度管理系统
+   */
+  async waitForTaskCompletionWithProgress(promptId, onProgress) {
+    // 设置队列等待阶段
+    if (this.progressManager && this.PROGRESS_STAGES) {
+      this.progressManager.setStage(this.PROGRESS_STAGES.QUEUING)
+    }
+
+    // 创建工作流进度回调
+    const workflowProgressCallback = (nodeId) => {
+      if (this.progressManager) {
+        // 基于已执行节点数量更新进度
+        this.progressManager.updateFromNodeExecution(nodeId)
+      }
+    }
+
+    // 等待任务完成，传递工作流进度回调
+    return await webSocketManager.waitForCompletion(promptId, {
+      onProgress: (status, progress) => {
+        // 兼容旧的进度回调
+        if (onProgress && !this.progressManager) {
+          onProgress(status, progress)
+        }
+      },
+      onWorkflowProgress: workflowProgressCallback
+    })
+  }
+
+  /**
+   * 获取工作流所有节点ID
+   */
+  getWorkflowNodeIds(workflow) {
+    if (!workflow || typeof workflow !== 'object') {
+      return []
+    }
+
+    // ComfyUI工作流的节点存储在根级别，每个键是节点ID
+    const nodeIds = Object.keys(workflow).filter(key => {
+      const node = workflow[key]
+      return node && typeof node === 'object' && node.class_type
+    })
+
+    console.log(`📊 工作流节点列表: [${nodeIds.join(', ')}] (共${nodeIds.length}个)`)
+    return nodeIds
+  }
+
+  /**
+   * 计算工作流总节点数
+   */
+  calculateTotalNodes(workflow) {
+    return this.getWorkflowNodeIds(workflow).length
+  }
+
+  /**
+   * 从节点ID提取数字
+   */
+  extractNodeNumber(nodeId) {
+    if (!nodeId) return 0
+
+    // 尝试直接转换为数字
+    const directNumber = parseInt(nodeId)
+    if (!isNaN(directNumber)) {
+      return directNumber
+    }
+
+    // 尝试从字符串中提取数字
+    const match = nodeId.toString().match(/\d+/)
+    return match ? parseInt(match[0]) : 0
+  }
+
+  /**
    * 通用后处理 - 获取结果和扣除积分
    */
   async postProcess(result, onProgress) {
-    if (onProgress) onProgress('正在获取处理结果...', 96)
+    // 设置完成状态
+    if (this.progressManager && this.PROGRESS_STAGES) {
+      this.progressManager.setCompleted()
+    } else if (onProgress) {
+      onProgress('正在获取处理结果...', 96)
+    }
 
     // 获取结果图片URL
     const resultImageUrl = await getGeneratedImageUrl(result.taskResult, this.config.type, result.promptId)
@@ -1447,6 +1549,12 @@ class UniversalWorkflowProcessor {
    */
   handleError(error) {
     console.error(`❌ ${this.config.displayName}处理失败:`, error)
+
+    // 设置错误状态
+    if (this.progressManager && this.PROGRESS_STAGES) {
+      this.progressManager.setError(error.message)
+    }
+
     return {
       success: false,
       error: error.message,
@@ -1489,7 +1597,7 @@ class WorkflowConfigManager {
       type: 'undress',
       displayName: '一键褪衣',
       pointsCost: 20,
-      checkServer: true,
+      checkServer: false, // 🔧 修改：不在任务提交时检测服务器
       randomizeSeed: true,
       workflowTemplate: undressWorkflow,
       inputSchema: {
@@ -1513,7 +1621,7 @@ class WorkflowConfigManager {
       type: 'faceswap',
       displayName: '极速换脸',
       pointsCost: 20,
-      checkServer: true,
+      checkServer: false, // 🔧 修改：不在任务提交时检测服务器
       randomizeSeed: false,
       workflowTemplate: faceSwapWorkflow,
       inputSchema: {

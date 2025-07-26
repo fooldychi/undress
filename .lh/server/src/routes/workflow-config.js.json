@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 15,
+            "activePatchIndex": 17,
             "patches": [
                 {
                     "date": 1752813382472,
@@ -68,6 +68,14 @@
                 {
                     "date": 1752836046760,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -363,9 +363,12 @@\n \n // 获取启用的功能列表（用于首页显示）\n router.get('/features', async (req, res) => {\n   try {\n-    console.log('📥 获取启用的功能列表...');\n+    // 简化日志输出\n+    if (process.env.NODE_ENV === 'development') {\n+      console.log('📥 获取启用的功能列表...');\n+    }\n \n     // 获取启用的工作流\n     const enabledWorkflows = await query(`\n       SELECT workflow_type, workflow_name, is_enabled\n"
+                },
+                {
+                    "date": 1753544270120,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -384,10 +384,10 @@\n         title: '一键褪衣',\n         description: '智能识别人物轮廓，快速移除照片中的服装，体验前沿AI技术',\n         route: '/clothes-swap',\n         icon: {\n-          type: 'custom',\n-          component: 'UndressWomanIcon',\n+          type: 'svg',\n+          name: 'undress-woman',\n           size: 28,\n           color: '#667eea'\n         },\n         iconClass: 'undress-icon',\n"
+                },
+                {
+                    "date": 1753544281666,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -405,10 +405,10 @@\n         title: '极速换脸',\n         description: '精准面部识别技术，实现自然的人脸替换效果，创造有趣内容',\n         route: '/face-swap',\n         icon: {\n-          type: 'custom',\n-          component: 'FaceSwapIcon',\n+          type: 'svg',\n+          name: 'face-swap',\n           size: 28,\n           color: '#f093fb'\n         },\n         iconClass: 'faceswap-icon',\n"
                 }
             ],
             "date": 1752813382472,

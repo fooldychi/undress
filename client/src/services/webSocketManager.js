@@ -83,20 +83,17 @@ class SimpleWebSocketManager {
         this.ws.onopen = () => {
           this.isConnected = true
           clearTimeout(timeout)
-          console.log(`✅ [${WINDOW_ID}] WebSocket连接成功: ${serverUrl}`)
           resolve(true)
         }
 
         this.ws.onerror = (error) => {
           this.isConnected = false
           clearTimeout(timeout)
-          console.error(`❌ [${WINDOW_ID}] WebSocket连接失败:`, error)
           reject(error)
         }
 
         this.ws.onclose = () => {
           this.isConnected = false
-          console.log(`🔌 [${WINDOW_ID}] WebSocket连接关闭`)
         }
 
         // 核心消息处理 - 基于官方样例
@@ -115,7 +112,6 @@ class SimpleWebSocketManager {
         }
       })
     } catch (error) {
-      console.error(`❌ [${WINDOW_ID}] 连接失败:`, error)
       throw error
     }
   }
@@ -132,8 +128,8 @@ class SimpleWebSocketManager {
       if (node === null && prompt_id) {
         this._handleTaskCompletion(prompt_id)
       } else if (node && prompt_id) {
-        // 任务执行中，更新进度
-        this._handleTaskProgress(prompt_id, `执行节点: ${node}`, 50)
+        // 任务执行中，更新工作流节点进度
+        this._handleWorkflowNodeProgress(prompt_id, node)
       }
     }
 
@@ -152,6 +148,18 @@ class SimpleWebSocketManager {
     const task = this.tasks.get(promptId)
     if (task && task.onProgress) {
       task.onProgress(message, progress)
+    }
+  }
+
+  // 工作流节点进度处理
+  _handleWorkflowNodeProgress(promptId, nodeId) {
+    const task = this.tasks.get(promptId)
+    if (task && task.onWorkflowProgress) {
+      // 调用工作流进度回调，传递节点ID
+      task.onWorkflowProgress(nodeId)
+    } else if (task && task.onProgress) {
+      // 兼容旧的进度回调
+      task.onProgress(`执行节点: ${nodeId}`, 50)
     }
   }
 
@@ -322,6 +330,7 @@ class SimpleWebSocketManager {
       task.onComplete = resolve
       task.onError = reject
       task.onProgress = callbacks.onProgress || (() => {})
+      task.onWorkflowProgress = callbacks.onWorkflowProgress || null
 
       console.log(`⏳ [${WINDOW_ID}] 等待任务完成: ${promptId}`)
     })

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/src/utils/notification.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753531163623,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753531163623,
+            "name": "Commit-0",
+            "content": "// 通知工具函数\n// 提供简单的通知功能，兼容WebSocket重构版本\n\n/**\n * 显示通知消息\n * @param {string} message - 通知消息\n * @param {string} type - 通知类型: 'success', 'error', 'warning', 'info'\n */\nexport function showNotification(message, type = 'info') {\n  const timestamp = new Date().toLocaleTimeString()\n  const typeEmoji = {\n    'success': '✅',\n    'error': '❌',\n    'warning': '⚠️',\n    'info': 'ℹ️'\n  }\n\n  // 控制台输出\n  console.log(`${typeEmoji[type] || 'ℹ️'} [${timestamp}] ${message}`)\n\n  // 如果有Vant Toast可用，也使用Toast显示\n  if (typeof window !== 'undefined' && window.vant && window.vant.Toast) {\n    const toastType = type === 'error' ? 'fail' : type === 'success' ? 'success' : 'loading'\n    window.vant.Toast({\n      type: toastType,\n      message: message,\n      duration: type === 'error' ? 3000 : 2000\n    })\n  }\n}\n\n/**\n * 显示成功通知\n * @param {string} message - 通知消息\n */\nexport function showSuccessNotification(message) {\n  showNotification(message, 'success')\n}\n\n/**\n * 显示错误通知\n * @param {string} message - 通知消息\n */\nexport function showErrorNotification(message) {\n  showNotification(message, 'error')\n}\n\n/**\n * 显示警告通知\n * @param {string} message - 通知消息\n */\nexport function showWarningNotification(message) {\n  showNotification(message, 'warning')\n}\n\n/**\n * 显示信息通知\n * @param {string} message - 通知消息\n */\nexport function showInfoNotification(message) {\n  showNotification(message, 'info')\n}\n\n// 默认导出\nexport default {\n  showNotification,\n  showSuccessNotification,\n  showErrorNotification,\n  showWarningNotification,\n  showInfoNotification\n}\n"
+        }
+    ]
+}

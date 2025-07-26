@@ -385,8 +385,8 @@ router.get('/features', async (req, res) => {
         description: '智能识别人物轮廓，快速移除照片中的服装，体验前沿AI技术',
         route: '/clothes-swap',
         icon: {
-          type: 'custom',
-          component: 'UndressWomanIcon',
+          type: 'svg',
+          name: 'undress-woman',
           size: 28,
           color: '#667eea'
         },
@@ -406,8 +406,8 @@ router.get('/features', async (req, res) => {
         description: '精准面部识别技术，实现自然的人脸替换效果，创造有趣内容',
         route: '/face-swap',
         icon: {
-          type: 'custom',
-          component: 'FaceSwapIcon',
+          type: 'svg',
+          name: 'face-swap',
           size: 28,
           color: '#f093fb'
         },

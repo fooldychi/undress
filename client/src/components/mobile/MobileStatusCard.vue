@@ -19,12 +19,12 @@
         <!-- 进度条（加载状态时显示） -->
         <div v-if="status === 'loading' && showProgress" class="status-progress">
           <van-progress
-            :percentage="progress"
+            :percentage="isWorkflowProgress ? progress : 100"
             :show-pivot="false"
             color="var(--van-primary-color, #1989fa)"
             track-color="var(--van-border-color, #ebedf0)"
+            :class="{ 'progress-animation': !isWorkflowProgress }"
           />
-          <div class="progress-text">{{ progress }}%</div>
         </div>
 
         <!-- 额外信息 -->
@@ -80,6 +80,11 @@ const props = defineProps({
 })
 
 // Computed
+const isWorkflowProgress = computed(() => {
+  // 判断是否是工作流进度（包含百分比和节点信息的格式）
+  return props.description && props.description.includes('（') && props.description.includes('）')
+})
+
 const statusIcon = computed(() => {
   const iconMap = {
     default: 'info-o',
@@ -176,11 +181,17 @@ const statusIcon = computed(() => {
   margin-top: 8px;
 }
 
-.progress-text {
-  font-size: 12px;
-  color: var(--van-text-color-3, #969799);
-  text-align: right;
-  margin-top: 4px;
+.progress-animation {
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .status-extra {

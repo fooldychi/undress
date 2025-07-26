@@ -1,0 +1,50 @@
+{
+    "sourceFile": "client/src/components/ui/AppProgressBar.vue",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 8,
+            "patches": [
+                {
+                    "date": 1753531828723,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753531840312,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,10 +5,9 @@\n     </div>\r\n \r\n     <div class=\"progress-bar\" :class=\"{ 'progress-bar--animated': animated }\">\r\n       <div\r\n-        class=\"progress-fill\"\r\n-        :style=\"{ width: percentage + '%' }\"\r\n+        class=\"progress-fill progress-animation\"\r\n         :class=\"`progress-fill--${variant}`\"\r\n       ></div>\r\n     </div>\r\n \r\n"
+                },
+                {
+                    "date": 1753531850153,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -33,12 +33,9 @@\n   showStatus: {\r\n     type: Boolean,\r\n     default: true\r\n   },\r\n-  showPercentage: {\r\n-    type: Boolean,\r\n-    default: false\r\n-  },\r\n+\r\n   variant: {\r\n     type: String,\r\n     default: 'primary',\r\n     validator: (value) => ['primary', 'success', 'warning', 'error'].includes(value)\r\n"
+                },
+                {
+                    "date": 1753531865589,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -57,11 +57,8 @@\n   width: 100%;\r\n }\r\n \r\n .progress-status {\r\n-  display: flex;\r\n-  justify-content: space-between;\r\n-  align-items: center;\r\n   margin-bottom: 12px;\r\n }\r\n \r\n .status-text {\r\n"
+                },
+                {
+                    "date": 1753531878471,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -64,18 +64,10 @@\n .status-text {\r\n   color: white;\r\n   font-weight: 500;\r\n   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n-  flex: 1;\r\n }\r\n \r\n-.status-percentage {\r\n-  color: white;\r\n-  font-weight: 600;\r\n-  font-size: 0.9rem;\r\n-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n-}\r\n-\r\n .progress-bar {\r\n   width: 100%;\r\n   height: 8px;\r\n   background: rgba(0, 0, 0, 0.1);\r\n"
+                },
+                {
+                    "date": 1753531895685,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -84,10 +84,24 @@\n   height: 100%;\r\n   border-radius: 4px;\r\n   transition: width 0.3s ease;\r\n   position: relative;\r\n+  width: 100% !important; /* 始终显示满进度条 */\r\n }\r\n \r\n+.progress-animation {\r\n+  animation: progressPulse 2s ease-in-out infinite;\r\n+}\r\n+\r\n+@keyframes progressPulse {\r\n+  0%, 100% {\r\n+    opacity: 0.8;\r\n+  }\r\n+  50% {\r\n+    opacity: 1;\r\n+  }\r\n+}\r\n+\r\n /* 进度条变体 */\r\n .progress-fill--primary {\r\n   background: linear-gradient(90deg, var(--primary-color), #4ecdc4);\r\n }\r\n"
+                },
+                {
+                    "date": 1753533023842,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,10 +5,11 @@\n     </div>\r\n \r\n     <div class=\"progress-bar\" :class=\"{ 'progress-bar--animated': animated }\">\r\n       <div\r\n-        class=\"progress-fill progress-animation\"\r\n-        :class=\"`progress-fill--${variant}`\"\r\n+        class=\"progress-fill\"\r\n+        :class=\"[`progress-fill--${variant}`, { 'progress-animation': !isWorkflowProgress }]\"\r\n+        :style=\"{ width: isWorkflowProgress ? percentage + '%' : '100%' }\"\r\n       ></div>\r\n     </div>\r\n \r\n     <div v-if=\"$slots.extra\" class=\"progress-extra\">\r\n"
+                },
+                {
+                    "date": 1753533050812,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,8 +50,14 @@\n     default: 'medium',\r\n     validator: (value) => ['small', 'medium', 'large'].includes(value)\r\n   }\r\n })\r\n+\r\n+// Computed\r\n+const isWorkflowProgress = computed(() => {\r\n+  // 判断是否是工作流进度（包含百分比和节点信息的格式）\r\n+  return props.statusText && props.statusText.includes('（') && props.statusText.includes('）')\r\n+})\r\n </script>\r\n \r\n <style scoped>\r\n .app-progress-container {\r\n"
+                },
+                {
+                    "date": 1753533065948,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -91,9 +91,8 @@\n   height: 100%;\r\n   border-radius: 4px;\r\n   transition: width 0.3s ease;\r\n   position: relative;\r\n-  width: 100% !important; /* 始终显示满进度条 */\r\n }\r\n \r\n .progress-animation {\r\n   animation: progressPulse 2s ease-in-out infinite;\r\n"
+                }
+            ],
+            "date": 1753531828723,
+            "name": "Commit-0",
+            "content": "<template>\r\n  <div class=\"app-progress-container\">\r\n    <div v-if=\"showStatus\" class=\"progress-status\">\r\n      <div class=\"status-text\">{{ statusText }}</div>\r\n    </div>\r\n\r\n    <div class=\"progress-bar\" :class=\"{ 'progress-bar--animated': animated }\">\r\n      <div\r\n        class=\"progress-fill\"\r\n        :style=\"{ width: percentage + '%' }\"\r\n        :class=\"`progress-fill--${variant}`\"\r\n      ></div>\r\n    </div>\r\n\r\n    <div v-if=\"$slots.extra\" class=\"progress-extra\">\r\n      <slot name=\"extra\"></slot>\r\n    </div>\r\n  </div>\r\n</template>\r\n\r\n<script setup>\r\nimport { computed } from 'vue'\r\n\r\nconst props = defineProps({\r\n  percentage: {\r\n    type: Number,\r\n    default: 0,\r\n    validator: (value) => value >= 0 && value <= 100\r\n  },\r\n  statusText: {\r\n    type: String,\r\n    default: ''\r\n  },\r\n  showStatus: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  showPercentage: {\r\n    type: Boolean,\r\n    default: false\r\n  },\r\n  variant: {\r\n    type: String,\r\n    default: 'primary',\r\n    validator: (value) => ['primary', 'success', 'warning', 'error'].includes(value)\r\n  },\r\n  animated: {\r\n    type: Boolean,\r\n    default: true\r\n  },\r\n  size: {\r\n    type: String,\r\n    default: 'medium',\r\n    validator: (value) => ['small', 'medium', 'large'].includes(value)\r\n  }\r\n})\r\n</script>\r\n\r\n<style scoped>\r\n.app-progress-container {\r\n  width: 100%;\r\n}\r\n\r\n.progress-status {\r\n  display: flex;\r\n  justify-content: space-between;\r\n  align-items: center;\r\n  margin-bottom: 12px;\r\n}\r\n\r\n.status-text {\r\n  color: white;\r\n  font-weight: 500;\r\n  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n  flex: 1;\r\n}\r\n\r\n.status-percentage {\r\n  color: white;\r\n  font-weight: 600;\r\n  font-size: 0.9rem;\r\n  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.progress-bar {\r\n  width: 100%;\r\n  height: 8px;\r\n  background: rgba(0, 0, 0, 0.1);\r\n  border-radius: 4px;\r\n  overflow: hidden;\r\n  position: relative;\r\n}\r\n\r\n.progress-bar--animated {\r\n  transition: all 0.3s ease;\r\n}\r\n\r\n.progress-fill {\r\n  height: 100%;\r\n  border-radius: 4px;\r\n  transition: width 0.3s ease;\r\n  position: relative;\r\n}\r\n\r\n/* 进度条变体 */\r\n.progress-fill--primary {\r\n  background: linear-gradient(90deg, var(--primary-color), #4ecdc4);\r\n}\r\n\r\n.progress-fill--success {\r\n  background: linear-gradient(90deg, #28a745, #20c997);\r\n}\r\n\r\n.progress-fill--warning {\r\n  background: linear-gradient(90deg, #ffc107, #fd7e14);\r\n}\r\n\r\n.progress-fill--error {\r\n  background: linear-gradient(90deg, #dc3545, #e83e8c);\r\n}\r\n\r\n/* 动画效果 */\r\n.progress-fill--primary::after {\r\n  content: '';\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n  right: 0;\r\n  bottom: 0;\r\n  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);\r\n  animation: shimmer 2s infinite;\r\n}\r\n\r\n.progress-extra {\r\n  margin-top: 8px;\r\n  text-align: center;\r\n}\r\n\r\n@keyframes shimmer {\r\n  0% { transform: translateX(-100%); }\r\n  100% { transform: translateX(100%); }\r\n}\r\n\r\n/* 尺寸变体 */\r\n.progress-bar--small {\r\n  height: 6px;\r\n}\r\n\r\n.progress-bar--medium {\r\n  height: 8px;\r\n}\r\n\r\n.progress-bar--large {\r\n  height: 12px;\r\n}\r\n\r\n/* 响应式设计 */\r\n@media (max-width: 768px) {\r\n  .progress-status {\r\n    margin-bottom: 8px;\r\n  }\r\n\r\n  .status-text {\r\n    font-size: 0.9rem;\r\n  }\r\n\r\n  .status-percentage {\r\n    font-size: 0.8rem;\r\n  }\r\n}\r\n</style>\r\n"
+        }
+    ]
+}

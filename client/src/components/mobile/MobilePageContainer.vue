@@ -113,7 +113,8 @@ defineExpose({
 }
 
 .mobile-page-main {
-  padding: 20px;
+  padding: 0 20px 20px 20px;
+  padding-top: 0;
   flex: 1;
 }
 
@@ -135,6 +136,7 @@ defineExpose({
 
   .mobile-page-main {
     padding: 16px;
+    padding-top: 0;
   }
 
   .mobile-page-header,
@@ -176,6 +178,8 @@ defineExpose({
   }
 }
 </style>
+
+
 
 
 

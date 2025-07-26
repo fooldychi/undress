@@ -1,11 +1,12 @@
 <template>
   <UnifiedImageProcessingTemplate
     function-id="face-swap"
-    :title-icon="FaceSwapIcon"
+    title-icon-name="face-swap"
     title-icon-color="var(--van-warning-color)"
     :process-button-icon="Users"
     :is-processing="isLoading"
     :progress="progressPercent"
+    :processing-description="processingStatus"
     :processing-info="{ promptId, processingTime }"
     :result-data="resultImage"
     :original-image-for-comparison="originalImageForComparison"
@@ -24,7 +25,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
 import { Users } from 'lucide-vue-next'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
-import { FaceSwapIcon } from '../components/icons'
+
 import { processFaceSwapImage } from '../services/comfyui.js'
 import { handleError } from '../services/globalErrorHandler.js'
 
@@ -79,23 +80,20 @@ const processImages = async () => {
   }
 
   isLoading.value = true
-  processingStatus.value = '正在加载服务...'
-  progressPercent.value = 10
+  processingStatus.value = '正在初始化...'
   startTime.value = Date.now()
 
   try {
     console.log('🚀 开始极速换脸处理')
 
-    processingStatus.value = '正在上传图片...'
-    progressPercent.value = 30
-
     // 调用换脸处理服务
     const result = await processFaceSwapImage({
       facePhotos: facePhotos.value,
       targetImage: targetImage.value,
-      onProgress: (status, percent) => {
+      onProgress: (status, progress) => {
         processingStatus.value = status
-        progressPercent.value = Math.max(progressPercent.value, percent)
+        progressPercent.value = progress || 0
+        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
       }
     })
 
@@ -112,7 +110,7 @@ const processImages = async () => {
 
       // 显示成功toast
       const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
-      Toast.success(`🎉 换脸完成！${pointsInfo}可以拖拽中间线对比目标图像和换脸结果`)
+      Toast.success(`🎉 换脸完成！${pointsInfo}`)
       console.log('✅ 换脸处理完成')
     } else {
       throw new Error(result.error || '换脸处理失败')

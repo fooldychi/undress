@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 7,
             "patches": [
                 {
                     "date": 1752435852413,
@@ -20,6 +20,22 @@
                 {
                     "date": 1752435929961,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -119,11 +119,7 @@\n   .status-content {\r\n     gap: 12px;\r\n   }\r\n \r\n-  .info-item {\r\n-    flex-direction: column;\r\n-    align-items: flex-start;\r\n-    gap: 4px;\r\n-  }\r\n+\r\n }\r\n </style>\r\n"
+                },
+                {
+                    "date": 1753531763413,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,16 +12,16 @@\n         <p v-if=\"description\" class=\"status-description\">{{ description }}</p>\r\n       </div>\r\n     </div>\r\n \r\n-    <!-- 进度条 -->\r\n+    <!-- 进度条 - 仅显示动画，不显示百分比 -->\r\n     <van-progress\r\n-      v-if=\"showProgress && progress >= 0\"\r\n-      :percentage=\"progress\"\r\n+      v-if=\"showProgress && isLoading\"\r\n+      :percentage=\"100\"\r\n       :show-pivot=\"false\"\r\n       color=\"var(--primary-color)\"\r\n       track-color=\"var(--bg-dark-light)\"\r\n-      class=\"progress-bar\"\r\n+      class=\"progress-bar progress-animation\"\r\n     />\r\n \r\n \r\n   </div>\r\n"
+                },
+                {
+                    "date": 1753531781125,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -108,10 +108,23 @@\n .progress-bar {\r\n   margin-bottom: 16px;\r\n }\r\n \r\n+.progress-animation {\r\n+  animation: progressPulse 2s ease-in-out infinite;\r\n+}\r\n \r\n+@keyframes progressPulse {\r\n+  0%, 100% {\r\n+    opacity: 0.8;\r\n+  }\r\n+  50% {\r\n+    opacity: 1;\r\n+  }\r\n+}\r\n \r\n+\r\n+\r\n @media (max-width: 768px) {\r\n   .processing-status {\r\n     padding: 16px;\r\n   }\r\n"
+                },
+                {
+                    "date": 1753532954655,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,16 +12,16 @@\n         <p v-if=\"description\" class=\"status-description\">{{ description }}</p>\r\n       </div>\r\n     </div>\r\n \r\n-    <!-- 进度条 - 仅显示动画，不显示百分比 -->\r\n+    <!-- 进度条 -->\r\n     <van-progress\r\n       v-if=\"showProgress && isLoading\"\r\n-      :percentage=\"100\"\r\n+      :percentage=\"isWorkflowProgress ? progress : 100\"\r\n       :show-pivot=\"false\"\r\n       color=\"var(--primary-color)\"\r\n       track-color=\"var(--bg-dark-light)\"\r\n-      class=\"progress-bar progress-animation\"\r\n+      :class=\"['progress-bar', { 'progress-animation': !isWorkflowProgress }]\"\r\n     />\r\n \r\n \r\n   </div>\r\n"
+                },
+                {
+                    "date": 1753532972060,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -58,8 +58,13 @@\n \r\n const isLoading = computed(() => props.status === 'loading')\r\n const isSuccess = computed(() => props.status === 'success')\r\n const isError = computed(() => props.status === 'error')\r\n+\r\n+const isWorkflowProgress = computed(() => {\r\n+  // 判断是否是工作流进度（包含百分比和节点信息的格式）\r\n+  return props.description && props.description.includes('（') && props.description.includes('）')\r\n+})\r\n </script>\r\n \r\n <style scoped>\r\n .processing-status {\r\n"
                 }
             ],
             "date": 1752435852413,

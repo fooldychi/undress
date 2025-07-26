@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 5,
             "patches": [
                 {
                     "date": 1752436588345,
@@ -12,6 +12,22 @@
                 {
                     "date": 1752824275749,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -122,21 +122,38 @@\n   return ICON_STYLES[iconClass] || {}\n }\n \n /**\n- * 模拟从后台API获取功能配置\n- * 后续可以替换为真实的API调用\n+ * 从后台API获取启用的功能配置\n+ * 根据工作流启用状态动态返回功能列表\n  * @returns {Promise<Array>} 功能配置列表\n  */\n export async function fetchFeaturesFromAPI() {\n-  // 模拟API延迟\n-  await new Promise(resolve => setTimeout(resolve, 100))\n+  try {\n+    console.log('🔄 从API获取功能配置...');\n \n-  // 这里后续可以替换为真实的API调用\n-  // const response = await fetch('/api/admin/features')\n-  // return response.json()\n+    // 调用后台API获取启用的功能\n+    const response = await fetch('/api/workflow-config/features');\n \n-  return getEnabledFeatures()\n+    if (!response.ok) {\n+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);\n+    }\n+\n+    const result = await response.json();\n+\n+    if (!result.success) {\n+      throw new Error(result.message || '获取功能配置失败');\n+    }\n+\n+    console.log(`✅ 获取到 ${result.data.length} 个启用的功能`);\n+    return result.data;\n+\n+  } catch (error) {\n+    console.warn('⚠️ 从API获取功能配置失败，使用默认配置:', error.message);\n+\n+    // 降级到静态配置\n+    return getEnabledFeatures();\n+  }\n }\n \n /**\n  * 更新功能配置\n"
+                },
+                {
+                    "date": 1753543721916,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'\n+import { SvgIcon } from '../components/icons'\n \n /**\n  * 功能配置文件\n  * 用于管理首页功能卡片的显示和配置\n"
+                },
+                {
+                    "date": 1753543732895,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,10 +13,10 @@\n     title: '一键褪衣',\n     description: '智能识别人物轮廓，快速移除照片中的服装，体验前沿AI技术',\n     route: '/clothes-swap',\n     icon: {\n-      type: 'custom', // 'custom' | 'vant'\n-      component: UndressWomanIcon,\n+      type: 'svg', // 'svg' | 'vant' | 'custom'\n+      name: 'undress-woman',\n       size: 28,\n       color: '#667eea'\n     },\n     iconClass: 'undress-icon',\n"
+                },
+                {
+                    "date": 1753543744506,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -37,10 +37,10 @@\n     title: '极速换脸',\n     description: '精准面部识别技术，实现自然的人脸替换效果，创造有趣内容',\n     route: '/face-swap',\n     icon: {\n-      type: 'custom',\n-      component: FaceSwapIcon,\n+      type: 'svg',\n+      name: 'face-swap',\n       size: 28,\n       color: '#f093fb'\n     },\n     iconClass: 'faceswap-icon',\n"
+                },
+                {
+                    "date": 1753544372561,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -143,11 +143,37 @@\n     if (!result.success) {\n       throw new Error(result.message || '获取功能配置失败');\n     }\n \n-    console.log(`✅ 获取到 ${result.data.length} 个启用的功能`);\n-    return result.data;\n+    // 修复API返回的图标配置\n+    const fixedFeatures = result.data.map(feature => {\n+      const fixedFeature = { ...feature };\n \n+      // 如果图标配置仍然是旧格式，转换为新格式\n+      if (fixedFeature.icon && fixedFeature.icon.type === 'custom') {\n+        if (fixedFeature.icon.component === 'UndressWomanIcon') {\n+          fixedFeature.icon = {\n+            type: 'svg',\n+            name: 'undress-woman',\n+            size: fixedFeature.icon.size || 28,\n+            color: fixedFeature.icon.color || '#667eea'\n+          };\n+        } else if (fixedFeature.icon.component === 'FaceSwapIcon') {\n+          fixedFeature.icon = {\n+            type: 'svg',\n+            name: 'face-swap',\n+            size: fixedFeature.icon.size || 28,\n+            color: fixedFeature.icon.color || '#f093fb'\n+          };\n+        }\n+      }\n+\n+      return fixedFeature;\n+    });\n+\n+    console.log(`✅ 获取到 ${fixedFeatures.length} 个启用的功能`);\n+    return fixedFeatures;\n+\n   } catch (error) {\n     console.warn('⚠️ 从API获取功能配置失败，使用默认配置:', error.message);\n \n     // 降级到静态配置\n"
                 }
             ],
             "date": 1752436588345,

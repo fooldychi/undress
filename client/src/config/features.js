@@ -1,4 +1,4 @@
-import { UndressWomanIcon, FaceSwapIcon } from '../components/icons'
+import { SvgIcon } from '../components/icons'
 
 /**
  * 功能配置文件
@@ -14,8 +14,8 @@ export const FEATURE_CONFIGS = [
     description: '智能识别人物轮廓，快速移除照片中的服装，体验前沿AI技术',
     route: '/clothes-swap',
     icon: {
-      type: 'custom', // 'custom' | 'vant'
-      component: UndressWomanIcon,
+      type: 'svg', // 'svg' | 'vant' | 'custom'
+      name: 'undress-woman',
       size: 28,
       color: '#667eea'
     },
@@ -38,8 +38,8 @@ export const FEATURE_CONFIGS = [
     description: '精准面部识别技术，实现自然的人脸替换效果，创造有趣内容',
     route: '/face-swap',
     icon: {
-      type: 'custom',
-      component: FaceSwapIcon,
+      type: 'svg',
+      name: 'face-swap',
       size: 28,
       color: '#f093fb'
     },
@@ -144,8 +144,34 @@ export async function fetchFeaturesFromAPI() {
       throw new Error(result.message || '获取功能配置失败');
     }
 
-    console.log(`✅ 获取到 ${result.data.length} 个启用的功能`);
-    return result.data;
+    // 修复API返回的图标配置
+    const fixedFeatures = result.data.map(feature => {
+      const fixedFeature = { ...feature };
+
+      // 如果图标配置仍然是旧格式，转换为新格式
+      if (fixedFeature.icon && fixedFeature.icon.type === 'custom') {
+        if (fixedFeature.icon.component === 'UndressWomanIcon') {
+          fixedFeature.icon = {
+            type: 'svg',
+            name: 'undress-woman',
+            size: fixedFeature.icon.size || 28,
+            color: fixedFeature.icon.color || '#667eea'
+          };
+        } else if (fixedFeature.icon.component === 'FaceSwapIcon') {
+          fixedFeature.icon = {
+            type: 'svg',
+            name: 'face-swap',
+            size: fixedFeature.icon.size || 28,
+            color: fixedFeature.icon.color || '#f093fb'
+          };
+        }
+      }
+
+      return fixedFeature;
+    });
+
+    console.log(`✅ 获取到 ${fixedFeatures.length} 个启用的功能`);
+    return fixedFeatures;
 
   } catch (error) {
     console.warn('⚠️ 从API获取功能配置失败，使用默认配置:', error.message);

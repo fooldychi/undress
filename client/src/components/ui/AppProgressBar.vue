@@ -2,17 +2,16 @@
   <div class="app-progress-container">
     <div v-if="showStatus" class="progress-status">
       <div class="status-text">{{ statusText }}</div>
-      <div v-if="showPercentage" class="status-percentage">{{ Math.round(percentage) }}%</div>
     </div>
-    
+
     <div class="progress-bar" :class="{ 'progress-bar--animated': animated }">
-      <div 
-        class="progress-fill" 
-        :style="{ width: percentage + '%' }"
-        :class="`progress-fill--${variant}`"
+      <div
+        class="progress-fill"
+        :class="[`progress-fill--${variant}`, { 'progress-animation': !isWorkflowProgress }]"
+        :style="{ width: isWorkflowProgress ? percentage + '%' : '100%' }"
       ></div>
     </div>
-    
+
     <div v-if="$slots.extra" class="progress-extra">
       <slot name="extra"></slot>
     </div>
@@ -36,10 +35,7 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
-  showPercentage: {
-    type: Boolean,
-    default: false
-  },
+
   variant: {
     type: String,
     default: 'primary',
@@ -55,6 +51,12 @@ const props = defineProps({
     validator: (value) => ['small', 'medium', 'large'].includes(value)
   }
 })
+
+// Computed
+const isWorkflowProgress = computed(() => {
+  // 判断是否是工作流进度（包含百分比和节点信息的格式）
+  return props.statusText && props.statusText.includes('（') && props.statusText.includes('）')
+})
 </script>
 
 <style scoped>
@@ -63,23 +65,12 @@ const props = defineProps({
 }
 
 .progress-status {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 12px;
 }
 
 .status-text {
   color: white;
   font-weight: 500;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  flex: 1;
-}
-
-.status-percentage {
-  color: white;
-  font-weight: 600;
-  font-size: 0.9rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -101,6 +92,19 @@ const props = defineProps({
   border-radius: 4px;
   transition: width 0.3s ease;
   position: relative;
+}
+
+.progress-animation {
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* 进度条变体 */
@@ -160,11 +164,11 @@ const props = defineProps({
   .progress-status {
     margin-bottom: 8px;
   }
-  
+
   .status-text {
     font-size: 0.9rem;
   }
-  
+
   .status-percentage {
     font-size: 0.8rem;
   }

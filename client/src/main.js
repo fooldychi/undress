@@ -51,10 +51,21 @@ async function initApp() {
     // 初始化负载均衡器
     await loadBalancer.initialize()
 
-    // 初始化服务器连接测试（静默模式）
+    // 🔧 修改：页面加载时立即进行服务器检测
+    // 这样可以在用户提交任务前就知道服务器状态
     try {
+      logger.info('🔍 页面加载时检测服务器状态...')
       await loadBalancer.initializeServerConnection()
       await loadBalancer.showLoadBalancingStatus()
+
+      // 检查是否有可用服务器
+      const healthyServers = loadBalancer.serverList.filter(s => s.healthy === true)
+      if (healthyServers.length > 0) {
+        logger.info(`✅ 发现 ${healthyServers.length} 个可用服务器`)
+      } else {
+        logger.warn('⚠️ 当前没有可用服务器，但用户仍可尝试提交任务')
+      }
+
       logger.info('✅ 服务器连接测试完成')
     } catch (error) {
       logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')

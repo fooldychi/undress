@@ -23,9 +23,10 @@ export const IMAGE_PROCESSING_CONFIGS = {
     id: 'clothes-swap',
     title: '一键褪衣',
     description: '上传人物照片，AI智能移除服装',
-    processButtonText: '开始处理',
+    processButtonText: '开始处理（消耗20积分）',
     processingTitle: '正在处理图片...',
-    processingDescription: '请耐心等待，处理时间可能需要几分钟',
+    processingDescription: '',
+    pointsCost: 20,
 
     // 上传面板配置
     uploadPanels: [
@@ -66,9 +67,10 @@ export const IMAGE_PROCESSING_CONFIGS = {
     id: 'face-swap',
     title: '极速换脸',
     description: '上传人脸照片和目标图片，AI智能换脸',
-    processButtonText: '开始换脸',
+    processButtonText: '开始换脸（消耗20积分）',
     processingTitle: '正在处理换脸...',
-    processingDescription: '请耐心等待，处理时间可能需要几分钟',
+    processingDescription: '',
+    pointsCost: 20,
 
     uploadPanels: [
       {

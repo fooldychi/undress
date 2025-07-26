@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1752435949161,
@@ -12,6 +12,10 @@
                 {
                     "date": 1752435967156,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,16 +44,9 @@\n   animated: {\r\n     type: Boolean,\r\n     default: true\r\n   },\r\n-  promptId: {\r\n-    type: String,\r\n-    default: ''\r\n-  },\r\n-  processingTime: {\r\n-    type: String,\r\n-    default: ''\r\n-  },\r\n+\r\n   centered: {\r\n     type: Boolean,\r\n     default: true\r\n   },\r\n"
+                },
+                {
+                    "date": 1753531907902,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,11 +1,9 @@\n <template>\r\n   <div class=\"app-processing-status\" :class=\"containerClasses\">\r\n     <AppProgressBar\r\n-      :percentage=\"percentage\"\r\n       :status-text=\"statusText\"\r\n       :show-status=\"showStatus\"\r\n-      :show-percentage=\"showPercentage\"\r\n       :variant=\"variant\"\r\n       :animated=\"animated\"\r\n     >\r\n       <template #extra>\r\n"
                 }
             ],
             "date": 1752435949161,

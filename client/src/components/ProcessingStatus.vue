@@ -15,12 +15,12 @@
 
     <!-- 进度条 -->
     <van-progress
-      v-if="showProgress && progress >= 0"
-      :percentage="progress"
+      v-if="showProgress && isLoading"
+      :percentage="isWorkflowProgress ? progress : 100"
       :show-pivot="false"
       color="var(--primary-color)"
       track-color="var(--bg-dark-light)"
-      class="progress-bar"
+      :class="['progress-bar', { 'progress-animation': !isWorkflowProgress }]"
     />
 
 
@@ -59,6 +59,11 @@ const props = defineProps({
 const isLoading = computed(() => props.status === 'loading')
 const isSuccess = computed(() => props.status === 'success')
 const isError = computed(() => props.status === 'error')
+
+const isWorkflowProgress = computed(() => {
+  // 判断是否是工作流进度（包含百分比和节点信息的格式）
+  return props.description && props.description.includes('（') && props.description.includes('）')
+})
 </script>
 
 <style scoped>
@@ -107,6 +112,19 @@ const isError = computed(() => props.status === 'error')
 
 .progress-bar {
   margin-bottom: 16px;
+}
+
+.progress-animation {
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 

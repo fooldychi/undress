@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 18,
+            "activePatchIndex": 20,
             "patches": [
                 {
                     "date": 1752283813378,
@@ -80,6 +80,14 @@
                 {
                     "date": 1752463174542,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -44,8 +44,16 @@\n     meta: {\r\n       title: '个人中心 - Imagic'\r\n     }\r\n   },\r\n+  {\r\n+    path: '/websocket-test',\r\n+    name: 'WebSocketTest',\r\n+    component: WebSocketTest,\r\n+    meta: {\r\n+      title: 'WebSocket 测试 - Imagic'\r\n+    }\r\n+  },\r\n \r\n ]\r\n \r\n const router = createRouter({\r\n"
+                },
+                {
+                    "date": 1753531016496,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,9 +5,8 @@\n const ClothesSwap = () => import('../views/ClothesSwap.vue')\r\n \r\n const FaceSwap = () => import('../views/FaceSwap.vue')\r\n const Profile = () => import('../views/Profile.vue')\r\n-const WebSocketTest = () => import('../views/WebSocketTest.vue')\r\n \r\n \r\n \r\n \r\n"
+                },
+                {
+                    "date": 1753531028168,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -43,16 +43,8 @@\n     meta: {\r\n       title: '个人中心 - Imagic'\r\n     }\r\n   },\r\n-  {\r\n-    path: '/websocket-test',\r\n-    name: 'WebSocketTest',\r\n-    component: WebSocketTest,\r\n-    meta: {\r\n-      title: 'WebSocket 测试 - Imagic'\r\n-    }\r\n-  },\r\n \r\n ]\r\n \r\n const router = createRouter({\r\n"
                 }
             ],
             "date": 1752283813378,
