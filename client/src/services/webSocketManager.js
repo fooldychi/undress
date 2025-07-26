@@ -167,11 +167,22 @@ class SimpleWebSocketManager {
       // 提取结果 - 基于官方样例第48-56行
       const result = this._extractResults(history, promptId)
 
-      // 🔧 关键修复：保存任务执行服务器信息到结果中
-      if (result && task.server) {
+      // 🔧 关键修复：确保任务执行服务器信息被正确保存
+      if (result && task && task.server) {
         result.executionServer = task.server
         result.promptId = promptId
+        result.taskStartTime = task.startTime
         console.log(`💾 [${WINDOW_ID}] 保存任务执行服务器信息: ${task.server}`)
+      } else {
+        // 🔧 尝试从当前锁定服务器获取
+        const currentLock = this.getWindowServerLock()
+        if (currentLock && currentLock.server) {
+          result.executionServer = currentLock.server
+          result.promptId = promptId
+          console.log(`💾 [${WINDOW_ID}] 使用锁定服务器作为执行服务器: ${currentLock.server}`)
+        } else {
+          console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 无法确定执行服务器`)
+        }
       }
 
       console.log(`✅ [${WINDOW_ID}] 任务结果获取成功: ${promptId}`)
@@ -213,23 +224,50 @@ class SimpleWebSocketManager {
     return await response.json()
   }
 
-  // 提取结果 - 基于官方样例第48-56行（增强版）
+  // 提取结果 - 完全基于官方样例第47-56行
   _extractResults(history, promptId) {
     const taskData = history[promptId]
     if (!taskData || !taskData.outputs) {
-      console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 没有输出数据，返回空结果`)
-      return {}
+      console.warn(`⚠️ [${WINDOW_ID}] 任务 ${promptId} 没有输出数据`)
+      return { outputs: {} }
     }
 
-    const results = {}
+    console.log(`📋 [${WINDOW_ID}] 原始历史数据结构:`)
+    console.log(`📋 [${WINDOW_ID}] - 任务状态: ${taskData.status?.status_str || '未知'}`)
+    console.log(`📋 [${WINDOW_ID}] - 输出节点数量: ${Object.keys(taskData.outputs).length}`)
+    console.log(`📋 [${WINDOW_ID}] - 节点列表: [${Object.keys(taskData.outputs).join(', ')}]`)
+
+    // 🔧 关键修复：确保完整保留所有节点输出数据
+    const results = {
+      outputs: taskData.outputs,  // 保持原始的 outputs 结构
+      promptId: promptId,
+      status: taskData.status,    // 保留状态信息
+      meta: taskData.meta || {}   // 保留元数据
+    }
+
+    // 详细记录每个节点的输出内容和类型
     for (const nodeId in taskData.outputs) {
       const nodeOutput = taskData.outputs[nodeId]
-      // 🔧 修复：保存所有输出数据，不仅仅是图片
-      results[nodeId] = nodeOutput
-      console.log(`📊 [${WINDOW_ID}] 提取节点 ${nodeId} 输出:`, nodeOutput)
+      console.log(`� [${WINDOW_ID}] 节点 ${nodeId}:`)
+      console.log(`   - 输出类型: ${Object.keys(nodeOutput).join(', ')}`)
+
+      // 特别记录图片输出
+      if (nodeOutput.images && Array.isArray(nodeOutput.images)) {
+        console.log(`   - 图片数量: ${nodeOutput.images.length}`)
+        nodeOutput.images.forEach((img, idx) => {
+          console.log(`   - 图片${idx + 1}: ${img.filename} (${img.type || 'output'})`)
+        })
+      }
+
+      // 记录其他类型的输出
+      Object.keys(nodeOutput).forEach(key => {
+        if (key !== 'images') {
+          console.log(`   - ${key}: ${typeof nodeOutput[key]} (${Array.isArray(nodeOutput[key]) ? nodeOutput[key].length + ' items' : 'single value'})`)
+        }
+      })
     }
 
-    console.log(`📋 [${WINDOW_ID}] 完整结果结构:`, results)
+    console.log(`✅ [${WINDOW_ID}] 结果提取完成，保留所有 ${Object.keys(taskData.outputs).length} 个节点的输出`)
     return results
   }
 

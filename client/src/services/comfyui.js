@@ -656,19 +656,32 @@ async function findImageInTaskResult(taskResult, workflowType) {
   return imageInfo
 }
 
-// 🔧 重构后的任务绑定图片URL获取函数 - 使用统一服务器地址
+// 🔧 简化的任务绑定图片URL获取函数 - 确保使用任务执行服务器
 async function getTaskBoundImageUrl(promptId, taskResult, workflowType = 'undress') {
   try {
+    // 🔧 简化逻辑：优先从任务结果获取执行服务器，确保一致性
     let executionServer = null
 
-    // 优先级1: 从任务结果中获取服务器信息（任务完成后保存的）
     if (taskResult && taskResult.executionServer) {
       executionServer = taskResult.executionServer
-      logServerSelection('任务绑定图片URL', promptId, executionServer, '任务结果中的服务器')
+      console.log(`🎯 [${WINDOW_ID}] 使用任务结果中的执行服务器: ${executionServer}`)
     } else {
-      // 优先级2: 使用统一的服务器地址获取函数
-      executionServer = getUnifiedServerUrl(promptId)
-      logServerSelection('任务绑定图片URL', promptId, executionServer, '统一服务器获取函数')
+      // 如果任务结果中没有服务器信息，说明有问题，记录警告
+      console.warn(`⚠️ [${WINDOW_ID}] 任务结果缺少执行服务器信息，这可能导致图片404`)
+
+      // 尝试从窗口锁定服务器获取（作为备用方案）
+      const currentLock = webSocketManager.getWindowServerLock()
+      if (currentLock && currentLock.server) {
+        executionServer = currentLock.server
+        console.log(`🔒 [${WINDOW_ID}] 使用窗口锁定服务器作为备用: ${executionServer}`)
+      } else {
+        throw new Error('无法确定任务执行服务器，图片URL构建失败')
+      }
+    }
+
+    // 确保URL格式正确
+    if (executionServer && executionServer.endsWith('/')) {
+      executionServer = executionServer.slice(0, -1)
     }
 
     // 查找图片信息并构建URL
@@ -1101,15 +1114,16 @@ async function processUndressImage(base64Image, onProgress = null) {
     // 直接使用图片URL进行积分扣除
     const pointsResult = await levelCardPointsManager.consumePoints(20, '一键换衣', resultImageUrl)
 
-    // 🔧 修复：获取节点49的原图用于对比，使用任务结果中的服务器信息
+    // 🔧 简化：使用任务结果中的执行服务器构建原图URL
     let originalImage = null
     try {
-      // 使用任务结果中保存的执行服务器信息构建原图URL
-      const executionServer = taskResult.executionServer || getUnifiedServerUrl(submittedPromptId)
-      logServerSelection('原图URL构建', submittedPromptId, executionServer,
-        taskResult.executionServer ? '任务结果中的服务器' : '统一服务器获取函数')
-      originalImage = ImageUrlBuilder.buildUrl(executionServer, uploadedImageName, '', 'input')
-      console.log(`📷 [${WINDOW_ID}] 原图URL: ${originalImage}`)
+      if (taskResult && taskResult.executionServer) {
+        // 使用任务执行服务器构建原图URL，确保与结果图使用相同服务器
+        originalImage = ImageUrlBuilder.buildUrl(taskResult.executionServer, uploadedImageName, '', 'input')
+        console.log(`📷 [${WINDOW_ID}] 原图URL（使用任务执行服务器）: ${originalImage}`)
+      } else {
+        console.warn('⚠️ 任务结果缺少执行服务器信息，无法构建原图URL')
+      }
     } catch (error) {
       console.warn('⚠️ 获取原图失败:', error)
     }
@@ -1287,12 +1301,17 @@ async function processFaceSwapImage({ facePhotos, targetImage, onProgress }) {
     // 直接使用图片URL进行积分扣除
     const pointsResult = await levelCardPointsManager.consumePoints(20, '极速换脸', imageUrl)
 
-    // 🔧 修复：构建目标图片URL，使用统一服务器地址确保一致性
+    // 🔧 简化：使用任务结果中的执行服务器构建目标图片URL
     let targetImageUrl = null
     try {
-      // 使用统一的图片URL构建函数，确保目标图片和结果图使用相同服务器
-      targetImageUrl = buildUnifiedImageUrl(targetUploadedFilename, '', 'input', submittedPromptId)
-      console.log(`📷 [${WINDOW_ID}] 目标图片URL: ${targetImageUrl}`)
+      if (taskResult && taskResult.executionServer) {
+        // 使用任务执行服务器构建目标图片URL，确保与结果图使用相同服务器
+        targetImageUrl = ImageUrlBuilder.buildUrl(taskResult.executionServer, targetUploadedFilename, '', 'input')
+        console.log(`📷 [${WINDOW_ID}] 目标图片URL（使用任务执行服务器）: ${targetImageUrl}`)
+      } else {
+        console.warn('⚠️ 任务结果缺少执行服务器信息，使用原始目标图片')
+        targetImageUrl = targetImage
+      }
     } catch (error) {
       console.warn('⚠️ 获取目标图片URL失败:', error)
       // 回退到原始目标图片

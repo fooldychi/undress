@@ -1,9 +1,9 @@
 {
-    "sourceFile": "client/src/services/websocketManager.js",
+    "sourceFile": "client/src/services/webSocketManager.js",
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 42,
+            "activePatchIndex": 44,
             "patches": [
                 {
                     "date": 1753463557474,
@@ -176,6 +176,14 @@
                 {
                     "date": 1753516538264,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -467,7 +467,9 @@\n \n   console.log(`🔧 [${WINDOW_ID}] 兼容性接口已设置`)\n }\n \n+\n+\n // 导出\n export default webSocketManager\n export { WINDOW_ID, CLIENT_ID, CLIENT_ID as WINDOW_CLIENT_ID }\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1753518650376,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -234,9 +234,9 @@\n \n     // 详细记录每个节点的输出\n     for (const nodeId in taskData.outputs) {\n       const nodeOutput = taskData.outputs[nodeId]\n-      console.log(`� [${WINDOW_ID}] 节点 ${nodeId} 输出:`, nodeOutput)\n+      console.log(`\udcca [${WINDOW_ID}] 节点 ${nodeId} 输出:`, nodeOutput)\n     }\n \n     return results\n   }\n"
+                },
+                {
+                    "date": 1753518766609,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -234,9 +234,9 @@\n \n     // 详细记录每个节点的输出\n     for (const nodeId in taskData.outputs) {\n       const nodeOutput = taskData.outputs[nodeId]\n-      console.log(`� [${WINDOW_ID}] 节点 ${nodeId} 输出:`, nodeOutput)\n+      console.log(`\udcca [${WINDOW_ID}] 节点 ${nodeId} 输出:`, nodeOutput)\n     }\n \n     return results\n   }\n"
                 }
             ],
             "date": 1753463557474,
