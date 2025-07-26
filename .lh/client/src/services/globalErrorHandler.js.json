@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1752899660459,
@@ -20,6 +20,10 @@
                 {
                     "date": 1752947431569,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,13 +23,16 @@\n   'ComfyUI服务器不可用',\n   '所有端点测试失败',\n   'ComfyUI服务器不可达',\n   'WebSocket连接失败',\n+  'WebSocket连接后未能锁定服务器',\n   'ComfyUI服务器响应异常',\n   'ComfyUI服务器集群不可用',\n   '个服务器都无法连接',\n   '没有找到健康的服务器',\n-  '没有可用的健康服务器'\n+  '没有可用的健康服务器',\n+  '无法获取可用的ComfyUI服务器',\n+  '负载均衡器未返回有效的服务器URL'\n ]\n \n // 检查是否为 ComfyUI 服务器错误\n function isComfyUIServerError(error) {\n"
+                },
+                {
+                    "date": 1753553565119,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -135,8 +135,21 @@\n   // 拦截未捕获的 Promise 错误\n   window.addEventListener('unhandledrejection', (event) => {\n     console.error('🚨 未处理的 Promise 拒绝:', event.reason)\n \n+    // Vue递归更新错误应该暴露给开发者，不要掩盖\n+    if (event.reason?.message?.includes('Maximum recursive updates exceeded')) {\n+      console.error('❌ Vue递归更新错误 - 需要修复代码逻辑!')\n+      console.error('检查以下可能原因:')\n+      console.error('1. watch中修改被监听的数据')\n+      console.error('2. computed中修改响应式数据')\n+      console.error('3. 模板中调用修改状态的函数')\n+      // 开发环境下不阻止错误，让开发者看到完整错误信息\n+      if (process.env.NODE_ENV === 'development') {\n+        return\n+      }\n+    }\n+\n     // 检查是否为关键错误\n     if (isComfyUIServerError(event.reason) ||\n         isNetworkError(event.reason) ||\n         isAuthError(event.reason)) {\n"
                 }
             ],
             "date": 1752899660459,

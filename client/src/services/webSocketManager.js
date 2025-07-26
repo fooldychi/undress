@@ -161,7 +161,10 @@ class SimpleWebSocketManager {
   _handleTaskProgress(promptId, message, progress) {
     const task = this.tasks.get(promptId)
     if (task && task.onProgress) {
-      task.onProgress(message, progress)
+      // 使用 setTimeout 避免递归更新
+      setTimeout(() => {
+        task.onProgress(message, progress)
+      }, 0)
     }
   }
 
@@ -169,11 +172,15 @@ class SimpleWebSocketManager {
   _handleWorkflowNodeProgress(promptId, nodeId) {
     const task = this.tasks.get(promptId)
     if (task && task.onWorkflowProgress) {
-      // 调用工作流进度回调，传递节点ID
-      task.onWorkflowProgress(nodeId)
+      // 使用 setTimeout 避免递归更新
+      setTimeout(() => {
+        task.onWorkflowProgress(nodeId)
+      }, 0)
     } else if (task && task.onProgress) {
       // 兼容旧的进度回调
-      task.onProgress(`执行节点: ${nodeId}`, 50)
+      setTimeout(() => {
+        task.onProgress(`执行节点: ${nodeId}`, 50)
+      }, 0)
     }
   }
 

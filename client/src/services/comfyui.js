@@ -1261,7 +1261,10 @@ class UniversalWorkflowProcessor {
       // 添加进度回调
       if (onProgress) {
         this.progressManager.addCallback((_, message, workflowProgress) => {
-          onProgress(message, workflowProgress.percentage || 0)
+          // 使用 setTimeout 避免递归更新
+          setTimeout(() => {
+            onProgress(message, workflowProgress.percentage || 0)
+          }, 0)
         })
       }
 

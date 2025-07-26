@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 5,
             "patches": [
                 {
                     "date": 1753532700663,
@@ -24,6 +24,10 @@
                 {
                     "date": 1753532767567,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -217,27 +217,36 @@\n   return new ProgressStageManager()\n }\n \n /**\n- * 解析ComfyUI工作流JSON，获取总节点数\n+ * 解析ComfyUI工作流JSON，获取所有节点ID\n  * @param {Object} workflow - 工作流JSON对象\n- * @returns {number} 总节点数\n+ * @returns {Array} 节点ID列表\n  */\n-export function getWorkflowTotalNodes(workflow) {\n+export function getWorkflowNodeIds(workflow) {\n   if (!workflow || typeof workflow !== 'object') {\n-    return 0\n+    return []\n   }\n \n   // ComfyUI工作流的节点存储在根级别，每个键是节点ID\n   const nodeIds = Object.keys(workflow).filter(key => {\n     const node = workflow[key]\n     return node && typeof node === 'object' && node.class_type\n   })\n \n-  return nodeIds.length\n+  return nodeIds\n }\n \n /**\n+ * 解析ComfyUI工作流JSON，获取总节点数\n+ * @param {Object} workflow - 工作流JSON对象\n+ * @returns {number} 总节点数\n+ */\n+export function getWorkflowTotalNodes(workflow) {\n+  return getWorkflowNodeIds(workflow).length\n+}\n+\n+/**\n  * 从节点ID提取数字\n  * @param {string} nodeId - 节点ID\n  * @returns {number} 提取的数字，如果无法提取则返回0\n  */\n"
+                },
+                {
+                    "date": 1753556136642,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -59,15 +59,18 @@\n    * 触发所有回调\n    */\n   _notifyCallbacks() {\n     const message = this.getCurrentMessage()\n-    this.callbacks.forEach(callback => {\n-      try {\n-        callback(this.currentStage, message, { ...this.workflowProgress })\n-      } catch (error) {\n-        console.error('进度回调执行错误:', error)\n-      }\n-    })\n+    // 使用 setTimeout 避免递归更新\n+    setTimeout(() => {\n+      this.callbacks.forEach(callback => {\n+        try {\n+          callback(this.currentStage, message, { ...this.workflowProgress })\n+        } catch (error) {\n+          console.error('进度回调执行错误:', error)\n+        }\n+      })\n+    }, 0)\n   }\n \n   /**\n    * 设置当前阶段\n"
                 }
             ],
             "date": 1753532700663,

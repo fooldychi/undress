@@ -84,9 +84,21 @@ async function initApp() {
     app.use(router)
     app.use(Vant)
 
-    // 全局错误处理
+    // 全局错误处理 - 简化版本，不掩盖递归更新错误
     app.config.errorHandler = (err, vm, info) => {
       logger.error('Vue应用错误:', err, info)
+
+      // 递归更新错误应该暴露给开发者，不要掩盖
+      if (err.message && err.message.includes('Maximum recursive updates exceeded')) {
+        console.error('❌ Vue递归更新错误 - 需要修复代码逻辑!')
+        console.error('组件信息:', info)
+        console.error('错误详情:', err)
+        // 开发环境下不显示Toast，让开发者看到完整错误
+        if (process.env.NODE_ENV === 'development') {
+          return
+        }
+      }
+
       Toast.fail('应用发生错误，请刷新页面重试')
     }
 

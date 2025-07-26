@@ -3,7 +3,7 @@
     function-id="face-swap"
     title-icon-name="face-swap"
     title-icon-color="var(--van-warning-color)"
-    :process-button-icon="Users"
+    process-button-icon-name="users"
     :is-processing="isLoading"
     :progress="progressPercent"
     :processing-description="processingStatus"
@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Toast } from 'vant'
 import { Users } from 'lucide-vue-next'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
@@ -91,9 +91,12 @@ const processImages = async () => {
       facePhotos: facePhotos.value,
       targetImage: targetImage.value,
       onProgress: (status, progress) => {
-        processingStatus.value = status
-        progressPercent.value = progress || 0
-        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
+        // 使用 nextTick 避免递归更新
+        nextTick(() => {
+          processingStatus.value = status
+          progressPercent.value = progress || 0
+          console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
+        })
       }
     })
 
@@ -200,13 +203,6 @@ onUnmounted(() => {
 /* 大部分样式已经在统一模板中处理 */
 
 /* 如果需要自定义样式，可以在这里添加 */
-:deep(.unified-image-upload-panel) {
-  /* 自定义上传面板样式 */
-}
-
-:deep(.multi-image-upload) {
-  /* 自定义多图上传样式 */
-}
 
 /* 移动端优化 */
 @media (max-width: 768px) {

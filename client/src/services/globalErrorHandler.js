@@ -136,6 +136,19 @@ export function setupGlobalErrorHandler() {
   window.addEventListener('unhandledrejection', (event) => {
     console.error('🚨 未处理的 Promise 拒绝:', event.reason)
 
+    // Vue递归更新错误应该暴露给开发者，不要掩盖
+    if (event.reason?.message?.includes('Maximum recursive updates exceeded')) {
+      console.error('❌ Vue递归更新错误 - 需要修复代码逻辑!')
+      console.error('检查以下可能原因:')
+      console.error('1. watch中修改被监听的数据')
+      console.error('2. computed中修改响应式数据')
+      console.error('3. 模板中调用修改状态的函数')
+      // 开发环境下不阻止错误，让开发者看到完整错误信息
+      if (process.env.NODE_ENV === 'development') {
+        return
+      }
+    }
+
     // 检查是否为关键错误
     if (isComfyUIServerError(event.reason) ||
         isNetworkError(event.reason) ||

@@ -4,7 +4,7 @@
 
 - `index.html` - 主页面文件
 - `assets/` - 静态资源文件（CSS、JS、图片等）
-- `proxy-server.js` - 代理服务器（可选）
+- `proxy-server-simple.js` - 静态文件服务器
 - `package.json` - Node.js依赖配置
 - `start.bat` - Windows启动脚本
 - `nginx.conf` - Nginx配置示例
@@ -16,7 +16,7 @@
 1. 将 `index.html` 和 `assets/` 文件夹上传到静态托管平台
 2. 支持的平台：Vercel、Netlify、GitHub Pages、阿里云OSS等
 
-### 方式2: 使用代理服务器
+### 方式2: 使用静态文件服务器
 1. 确保已安装 Node.js (>=14.0.0)
 2. 双击运行 `start.bat` 或执行以下命令：
    ```bash
@@ -24,6 +24,8 @@
    npm start
    ```
 3. 访问 http://localhost:3008
+
+**注意**: 应用将直接连接到ComfyUI服务器，无需代理。确保ComfyUI服务器已启用CORS支持。
 
 ### 方式3: Nginx部署
 1. 将文件上传到服务器

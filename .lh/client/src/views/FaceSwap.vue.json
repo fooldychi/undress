@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 46,
+            "activePatchIndex": 50,
             "patches": [
                 {
                     "date": 1752348807217,
@@ -192,6 +192,22 @@
                 {
                     "date": 1753543834857,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,9 +24,9 @@\n import { ref, computed, onMounted, onUnmounted } from 'vue'\r\n import { Toast } from 'vant'\r\n import { Users } from 'lucide-vue-next'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n-import { FaceSwapIcon } from '../components/icons'\r\n+\r\n import { processFaceSwapImage } from '../services/comfyui.js'\r\n import { handleError } from '../services/globalErrorHandler.js'\r\n \r\n console.log('FaceSwapUnified组件已加载，ComfyUI服务已导入')\r\n"
+                },
+                {
+                    "date": 1753555570239,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n     title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n-    :process-button-icon=\"Users\"\r\n+    process-button-icon-name=\"users\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n     :processing-description=\"processingStatus\"\r\n     :processing-info=\"{ promptId, processingTime }\"\r\n"
+                },
+                {
+                    "date": 1753556101240,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n   />\r\n </template>\r\n \r\n <script setup>\r\n-import { ref, computed, onMounted, onUnmounted } from 'vue'\r\n+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'\r\n import { Toast } from 'vant'\r\n import { Users } from 'lucide-vue-next'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n \r\n"
+                },
+                {
+                    "date": 1753556111292,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -90,11 +90,14 @@\n     const result = await processFaceSwapImage({\r\n       facePhotos: facePhotos.value,\r\n       targetImage: targetImage.value,\r\n       onProgress: (status, progress) => {\r\n-        processingStatus.value = status\r\n-        progressPercent.value = progress || 0\r\n-        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n+        // 使用 nextTick 避免递归更新\r\n+        nextTick(() => {\r\n+          processingStatus.value = status\r\n+          progressPercent.value = progress || 0\r\n+          console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n+        })\r\n       }\r\n     })\r\n \r\n     if (result.success && result.imageUrl) {\r\n"
+                },
+                {
+                    "date": 1753556172889,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -202,16 +202,9 @@\n /* 这里可以添加特定于换脸功能的样式 */\r\n /* 大部分样式已经在统一模板中处理 */\r\n \r\n /* 如果需要自定义样式，可以在这里添加 */\r\n-:deep(.unified-image-upload-panel) {\r\n-  /* 自定义上传面板样式 */\r\n-}\r\n \r\n-:deep(.multi-image-upload) {\r\n-  /* 自定义多图上传样式 */\r\n-}\r\n-\r\n /* 移动端优化 */\r\n @media (max-width: 768px) {\r\n   /* 移动端特定样式 */\r\n }\r\n"
                 }
             ],
             "date": 1752348807217,

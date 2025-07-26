@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 40,
+            "activePatchIndex": 41,
             "patches": [
                 {
                     "date": 1752330016769,
@@ -168,6 +168,10 @@
                 {
                     "date": 1753535753560,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,12 +50,23 @@\n \r\n     // 初始化负载均衡器\r\n     await loadBalancer.initialize()\r\n \r\n-    // 初始化服务器连接测试（静默模式）\r\n+    // 🔧 修改：页面加载时立即进行服务器检测\r\n+    // 这样可以在用户提交任务前就知道服务器状态\r\n     try {\r\n+      logger.info('🔍 页面加载时检测服务器状态...')\r\n       await loadBalancer.initializeServerConnection()\r\n       await loadBalancer.showLoadBalancingStatus()\r\n+\r\n+      // 检查是否有可用服务器\r\n+      const healthyServers = loadBalancer.serverList.filter(s => s.healthy === true)\r\n+      if (healthyServers.length > 0) {\r\n+        logger.info(`✅ 发现 ${healthyServers.length} 个可用服务器`)\r\n+      } else {\r\n+        logger.warn('⚠️ 当前没有可用服务器，但用户仍可尝试提交任务')\r\n+      }\r\n+\r\n       logger.info('✅ 服务器连接测试完成')\r\n     } catch (error) {\r\n       logger.warn('⚠️ 服务器连接测试失败，将在需要时重试')\r\n     }\r\n"
+                },
+                {
+                    "date": 1753553583554,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -83,11 +83,23 @@\n     const app = createApp(App)\r\n     app.use(router)\r\n     app.use(Vant)\r\n \r\n-    // 全局错误处理\r\n+    // 全局错误处理 - 简化版本，不掩盖递归更新错误\r\n     app.config.errorHandler = (err, vm, info) => {\r\n       logger.error('Vue应用错误:', err, info)\r\n+\r\n+      // 递归更新错误应该暴露给开发者，不要掩盖\r\n+      if (err.message && err.message.includes('Maximum recursive updates exceeded')) {\r\n+        console.error('❌ Vue递归更新错误 - 需要修复代码逻辑!')\r\n+        console.error('组件信息:', info)\r\n+        console.error('错误详情:', err)\r\n+        // 开发环境下不显示Toast，让开发者看到完整错误\r\n+        if (process.env.NODE_ENV === 'development') {\r\n+          return\r\n+        }\r\n+      }\r\n+\r\n       Toast.fail('应用发生错误，请刷新页面重试')\r\n     }\r\n \r\n     // 全局属性\r\n"
                 }
             ],
             "date": 1752330016769,

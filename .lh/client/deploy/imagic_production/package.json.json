@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/deploy/imagic_production/package.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753557106317,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753557106317,
+            "name": "Commit-0",
+            "content": "{\r\n  \"name\": \"imagic\",\r\n  \"version\": \"1.0.0\",\r\n  \"description\": \"Imagic - AI图像处理平台\",\r\n  \"main\": \"proxy-server-simple.js\",\r\n  \"scripts\": {\r\n    \"start\": \"node proxy-server-simple.js\",\r\n    \"proxy\": \"node proxy-server-simple.js\",\r\n    \"dev\": \"node proxy-server-simple.js\"\r\n  },\r\n  \"dependencies\": {\r\n    \"express\": \"^4.18.2\",\r\n    \"cors\": \"^2.8.5\"\r\n  },\r\n  \"engines\": {\r\n    \"node\": \">=14.0.0\"\r\n  },\r\n  \"keywords\": [\r\n    \"ai\",\r\n    \"image-processing\",\r\n    \"comfyui\",\r\n    \"vue\",\r\n    \"clothes-swap\"\r\n  ],\r\n  \"author\": \"Imagic Team\",\r\n  \"license\": \"MIT\"\r\n}\r\n"
+        }
+    ]
+}

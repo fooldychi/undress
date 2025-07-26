@@ -60,13 +60,16 @@ export class ProgressStageManager {
    */
   _notifyCallbacks() {
     const message = this.getCurrentMessage()
-    this.callbacks.forEach(callback => {
-      try {
-        callback(this.currentStage, message, { ...this.workflowProgress })
-      } catch (error) {
-        console.error('进度回调执行错误:', error)
-      }
-    })
+    // 使用 setTimeout 避免递归更新
+    setTimeout(() => {
+      this.callbacks.forEach(callback => {
+        try {
+          callback(this.currentStage, message, { ...this.workflowProgress })
+        } catch (error) {
+          console.error('进度回调执行错误:', error)
+        }
+      })
+    }, 0)
   }
 
   /**
