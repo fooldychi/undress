@@ -47,7 +47,7 @@ node scripts/port-config-manager.js fix
 node scripts/port-config-manager.js availability
 ```
 
-⚠️ **重要**: 端口配置由 `port-config.json` 统一管理，请勿随意修改。详见 [PORT_CONFIG_RULES.md](PORT_CONFIG_RULES.md)
+⚠️ **重要**: 端口配置由 `port-config.json` 统一管理，请勿随意修改。详见 [端口管理指南](./docs/port-management/PORT_MANAGER_GUIDE.md)
 
 ## 📁 项目结构
 
@@ -79,8 +79,9 @@ AIMagic/
 │   ├── port-config-manager.js    # 端口配置管理
 │   └── setup-port-management.js  # 端口管理安装
 ├── port-config.json       # 端口配置文件
-└── PORT_CONFIG_RULES.md   # 端口配置规则
 └── docs/                  # 项目文档
+    ├── port-management/   # 端口管理文档
+    └── README.md          # 文档索引
 ```
 
 ## 🛠️ 快速开始
@@ -115,19 +116,30 @@ cp server/.env.example server/.env
 ### 启动项目
 
 #### 🎯 前后端分离启动 (推荐)
+
+⚠️ **重要**: 必须按顺序启动，先启动后端服务，再启动前端服务
+
 ```bash
-# 启动后端服务 (端口: 3007)
+# 1️⃣ 首先启动后端服务 (端口: 3007)
 cd server
+npm install  # 首次运行需要安装依赖
 npm start
 
-# 启动前端开发服务器 (端口: 3001)
+# 2️⃣ 启动前端开发服务器 (端口: 3001)
 cd client
+npm install  # 首次运行需要安装依赖
 npm run dev
 
-# 启动后台管理系统 (端口: 3003)
+# 3️⃣ 启动后台管理系统 (端口: 3003)
 cd admin
+npm install  # 首次运行需要安装依赖
 npm run dev
 ```
+
+#### 🔐 默认登录信息
+- **后台管理系统**: http://localhost:3003
+  - 用户名: `admin`
+  - 密码: `admin123456`
 
 #### 📋 生产环境部署
 各服务应独立部署：
@@ -136,9 +148,42 @@ npm run dev
 - **后台管理**: 构建静态文件，部署到内网或受保护的环境
 
 ### 访问应用
-- 客户端前端: http://localhost:3001
-- 后台管理系统: http://localhost:3003
-- 后端API: http://localhost:3007
+- **客户端前端**: http://localhost:3001 (用户界面)
+- **后台管理系统**: http://localhost:3003 (管理员界面)
+- **后端API**: http://localhost:3007 (API服务)
+
+### 🛠️ 常见问题解决
+
+#### 端口被占用
+```bash
+# 查看端口占用
+netstat -ano | findstr :3001  # Windows
+lsof -i :3001                 # Linux/Mac
+
+# 终止占用进程
+taskkill /PID <进程ID> /F      # Windows
+kill -9 <进程ID>               # Linux/Mac
+```
+
+#### 依赖安装失败
+```bash
+# 清除缓存重新安装
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+#### API连接失败
+1. 确认后端服务已启动 (http://localhost:3007)
+2. 检查防火墙设置
+3. 检查代理配置是否正确
+
+#### 健康检查
+```bash
+# 检查服务状态
+curl http://localhost:3007/health  # 后端API
+# 浏览器访问前端和后台管理界面
+```
 
 ## 🔧 端口配置
 
@@ -163,8 +208,8 @@ node scripts/port-manager.js start admin
 
 ### 配置文件
 - `port-config.json` - 统一端口配置
-- `PORT_MANAGER_GUIDE.md` - 详细使用指南
-- `PORT_PROTECTION_GUIDE.md` - 端口配置保护指南
+- [端口管理指南](./docs/port-management/PORT_MANAGER_GUIDE.md) - 详细使用指南
+- [端口保护指南](./docs/port-management/PORT_PROTECTION_GUIDE.md) - 端口配置保护指南
 
 ### 🛡️ 配置保护机制
 ```bash
@@ -181,9 +226,17 @@ node scripts/install-git-hooks.js install
 ## 📖 文档
 
 ### 前端开发
+- [前端文档中心](./client/docs/README.md) - 完整的前端开发文档索引
 - [前端开发原则](./client/docs/FRONTEND_DEVELOPMENT_PRINCIPLES.md)
 - [项目概览](./client/docs/PROJECT_OVERVIEW.md)
 - [部署指南](./client/docs/DEPLOYMENT_GUIDE.md)
+- [SVG图标系统](./client/docs/SVG_ICON_SYSTEM.md)
+- [SVG图标迁移指南](./client/docs/SVG_ICONS_MIGRATION.md)
+- [统一组件指南](./client/docs/UNIFIED_COMPONENTS_GUIDE.md)
+
+### 系统架构
+- [项目文档总览](./docs/README.md)
+- [端口管理系统](./docs/port-management/README.md)
 
 ### API文档
 - 用户认证: `/api/auth/*`

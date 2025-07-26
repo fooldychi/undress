@@ -1,0 +1,26 @@
+{
+    "sourceFile": "client/docs/README.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1753545687928,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753545700531,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,9 @@\n ### 📖 开发指南\r\n \r\n #### 核心概念\r\n - **设计系统**: 统一的CSS变量和组件样式\r\n-- **图标规范**: 按功能分类的图标使用标准\r\n+- **SVG图标系统**: 现代化的图标管理和渲染方案\r\n - **组件化开发**: 可复用组件的设计原则\r\n - **状态管理**: Vue 3 Composition API最佳实践\r\n \r\n #### 技术规范\r\n"
+                },
+                {
+                    "date": 1753546595730,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,8 +14,16 @@\n - [SVG图标迁移指南](./SVG_ICONS_MIGRATION.md) - 从旧图标系统迁移到SVG\r\n - [统一组件指南](./UNIFIED_COMPONENTS_GUIDE.md) - 组件统一化设计原则\r\n - [迁移检查清单](./MIGRATION_CHECKLIST.md) - 项目迁移和升级检查\r\n \r\n+### 🔧 技术配置\r\n+- [ComfyUI配置指南](./COMFYUI_CONFIG_GUIDE.md) - ComfyUI统一配置管理\r\n+- [队列负载均衡](./QUEUE_BASED_LOAD_BALANCING.md) - 基于队列的负载均衡实现\r\n+\r\n+### 🎯 功能特性\r\n+- [固定状态栏功能](./FIXED_STATUS_BAR_FEATURE.md) - 固定顶部处理状态栏说明\r\n+- [换脸上传隐藏功能](./FACE_SWAP_UPLOAD_HIDE_FEATURE.md) - 换脸成功后隐藏上传模块\r\n+\r\n ### 📖 开发指南\r\n \r\n #### 核心概念\r\n - **设计系统**: 统一的CSS变量和组件样式\r\n"
+                }
+            ],
+            "date": 1753545687928,
+            "name": "Commit-0",
+            "content": "# 文档索引\r\n\r\n欢迎来到AI图像处理平台前端项目文档中心。本目录包含了项目开发、维护和部署的所有重要文档。\r\n\r\n## 📚 文档目录\r\n\r\n### 🚀 快速开始\r\n- [项目概览](./PROJECT_OVERVIEW.md) - 项目整体介绍和技术架构\r\n- [前端开发原则](./FRONTEND_DEVELOPMENT_PRINCIPLES.md) - 详细的开发规范和最佳实践\r\n- [部署指南](./DEPLOYMENT_GUIDE.md) - 项目部署和环境配置\r\n\r\n### 🎨 系统设计\r\n- [SVG图标系统](./SVG_ICON_SYSTEM.md) - SVG图标管理和使用指南\r\n- [SVG图标迁移指南](./SVG_ICONS_MIGRATION.md) - 从旧图标系统迁移到SVG\r\n- [统一组件指南](./UNIFIED_COMPONENTS_GUIDE.md) - 组件统一化设计原则\r\n- [迁移检查清单](./MIGRATION_CHECKLIST.md) - 项目迁移和升级检查\r\n\r\n### 📖 开发指南\r\n\r\n#### 核心概念\r\n- **设计系统**: 统一的CSS变量和组件样式\r\n- **图标规范**: 按功能分类的图标使用标准\r\n- **组件化开发**: 可复用组件的设计原则\r\n- **状态管理**: Vue 3 Composition API最佳实践\r\n\r\n#### 技术规范\r\n- **代码质量**: ESLint规则和代码风格\r\n- **命名规范**: 组件、变量、CSS类的命名标准\r\n- **性能优化**: 组件优化和资源管理\r\n- **错误处理**: 统一的错误处理策略\r\n\r\n### 🎨 UI/UX指南\r\n\r\n#### 设计原则\r\n- **风格统一**: 确保整个应用的视觉一致性\r\n- **响应式设计**: 移动端和桌面端的适配标准\r\n- **用户体验**: 交互设计和反馈机制\r\n- **可访问性**: 无障碍设计考虑\r\n\r\n#### 组件规范\r\n- **TopNavigation**: 顶部导航栏的使用规范\r\n- **AuthModal**: 认证弹窗的集成方式\r\n- **功能卡片**: 统一的卡片样式和布局\r\n- **表单组件**: 输入组件的设计标准\r\n\r\n### 🔧 技术文档\r\n\r\n#### API集成\r\n- **认证系统**: 用户登录、注册、状态管理\r\n- **积分系统**: 积分查询、消费、充值流程\r\n- **图像处理**: AI功能的API调用和结果处理\r\n- **错误处理**: API错误的统一处理机制\r\n\r\n#### 状态管理\r\n- **用户状态**: 登录状态的同步和管理\r\n- **积分状态**: 积分信息的实时更新\r\n- **页面状态**: 加载、错误、成功状态的管理\r\n- **组件通信**: 父子组件和兄弟组件的通信\r\n\r\n### 📦 部署与维护\r\n\r\n#### 环境配置\r\n- **开发环境**: 本地开发环境的搭建\r\n- **测试环境**: 测试环境的配置和使用\r\n- **生产环境**: 生产部署的流程和注意事项\r\n- **CI/CD**: 持续集成和部署流程\r\n\r\n#### 维护指南\r\n- **依赖管理**: 包管理和版本控制\r\n- **性能监控**: 性能指标的监控和优化\r\n- **安全更新**: 安全漏洞的修复流程\r\n- **版本发布**: 版本管理和发布流程\r\n\r\n## 🎯 核心原则速览\r\n\r\n### 设计系统\r\n```css\r\n/* 统一的CSS变量 */\r\n:root {\r\n  --primary-color: #6366f1;\r\n  --bg-primary: #0f0f23;\r\n  --bg-card: #16213e;\r\n  --text-color: #e2e8f0;\r\n}\r\n```\r\n\r\n### 图标规范\r\n| 功能 | 图标 | 使用场景 |\r\n|------|------|----------|\r\n| 积分 | `diamond-o` | 积分显示、积分卡片 |\r\n| 等级卡 | `credit-pay` | 等级卡列表、标题 |\r\n| 用户 | `user-o` | 用户头像、个人中心 |\r\n| 记录 | `records` | 积分记录、操作历史 |\r\n\r\n### 组件结构\r\n```vue\r\n<template>\r\n  <!-- 统一的模板结构 -->\r\n</template>\r\n\r\n<script setup>\r\n// Vue 3 Composition API\r\nimport { ref, computed, onMounted } from 'vue'\r\n\r\n// 组件逻辑\r\n</script>\r\n\r\n<style scoped>\r\n/* 使用CSS变量的样式 */\r\n</style>\r\n```\r\n\r\n## 📋 开发检查清单\r\n\r\n### 新功能开发\r\n- [ ] 遵循组件化设计原则\r\n- [ ] 使用统一的CSS变量和样式\r\n- [ ] 按规范使用图标\r\n- [ ] 实现响应式设计\r\n- [ ] 添加错误处理\r\n- [ ] 编写必要的注释\r\n- [ ] 进行功能测试\r\n\r\n### 代码审查\r\n- [ ] 代码风格符合规范\r\n- [ ] 组件可复用性良好\r\n- [ ] 性能优化合理\r\n- [ ] 安全考虑充分\r\n- [ ] 文档更新及时\r\n- [ ] 测试覆盖完整\r\n\r\n## 🔗 相关链接\r\n\r\n- [Vue 3 官方文档](https://vuejs.org/)\r\n- [Vant UI 组件库](https://vant-contrib.gitee.io/vant/)\r\n- [Vite 构建工具](https://vitejs.dev/)\r\n- [Vue Router 路由](https://router.vuejs.org/)\r\n\r\n## 📞 支持与反馈\r\n\r\n如果您在开发过程中遇到问题或有改进建议，请：\r\n\r\n1. 查阅相关文档\r\n2. 搜索已有的Issue\r\n3. 创建新的Issue描述问题\r\n4. 联系开发团队\r\n\r\n---\r\n\r\n**注意**: 本文档会随着项目发展持续更新，请定期查看最新版本。\r\n"
+        }
+    ]
+}

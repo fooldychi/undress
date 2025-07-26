@@ -1,10 +1,10 @@
-# ComfyUI统一端点配置管理
+# ComfyUI统一配置管理指南
 
-## 概述
+## 📋 概述
 
 基于前后端分离的架构原则，ComfyUI的健康检测端点管理已统一在前端进行定义和管理，采用官方推荐的端点格式。
 
-## 配置文件结构
+## 🏗️ 配置文件结构
 
 ### 主配置文件: `client/src/config/comfyui.config.js`
 
@@ -43,7 +43,7 @@ const config = {
 }
 ```
 
-## 使用方法
+## 🚀 使用方法
 
 ### 1. 获取健康检测端点列表
 
@@ -74,7 +74,7 @@ const data = await response.json()
 const isValid = comfyUIConfig.validateResponse(endpoint, data)
 ```
 
-## 端点优先级说明
+## 📊 端点优先级说明
 
 ### 官方端点（按优先级排序）
 1. **`/api/queue`** - ComfyUI官方队列端点
@@ -85,7 +85,7 @@ const isValid = comfyUIConfig.validateResponse(endpoint, data)
    - 服务器系统信息
    - 设备状态和Python版本信息
 
-## 响应验证规则
+## ✅ 响应验证规则
 
 ### 队列端点验证
 检查响应中是否包含以下字段之一：
@@ -99,7 +99,7 @@ const isValid = comfyUIConfig.validateResponse(endpoint, data)
 - `devices` - 设备信息
 - `python_version` - Python版本
 
-## 负载均衡机制
+## ⚖️ 负载均衡机制
 
 ### 服务器管理
 负载均衡器从配置服务动态获取服务器列表：
@@ -124,28 +124,7 @@ comfyui.backup_servers: "https://backup1.com,https://backup2.com"
 3. 所有服务器都不健康时，使用第一个服务器（可能恢复）
 4. 没有配置服务器时，使用默认配置
 
-## 已更新的文件
-
-### 1. 配置文件
-- ✅ `client/src/config/comfyui.config.js` - 主配置文件（已更新）
-
-### 2. 服务文件
-- ✅ `client/src/services/loadBalancer.js` - 负载均衡器（完全重写）
-- ✅ `client/src/services/comfyui.js` - ComfyUI服务（已更新）
-
-### 3. 测试工具
-- ✅ `client/test-loadbalancer.html` - 负载均衡器测试页面（新增）
-- ✅ `scripts/verify-unified-config.js` - 配置验证脚本（新增）
-
-### 4. 已移除的文件
-- ❌ `client/src/constants/comfyui-health.js` - 独立健康检测配置（已删除）
-- ❌ `client/src/utils/test-unified-config.js` - 旧测试工具（已删除）
-- ❌ `client/src/utils/loadBalancerTest.js` - 旧测试工具（已删除）
-- ❌ `client/src/utils/comfyui-test.js` - 旧测试工具（已删除）
-- ❌ `test-comfyui-health.js` - 旧测试脚本（已删除）
-- ❌ 多个旧的文档文件（已删除）
-
-## 测试方法
+## 🧪 测试方法
 
 ### 浏览器控制台测试
 ```javascript
@@ -156,13 +135,13 @@ import { testUnifiedHealthCheck } from './src/utils/test-unified-config.js'
 testUnifiedHealthCheck('https://your-comfyui-server.com')
 ```
 
-### 开发环境测试
+### 配置统一性验证
 ```bash
-# 在浏览器开发者工具中
-testUnifiedHealthCheck() // 使用默认服务器
+# 运行验证脚本检查是否还有硬编码端点
+node scripts/verify-unified-config.js
 ```
 
-## 优势
+## 🎯 优势
 
 1. **统一管理** - 所有端点配置集中在一个文件中
 2. **官方标准** - 采用ComfyUI官方推荐的端点格式
@@ -171,18 +150,43 @@ testUnifiedHealthCheck() // 使用默认服务器
 5. **易于维护** - 配置变更只需修改一个文件
 6. **响应验证** - 确保连接的是真正的ComfyUI服务器
 
-## 验证工具
+## 📁 相关文件
 
-### 配置统一性验证
-```bash
-# 运行验证脚本检查是否还有硬编码端点
-node scripts/verify-unified-config.js
-```
+### 配置文件
+- ✅ `client/src/config/comfyui.config.js` - 主配置文件
 
-## 注意事项
+### 服务文件
+- ✅ `client/src/services/loadBalancer.js` - 负载均衡器
+- ✅ `client/src/services/comfyui.js` - ComfyUI服务
+
+### 验证工具
+- ✅ `scripts/verify-unified-config.js` - 配置验证脚本
+
+## ⚠️ 注意事项
 
 1. **前端专用** - 此配置仅用于前端，后端不再定义ComfyUI端点
 2. **按序测试** - 健康检测按端点优先级顺序进行，找到第一个可用端点即停止
 3. **响应验证** - 不仅检查HTTP状态码，还验证响应内容是否符合ComfyUI格式
 4. **超时控制** - 统一的超时时间配置，避免长时间等待
 5. **无备用端点** - 已移除备用端点配置，只使用官方推荐的端点
+
+## 🔧 维护指南
+
+### 添加新端点
+1. 在 `HEALTH_CHECK.ENDPOINTS` 数组中添加新端点
+2. 在 `VALIDATION` 对象中添加对应的验证规则
+3. 更新文档说明
+
+### 修改验证规则
+1. 更新 `VALIDATION` 配置
+2. 测试验证逻辑
+3. 更新相关文档
+
+### 性能优化
+1. 调整超时时间配置
+2. 优化端点检测顺序
+3. 监控健康检测性能
+
+---
+
+**注意**: ComfyUI配置是AI功能正常运行的基础，请严格按照本指南进行配置和维护。

@@ -9,11 +9,25 @@
 - [前端开发原则](./FRONTEND_DEVELOPMENT_PRINCIPLES.md) - 详细的开发规范和最佳实践
 - [部署指南](./DEPLOYMENT_GUIDE.md) - 项目部署和环境配置
 
+### 🎨 系统设计
+- [SVG图标系统](./SVG_ICON_SYSTEM.md) - SVG图标管理和使用指南
+- [SVG图标迁移指南](./SVG_ICONS_MIGRATION.md) - 从旧图标系统迁移到SVG
+- [统一组件指南](./UNIFIED_COMPONENTS_GUIDE.md) - 组件统一化设计原则
+- [迁移检查清单](./MIGRATION_CHECKLIST.md) - 项目迁移和升级检查
+
+### 🔧 技术配置
+- [ComfyUI配置指南](./COMFYUI_CONFIG_GUIDE.md) - ComfyUI统一配置管理
+- [队列负载均衡](./QUEUE_BASED_LOAD_BALANCING.md) - 基于队列的负载均衡实现
+
+### 🎯 功能特性
+- [固定状态栏功能](./FIXED_STATUS_BAR_FEATURE.md) - 固定顶部处理状态栏说明
+- [换脸上传隐藏功能](./FACE_SWAP_UPLOAD_HIDE_FEATURE.md) - 换脸成功后隐藏上传模块
+
 ### 📖 开发指南
 
 #### 核心概念
 - **设计系统**: 统一的CSS变量和组件样式
-- **图标规范**: 按功能分类的图标使用标准
+- **SVG图标系统**: 现代化的图标管理和渲染方案
 - **组件化开发**: 可复用组件的设计原则
 - **状态管理**: Vue 3 Composition API最佳实践
 
