@@ -18,8 +18,8 @@ import webSocketManager, { WINDOW_ID, CLIENT_ID as WINDOW_CLIENT_ID } from './we
 const DEFAULT_CONFIG = {
   // ComfyUI服务器URL（用户可配置）
   COMFYUI_SERVER_URL: comfyUIConfig.BASE_URL,
-  CLIENT_ID: WINDOW_CLIENT_ID, // 🔧 使用窗口唯一的clientId（从 WebSocket 管理器导入）
-  TIMEOUT: 600000 // 从5分钟延长到10分钟
+  CLIENT_ID: WINDOW_CLIENT_ID // 🔧 使用窗口唯一的clientId（从 WebSocket 管理器导入）
+  // 🎯 移除TIMEOUT配置 - 系统已实现"无超时"设计，不再需要客户端超时限制
 }
 
 // 配置缓存

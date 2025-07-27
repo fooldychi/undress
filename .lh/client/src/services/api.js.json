@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 31,
+            "activePatchIndex": 32,
             "patches": [
                 {
                     "date": 1752283330589,
@@ -132,6 +132,10 @@
                 {
                     "date": 1752897710159,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,15 +1,15 @@\n // 导入ComfyUI工作流服务\r\n import { processUndressImage } from './comfyui.js'\r\n \r\n-// ComfyUI API服务配置 - 将使用动态配置\r\n+// ComfyUI API服务配置 - 延长超时时间\r\n const API_CONFIG = {\r\n   // ComfyUI服务器URL - 将从配置服务获取\r\n   BASE_URL: 'https://dzqgp58z0s-8188.cnb.run', // 默认值，将被配置服务覆盖\r\n   // 客户端ID，用于标识请求来源\r\n   CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b', // 默认值，将被配置服务覆盖\r\n   // 请求超时时间（毫秒）\r\n-  TIMEOUT: 300000 // 5分钟\r\n+  TIMEOUT: 600000 // 从5分钟延长到10分钟\r\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n"
+                },
+                {
+                    "date": 1753593466923,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,15 +1,14 @@\n // 导入ComfyUI工作流服务\r\n import { processUndressImage } from './comfyui.js'\r\n \r\n-// ComfyUI API服务配置 - 延长超时时间\r\n+// ComfyUI API服务配置 - 无超时设计\r\n const API_CONFIG = {\r\n   // ComfyUI服务器URL - 将从配置服务获取\r\n   BASE_URL: 'https://dzqgp58z0s-8188.cnb.run', // 默认值，将被配置服务覆盖\r\n   // 客户端ID，用于标识请求来源\r\n-  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b', // 默认值，将被配置服务覆盖\r\n-  // 请求超时时间（毫秒）\r\n-  TIMEOUT: 600000 // 从5分钟延长到10分钟\r\n+  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b' // 默认值，将被配置服务覆盖\r\n+  // 🎯 移除TIMEOUT配置 - 系统已实现\"无超时\"设计，任务处理时间由服务器控制\r\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n"
                 }
             ],
             "date": 1752283330589,

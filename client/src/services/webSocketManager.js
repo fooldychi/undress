@@ -379,13 +379,23 @@ class SimpleWebSocketManager {
     })
   }
 
-  // HTTP轮询备用机制
+  // HTTP轮询备用机制 - 无超时版本
+  // 🎯 业务需求：移除HTTP轮询超时机制，与主系统"无超时"设计保持一致
+  // - AI图像处理任务执行时间不可预测，HTTP轮询不应主动中断
+  // - 只有在服务器主动报错或网络完全不可达时才结束轮询
+  // - 持续轮询直到任务完成、服务器报错或网络中断
   async _startHttpPollingBackup(promptId, callbacks) {
-    const maxAttempts = 120 // 最多轮询2分钟
-    const pollInterval = 1000 // 每秒轮询一次
+    const pollInterval = 2000 // 每2秒轮询一次，减少服务器压力
+    let attemptCount = 0
+    let consecutiveFailures = 0
+    const maxConsecutiveFailures = 10 // 连续失败10次后认为网络中断
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    console.log(`🔄 [${WINDOW_ID}] 启动HTTP轮询备用机制 (无超时限制): ${promptId}`)
+
+    while (true) {
       try {
+        attemptCount++
+
         // 检查任务是否已被WebSocket处理完成
         if (!this.tasks.has(promptId)) {
           console.log(`✅ [${WINDOW_ID}] 任务已通过WebSocket完成: ${promptId}`)
@@ -393,42 +403,64 @@ class SimpleWebSocketManager {
         }
 
         // HTTP轮询检查任务状态
-        const historyResponse = await fetch(`${this.currentServer}/api/history/${promptId}`)
+        const historyResponse = await fetch(`${this.currentServer}/api/history/${promptId}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          // 设置较短的网络超时，但不设置轮询超时
+          signal: AbortSignal.timeout(10000) // 10秒网络超时
+        })
+
         if (historyResponse.ok) {
           const history = await historyResponse.json()
 
           // 任务完成
           if (history[promptId]) {
-            console.log(`✅ [${WINDOW_ID}] HTTP轮询检测到任务完成: ${promptId}`)
+            console.log(`✅ [${WINDOW_ID}] HTTP轮询检测到任务完成: ${promptId} (轮询${attemptCount}次)`)
             await this._handleTaskCompletion(promptId)
             return
           }
-        }
 
-        // 更新进度
-        if (callbacks.onProgress) {
-          const progress = Math.min((attempt / maxAttempts) * 100, 95)
-          callbacks.onProgress('处理中...', progress)
+          // 重置连续失败计数
+          consecutiveFailures = 0
+
+          // 更新进度 - 不再基于最大尝试次数，而是显示轮询状态
+          if (callbacks.onProgress) {
+            callbacks.onProgress(`处理中... (轮询${attemptCount}次)`, null)
+          }
+
+        } else {
+          // HTTP响应错误，但不是网络问题
+          console.warn(`⚠️ [${WINDOW_ID}] HTTP轮询响应错误 ${historyResponse.status}: ${promptId}`)
+          consecutiveFailures++
         }
 
         // 等待下次轮询
         await new Promise(resolve => setTimeout(resolve, pollInterval))
 
       } catch (error) {
-        console.warn(`⚠️ [${WINDOW_ID}] HTTP轮询失败 (${attempt + 1}/${maxAttempts}):`, error.message)
+        consecutiveFailures++
+        console.warn(`⚠️ [${WINDOW_ID}] HTTP轮询失败 (第${attemptCount}次，连续失败${consecutiveFailures}次): ${error.message}`)
 
-        // 继续重试
-        await new Promise(resolve => setTimeout(resolve, pollInterval * 2))
+        // 检查是否为网络完全中断
+        if (consecutiveFailures >= maxConsecutiveFailures) {
+          console.error(`❌ [${WINDOW_ID}] 网络连接中断，停止HTTP轮询: ${promptId}`)
+          const task = this.tasks.get(promptId)
+          if (task && task.onError) {
+            task.onError(new Error(`网络连接中断，无法继续监控任务状态。请检查网络连接后重试。`))
+          }
+          this.tasks.delete(promptId)
+          this._checkUnlock()
+          return
+        }
+
+        // 网络错误时延长等待时间
+        const backoffDelay = Math.min(pollInterval * (1 + consecutiveFailures), 10000) // 最多10秒
+        await new Promise(resolve => setTimeout(resolve, backoffDelay))
       }
     }
-
-    // 轮询超时
-    const task = this.tasks.get(promptId)
-    if (task && task.onError) {
-      task.onError(new Error('任务处理超时'))
-    }
-    this.tasks.delete(promptId)
-    this._checkUnlock()
   }
 
   // 获取状态信息

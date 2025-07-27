@@ -112,6 +112,12 @@ images/
 # Test files (keeping only essential ones)
 test-*.html
 **/test-*.html
+test-*.js
+**/test-*.js
+# But keep formal test files in tests/ directories
+!**/tests/**
+!**/*.test.js
+!**/*.spec.js
 
 # Backup files
 *.bak

@@ -1,14 +1,13 @@
 // 导入ComfyUI工作流服务
 import { processUndressImage } from './comfyui.js'
 
-// ComfyUI API服务配置 - 延长超时时间
+// ComfyUI API服务配置 - 无超时设计
 const API_CONFIG = {
   // ComfyUI服务器URL - 将从配置服务获取
   BASE_URL: 'https://dzqgp58z0s-8188.cnb.run', // 默认值，将被配置服务覆盖
   // 客户端ID，用于标识请求来源
-  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b', // 默认值，将被配置服务覆盖
-  // 请求超时时间（毫秒）
-  TIMEOUT: 600000 // 从5分钟延长到10分钟
+  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b' // 默认值，将被配置服务覆盖
+  // 🎯 移除TIMEOUT配置 - 系统已实现"无超时"设计，任务处理时间由服务器控制
 }
 
 // 后端API服务配置
