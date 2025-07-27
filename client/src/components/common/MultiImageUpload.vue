@@ -171,7 +171,7 @@ const gridColumnsValue = computed(() => {
   return `repeat(${props.gridColumns}, 1fr)`
 })
 
-// 监听modelValue变化
+// 监听modelValue变化，同步到内部状态
 watch(() => props.modelValue, (newValue) => {
   if (Array.isArray(newValue)) {
     imageList.value = newValue.map((item, index) => ({
@@ -183,16 +183,6 @@ watch(() => props.modelValue, (newValue) => {
     imageList.value = []
   }
 }, { immediate: true })
-
-// 监听imageList变化
-watch(imageList, () => {
-  const value = imageList.value.map(item => ({
-    url: item.url,
-    file: item.file
-  }))
-  emit('update:modelValue', value)
-  emit('change', value)
-}, { deep: true })
 
 // 方法
 const triggerUpload = () => {
@@ -233,7 +223,16 @@ const handleFileSelect = async (event) => {
       })
     )
 
-    imageList.value.push(...newImages)
+    // 批量更新，避免多次触发响应式
+    imageList.value = [...imageList.value, ...newImages]
+
+    // 直接emit更新，避免通过watch触发
+    const value = imageList.value.map(item => ({
+      url: item.url,
+      file: item.file
+    }))
+    emit('update:modelValue', value)
+    emit('change', value)
 
     const addedCount = newImages.length
     Toast.success(`成功添加 ${addedCount} 张图片`)
@@ -278,11 +277,25 @@ const readFileAsDataURL = (file) => {
 
 const removeImage = (index) => {
   imageList.value.splice(index, 1)
+
+  // 直接emit更新，避免通过watch触发
+  const value = imageList.value.map(item => ({
+    url: item.url,
+    file: item.file
+  }))
+  emit('update:modelValue', value)
+  emit('change', value)
+
   Toast.success('图片已移除')
 }
 
 const clearAll = () => {
   imageList.value = []
+
+  // 直接emit更新，避免通过watch触发
+  emit('update:modelValue', [])
+  emit('change', [])
+
   Toast.success('已清空所有图片')
 }
 

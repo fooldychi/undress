@@ -147,7 +147,7 @@ const uploadedCount = computed(() => {
     : multiImages.value.length
 })
 
-// 监听modelValue变化
+// 监听modelValue变化，同步到内部状态
 watch(() => props.modelValue, (newValue) => {
   if (props.config.uploadType === 'single') {
     singleImage.value = newValue
@@ -156,23 +156,19 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { immediate: true })
 
-// 监听内部数据变化
-watch([singleImage, multiImages], () => {
-  const value = props.config.uploadType === 'single'
-    ? singleImage.value
-    : multiImages.value
-
-  emit('update:modelValue', value)
-  emit('change', value)
-}, { deep: true })
-
 // 方法
 const handleSingleImageChange = (imageData, file) => {
   singleImage.value = imageData
+  // 直接emit，避免通过watch触发
+  emit('update:modelValue', imageData)
+  emit('change', imageData)
 }
 
 const handleMultiImageChange = (images) => {
   multiImages.value = images
+  // 直接emit，避免通过watch触发
+  emit('update:modelValue', images)
+  emit('change', images)
 }
 
 const handleUploadError = (error) => {

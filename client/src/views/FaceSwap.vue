@@ -21,9 +21,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
-import { Users } from 'lucide-vue-next'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
 
 import { processFaceSwapImage } from '../services/comfyui.js'
@@ -51,16 +50,22 @@ const canProcess = computed(() => {
 
 // 处理上传变化
 const handleUploadChange = (panelId, data) => {
-  console.log('上传变化:', panelId, data)
-
   if (panelId === 'face-photos') {
     // 处理多图上传数据
-    facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []
-    resultImage.value = null // 清除之前的结果
+    let photos = Array.isArray(data) ? data.map(item => item.url || item) : []
 
     // 自动补齐到4张（如果需要的话）
-    while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {
-      facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])
+    if (photos.length > 0 && photos.length < 4) {
+      const lastPhoto = photos[photos.length - 1]
+      while (photos.length < 4) {
+        photos.push(lastPhoto)
+      }
+    }
+
+    // 一次性更新状态
+    facePhotos.value = photos
+    if (resultImage.value !== null) {
+      resultImage.value = null
     }
 
     if (data.length > 0) {
@@ -68,7 +73,9 @@ const handleUploadChange = (panelId, data) => {
     }
   } else if (panelId === 'target-image') {
     targetImage.value = data
-    resultImage.value = null // 清除之前的结果
+    if (resultImage.value !== null) {
+      resultImage.value = null
+    }
   }
 }
 
@@ -79,8 +86,10 @@ const processImages = async () => {
     return
   }
 
+  // 批量初始化状态
   isLoading.value = true
   processingStatus.value = '正在初始化...'
+  progressPercent.value = 0
   startTime.value = Date.now()
 
   try {
@@ -91,12 +100,9 @@ const processImages = async () => {
       facePhotos: facePhotos.value,
       targetImage: targetImage.value,
       onProgress: (status, progress) => {
-        // 使用 nextTick 避免递归更新
-        nextTick(() => {
-          processingStatus.value = status
-          progressPercent.value = progress || 0
-          console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
-        })
+        // 简化状态更新，减少日志
+        processingStatus.value = status
+        progressPercent.value = progress || 0
       }
     })
 
@@ -129,6 +135,7 @@ const processImages = async () => {
       Toast.fail(`换脸失败: ${error.message}`)
     }
   } finally {
+    // 批量重置状态
     isLoading.value = false
     processingStatus.value = ''
     progressPercent.value = 0

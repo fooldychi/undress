@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752393516868,
@@ -24,6 +24,26 @@
                 {
                     "date": 1752421922375,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -323,14 +323,19 @@\n   width: 100%;\n   height: 100%;\n   position: relative;\n   cursor: pointer;\n+  display: flex;\n+  align-items: center;\n+  justify-content: center;\n }\n \n .uploaded-image {\n-  width: 100%;\n-  height: 100%;\n-  object-fit: cover;\n+  max-width: 100%;\n+  max-height: 100%;\n+  width: auto;\n+  height: auto;\n+  object-fit: contain;\n }\n \n .image-overlay {\n   position: absolute;\n"
+                },
+                {
+                    "date": 1753589186532,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -183,14 +183,20 @@\n     imageList.value = []\n   }\n }, { immediate: true })\n \n-// 监听imageList变化\n-watch(imageList, () => {\n-  const value = imageList.value.map(item => ({\n+// 监听imageList变化，避免递归更新\n+watch(imageList, (newValue, oldValue) => {\n+  // 避免不必要的更新\n+  if (JSON.stringify(newValue) === JSON.stringify(oldValue)) {\n+    return\n+  }\n+\n+  const value = newValue.map(item => ({\n     url: item.url,\n     file: item.file\n   }))\n+\n   emit('update:modelValue', value)\n   emit('change', value)\n }, { deep: true })\n \n"
+                },
+                {
+                    "date": 1753589201214,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -238,9 +238,10 @@\n         }\n       })\n     )\n \n-    imageList.value.push(...newImages)\n+    // 批量更新，避免多次触发响应式\n+    imageList.value = [...imageList.value, ...newImages]\n \n     const addedCount = newImages.length\n     Toast.success(`成功添加 ${addedCount} 张图片`)\n \n"
+                },
+                {
+                    "date": 1753589657946,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -170,9 +170,9 @@\n const gridColumnsValue = computed(() => {\n   return `repeat(${props.gridColumns}, 1fr)`\n })\n \n-// 监听modelValue变化\n+// 监听modelValue变化，同步到内部状态\n watch(() => props.modelValue, (newValue) => {\n   if (Array.isArray(newValue)) {\n     imageList.value = newValue.map((item, index) => ({\n       id: `img-${Date.now()}-${index}`,\n@@ -183,24 +183,8 @@\n     imageList.value = []\n   }\n }, { immediate: true })\n \n-// 监听imageList变化，避免递归更新\n-watch(imageList, (newValue, oldValue) => {\n-  // 避免不必要的更新\n-  if (JSON.stringify(newValue) === JSON.stringify(oldValue)) {\n-    return\n-  }\n-\n-  const value = newValue.map(item => ({\n-    url: item.url,\n-    file: item.file\n-  }))\n-\n-  emit('update:modelValue', value)\n-  emit('change', value)\n-}, { deep: true })\n-\n // 方法\n const triggerUpload = () => {\n   if (fileInput.value && !props.disabled) {\n     fileInput.value.click()\n"
+                },
+                {
+                    "date": 1753589682831,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -225,8 +225,16 @@\n \n     // 批量更新，避免多次触发响应式\n     imageList.value = [...imageList.value, ...newImages]\n \n+    // 直接emit更新，避免通过watch触发\n+    const value = imageList.value.map(item => ({\n+      url: item.url,\n+      file: item.file\n+    }))\n+    emit('update:modelValue', value)\n+    emit('change', value)\n+\n     const addedCount = newImages.length\n     Toast.success(`成功添加 ${addedCount} 张图片`)\n \n     if (files.length > remainingSlots) {\n"
+                },
+                {
+                    "date": 1753589696403,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -276,13 +276,27 @@\n }\n \n const removeImage = (index) => {\n   imageList.value.splice(index, 1)\n+\n+  // 直接emit更新，避免通过watch触发\n+  const value = imageList.value.map(item => ({\n+    url: item.url,\n+    file: item.file\n+  }))\n+  emit('update:modelValue', value)\n+  emit('change', value)\n+\n   Toast.success('图片已移除')\n }\n \n const clearAll = () => {\n   imageList.value = []\n+\n+  // 直接emit更新，避免通过watch触发\n+  emit('update:modelValue', [])\n+  emit('change', [])\n+\n   Toast.success('已清空所有图片')\n }\n \n const previewImage = (index) => {\n"
                 }
             ],
             "date": 1752393516868,

@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
 import { Users } from 'lucide-vue-next'
 import { UnifiedImageProcessingTemplate } from '../components/mobile'
@@ -54,21 +54,37 @@ const handleUploadChange = (panelId, data) => {
   console.log('上传变化:', panelId, data)
 
   if (panelId === 'face-photos') {
-    // 处理多图上传数据
-    facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []
-    resultImage.value = null // 清除之前的结果
+    // 处理多图上传数据，先在临时变量中完成所有逻辑
+    let processedPhotos = Array.isArray(data) ? data.map(item => item.url || item) : []
 
-    // 自动补齐到4张（如果需要的话）
-    while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {
-      facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])
+    // 自动补齐逻辑在赋值前完成，避免多次修改响应式变量
+    if (processedPhotos.length > 0 && processedPhotos.length < 4) {
+      const lastPhoto = processedPhotos[processedPhotos.length - 1]
+      while (processedPhotos.length < 4) {
+        processedPhotos.push(lastPhoto)
+      }
     }
 
+    // 一次性赋值，减少响应式触发次数
+    facePhotos.value = processedPhotos
+
+    // 只在有结果时才清空，避免不必要的状态变更
+    if (resultImage.value !== null) {
+      resultImage.value = null
+    }
+
+    // 显示提示信息
     if (data.length > 0) {
       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)
     }
   } else if (panelId === 'target-image') {
+    // 先更新目标图片
     targetImage.value = data
-    resultImage.value = null // 清除之前的结果
+
+    // 只在有结果时才清空，避免不必要的状态变更
+    if (resultImage.value !== null) {
+      resultImage.value = null
+    }
   }
 }
 
@@ -91,12 +107,10 @@ const processImages = async () => {
       facePhotos: facePhotos.value,
       targetImage: targetImage.value,
       onProgress: (status, progress) => {
-        // 使用 nextTick 避免递归更新
-        nextTick(() => {
-          processingStatus.value = status
-          progressPercent.value = progress || 0
-          console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
-        })
+        // 直接同步更新，WebSocket管理器已经处理了异步
+        processingStatus.value = status
+        progressPercent.value = progress || 0
+        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)
       }
     })
 

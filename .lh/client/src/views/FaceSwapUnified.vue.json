@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 15,
+            "activePatchIndex": 18,
             "patches": [
                 {
                     "date": 1752395499903,
@@ -68,6 +68,18 @@
                 {
                     "date": 1753556183002,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -202,16 +202,9 @@\n /* 这里可以添加特定于换脸功能的样式 */\r\n /* 大部分样式已经在统一模板中处理 */\r\n \r\n /* 如果需要自定义样式，可以在这里添加 */\r\n-:deep(.unified-image-upload-panel) {\r\n-  /* 自定义上传面板样式 */\r\n-}\r\n \r\n-:deep(.multi-image-upload) {\r\n-  /* 自定义多图上传样式 */\r\n-}\r\n-\r\n /* 移动端优化 */\r\n @media (max-width: 768px) {\r\n   /* 移动端特定样式 */\r\n }\r\n"
+                },
+                {
+                    "date": 1753586543711,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -90,14 +90,12 @@\n     const result = await processFaceSwapImage({\r\n       facePhotos: facePhotos.value,\r\n       targetImage: targetImage.value,\r\n       onProgress: (status, progress) => {\r\n-        // 使用 nextTick 避免递归更新\r\n-        nextTick(() => {\r\n-          processingStatus.value = status\r\n-          progressPercent.value = progress || 0\r\n-          console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n-        })\r\n+        // 直接同步更新，WebSocket管理器已经处理了异步\r\n+        processingStatus.value = status\r\n+        progressPercent.value = progress || 0\r\n+        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n       }\r\n     })\r\n \r\n     if (result.success && result.imageUrl) {\r\n"
+                },
+                {
+                    "date": 1753586587706,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n   />\r\n </template>\r\n \r\n <script setup>\r\n-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'\r\n+import { ref, computed, onMounted, onUnmounted } from 'vue'\r\n import { Toast } from 'vant'\r\n import { Users } from 'lucide-vue-next'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n \r\n"
+                },
+                {
+                    "date": 1753588440097,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,23 +53,39 @@\n const handleUploadChange = (panelId, data) => {\r\n   console.log('上传变化:', panelId, data)\r\n \r\n   if (panelId === 'face-photos') {\r\n-    // 处理多图上传数据\r\n-    facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n-    resultImage.value = null // 清除之前的结果\r\n+    // 处理多图上传数据，先在临时变量中完成所有逻辑\r\n+    let processedPhotos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n \r\n-    // 自动补齐到4张（如果需要的话）\r\n-    while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {\r\n-      facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])\r\n+    // 自动补齐逻辑在赋值前完成，避免多次修改响应式变量\r\n+    if (processedPhotos.length > 0 && processedPhotos.length < 4) {\r\n+      const lastPhoto = processedPhotos[processedPhotos.length - 1]\r\n+      while (processedPhotos.length < 4) {\r\n+        processedPhotos.push(lastPhoto)\r\n+      }\r\n     }\r\n \r\n+    // 一次性赋值，减少响应式触发次数\r\n+    facePhotos.value = processedPhotos\r\n+\r\n+    // 只在有结果时才清空，避免不必要的状态变更\r\n+    if (resultImage.value !== null) {\r\n+      resultImage.value = null\r\n+    }\r\n+\r\n+    // 显示提示信息\r\n     if (data.length > 0) {\r\n       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)\r\n     }\r\n   } else if (panelId === 'target-image') {\r\n+    // 先更新目标图片\r\n     targetImage.value = data\r\n-    resultImage.value = null // 清除之前的结果\r\n+\r\n+    // 只在有结果时才清空，避免不必要的状态变更\r\n+    if (resultImage.value !== null) {\r\n+      resultImage.value = null\r\n+    }\r\n   }\r\n }\r\n \r\n // 处理图片\r\n"
                 }
             ],
             "date": 1752395499903,

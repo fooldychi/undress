@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 50,
+            "activePatchIndex": 62,
             "patches": [
                 {
                     "date": 1752348807217,
@@ -208,6 +208,54 @@
                 {
                     "date": 1753556172889,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -202,16 +202,9 @@\n /* 这里可以添加特定于换脸功能的样式 */\r\n /* 大部分样式已经在统一模板中处理 */\r\n \r\n /* 如果需要自定义样式，可以在这里添加 */\r\n-:deep(.unified-image-upload-panel) {\r\n-  /* 自定义上传面板样式 */\r\n-}\r\n \r\n-:deep(.multi-image-upload) {\r\n-  /* 自定义多图上传样式 */\r\n-}\r\n-\r\n /* 移动端优化 */\r\n @media (max-width: 768px) {\r\n   /* 移动端特定样式 */\r\n }\r\n"
+                },
+                {
+                    "date": 1753584991122,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,7 @@\n <template>\r\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n-    title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n     process-button-icon-name=\"users\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n"
+                },
+                {
+                    "date": 1753585266697,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,8 @@\n <template>\r\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n+    title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n     process-button-icon-name=\"users\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n"
+                },
+                {
+                    "date": 1753586530934,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -90,14 +90,12 @@\n     const result = await processFaceSwapImage({\r\n       facePhotos: facePhotos.value,\r\n       targetImage: targetImage.value,\r\n       onProgress: (status, progress) => {\r\n-        // 使用 nextTick 避免递归更新\r\n-        nextTick(() => {\r\n-          processingStatus.value = status\r\n-          progressPercent.value = progress || 0\r\n-          console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n-        })\r\n+        // 直接同步更新，WebSocket管理器已经处理了异步\r\n+        processingStatus.value = status\r\n+        progressPercent.value = progress || 0\r\n+        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n       }\r\n     })\r\n \r\n     if (result.success && result.imageUrl) {\r\n"
+                },
+                {
+                    "date": 1753586577491,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n   />\r\n </template>\r\n \r\n <script setup>\r\n-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'\r\n+import { ref, computed, onMounted, onUnmounted } from 'vue'\r\n import { Toast } from 'vant'\r\n import { Users } from 'lucide-vue-next'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n \r\n"
+                },
+                {
+                    "date": 1753587249234,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -54,16 +54,22 @@\n   console.log('上传变化:', panelId, data)\r\n \r\n   if (panelId === 'face-photos') {\r\n     // 处理多图上传数据\r\n-    facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n+    let photos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n     resultImage.value = null // 清除之前的结果\r\n \r\n     // 自动补齐到4张（如果需要的话）\r\n-    while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {\r\n-      facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])\r\n+    if (photos.length > 0 && photos.length < 4) {\r\n+      const lastPhoto = photos[photos.length - 1]\r\n+      while (photos.length < 4) {\r\n+        photos.push(lastPhoto)\r\n+      }\r\n     }\r\n \r\n+    // 一次性赋值，避免多次触发响应式更新\r\n+    facePhotos.value = photos\r\n+\r\n     if (data.length > 0) {\r\n       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)\r\n     }\r\n   } else if (panelId === 'target-image') {\r\n"
+                },
+                {
+                    "date": 1753587579374,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n     title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n-    process-button-icon-name=\"users\"\r\n+    :process-button-icon=\"Users\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n     :processing-description=\"processingStatus\"\r\n     :processing-info=\"{ promptId, processingTime }\"\r\n"
+                },
+                {
+                    "date": 1753589086502,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n     title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n-    :process-button-icon=\"Users\"\r\n+    process-button-icon-name=\"users\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n     :processing-description=\"processingStatus\"\r\n     :processing-info=\"{ promptId, processingTime }\"\r\n"
+                },
+                {
+                    "date": 1753589099178,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,9 +22,8 @@\n \r\n <script setup>\r\n import { ref, computed, onMounted, onUnmounted } from 'vue'\r\n import { Toast } from 'vant'\r\n-import { Users } from 'lucide-vue-next'\r\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\r\n \r\n import { processFaceSwapImage } from '../services/comfyui.js'\r\n import { handleError } from '../services/globalErrorHandler.js'\r\n"
+                },
+                {
+                    "date": 1753589119915,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -49,32 +49,38 @@\n })\r\n \r\n // 处理上传变化\r\n const handleUploadChange = (panelId, data) => {\r\n-  console.log('上传变化:', panelId, data)\r\n-\r\n   if (panelId === 'face-photos') {\r\n-    // 处理多图上传数据\r\n-    let photos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n-    resultImage.value = null // 清除之前的结果\r\n+    // 处理多图上传数据，在临时变量中完成所有逻辑\r\n+    const processedPhotos = (() => {\r\n+      let photos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n \r\n-    // 自动补齐到4张（如果需要的话）\r\n-    if (photos.length > 0 && photos.length < 4) {\r\n-      const lastPhoto = photos[photos.length - 1]\r\n-      while (photos.length < 4) {\r\n-        photos.push(lastPhoto)\r\n+      // 自动补齐到4张（如果需要的话）\r\n+      if (photos.length > 0 && photos.length < 4) {\r\n+        const lastPhoto = photos[photos.length - 1]\r\n+        while (photos.length < 4) {\r\n+          photos.push(lastPhoto)\r\n+        }\r\n       }\r\n+\r\n+      return photos\r\n+    })()\r\n+\r\n+    // 批量更新状态，避免多次响应式触发\r\n+    facePhotos.value = processedPhotos\r\n+    if (resultImage.value !== null) {\r\n+      resultImage.value = null\r\n     }\r\n \r\n-    // 一次性赋值，避免多次触发响应式更新\r\n-    facePhotos.value = photos\r\n-\r\n     if (data.length > 0) {\r\n       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)\r\n     }\r\n   } else if (panelId === 'target-image') {\r\n     targetImage.value = data\r\n-    resultImage.value = null // 清除之前的结果\r\n+    if (resultImage.value !== null) {\r\n+      resultImage.value = null\r\n+    }\r\n   }\r\n }\r\n \r\n // 处理图片\r\n"
+                },
+                {
+                    "date": 1753589137136,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -89,10 +89,12 @@\n     Toast.fail('请先上传人脸照片和目标图片')\r\n     return\r\n   }\r\n \r\n+  // 批量初始化状态\r\n   isLoading.value = true\r\n   processingStatus.value = '正在初始化...'\r\n+  progressPercent.value = 0\r\n   startTime.value = Date.now()\r\n \r\n   try {\r\n     console.log('🚀 开始极速换脸处理')\r\n@@ -101,12 +103,11 @@\n     const result = await processFaceSwapImage({\r\n       facePhotos: facePhotos.value,\r\n       targetImage: targetImage.value,\r\n       onProgress: (status, progress) => {\r\n-        // 直接同步更新，WebSocket管理器已经处理了异步\r\n+        // 简化状态更新，减少日志\r\n         processingStatus.value = status\r\n         progressPercent.value = progress || 0\r\n-        console.log(`📊 处理状态: ${status}, 进度: ${progress}%`)\r\n       }\r\n     })\r\n \r\n     if (result.success && result.imageUrl) {\r\n"
+                },
+                {
+                    "date": 1753589169329,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -138,8 +138,9 @@\n     if (!isHandledGlobally) {\r\n       Toast.fail(`换脸失败: ${error.message}`)\r\n     }\r\n   } finally {\r\n+    // 批量重置状态\r\n     isLoading.value = false\r\n     processingStatus.value = ''\r\n     progressPercent.value = 0\r\n   }\r\n"
+                },
+                {
+                    "date": 1753589716806,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -50,25 +50,21 @@\n \r\n // 处理上传变化\r\n const handleUploadChange = (panelId, data) => {\r\n   if (panelId === 'face-photos') {\r\n-    // 处理多图上传数据，在临时变量中完成所有逻辑\r\n-    const processedPhotos = (() => {\r\n-      let photos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n+    // 处理多图上传数据\r\n+    let photos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n \r\n-      // 自动补齐到4张（如果需要的话）\r\n-      if (photos.length > 0 && photos.length < 4) {\r\n-        const lastPhoto = photos[photos.length - 1]\r\n-        while (photos.length < 4) {\r\n-          photos.push(lastPhoto)\r\n-        }\r\n+    // 自动补齐到4张（如果需要的话）\r\n+    if (photos.length > 0 && photos.length < 4) {\r\n+      const lastPhoto = photos[photos.length - 1]\r\n+      while (photos.length < 4) {\r\n+        photos.push(lastPhoto)\r\n       }\r\n+    }\r\n \r\n-      return photos\r\n-    })()\r\n-\r\n-    // 批量更新状态，避免多次响应式触发\r\n-    facePhotos.value = processedPhotos\r\n+    // 一次性更新状态\r\n+    facePhotos.value = photos\r\n     if (resultImage.value !== null) {\r\n       resultImage.value = null\r\n     }\r\n \r\n"
                 }
             ],
             "date": 1752348807217,
