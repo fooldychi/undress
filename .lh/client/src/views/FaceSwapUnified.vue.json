@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 18,
+            "activePatchIndex": 19,
             "patches": [
                 {
                     "date": 1752395499903,
@@ -80,6 +80,10 @@
                 {
                     "date": 1753588440097,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,23 +53,39 @@\n const handleUploadChange = (panelId, data) => {\r\n   console.log('上传变化:', panelId, data)\r\n \r\n   if (panelId === 'face-photos') {\r\n-    // 处理多图上传数据\r\n-    facePhotos.value = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n-    resultImage.value = null // 清除之前的结果\r\n+    // 处理多图上传数据，先在临时变量中完成所有逻辑\r\n+    let processedPhotos = Array.isArray(data) ? data.map(item => item.url || item) : []\r\n \r\n-    // 自动补齐到4张（如果需要的话）\r\n-    while (facePhotos.value.length < 4 && facePhotos.value.length > 0) {\r\n-      facePhotos.value.push(facePhotos.value[facePhotos.value.length - 1])\r\n+    // 自动补齐逻辑在赋值前完成，避免多次修改响应式变量\r\n+    if (processedPhotos.length > 0 && processedPhotos.length < 4) {\r\n+      const lastPhoto = processedPhotos[processedPhotos.length - 1]\r\n+      while (processedPhotos.length < 4) {\r\n+        processedPhotos.push(lastPhoto)\r\n+      }\r\n     }\r\n \r\n+    // 一次性赋值，减少响应式触发次数\r\n+    facePhotos.value = processedPhotos\r\n+\r\n+    // 只在有结果时才清空，避免不必要的状态变更\r\n+    if (resultImage.value !== null) {\r\n+      resultImage.value = null\r\n+    }\r\n+\r\n+    // 显示提示信息\r\n     if (data.length > 0) {\r\n       Toast.success(`已选择 ${data.length} 张照片${data.length < 4 ? '，自动补齐至4张' : ''}`)\r\n     }\r\n   } else if (panelId === 'target-image') {\r\n+    // 先更新目标图片\r\n     targetImage.value = data\r\n-    resultImage.value = null // 清除之前的结果\r\n+\r\n+    // 只在有结果时才清空，避免不必要的状态变更\r\n+    if (resultImage.value !== null) {\r\n+      resultImage.value = null\r\n+    }\r\n   }\r\n }\r\n \r\n // 处理图片\r\n"
+                },
+                {
+                    "date": 1753590330822,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n     title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n-    process-button-icon-name=\"users\"\r\n+    process-button-icon-name=\"face-swap\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n     :processing-description=\"processingStatus\"\r\n     :processing-info=\"{ promptId, processingTime }\"\r\n"
                 }
             ],
             "date": 1752395499903,

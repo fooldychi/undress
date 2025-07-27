@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 55,
+            "activePatchIndex": 57,
             "patches": [
                 {
                     "date": 1752384788723,
@@ -228,6 +228,14 @@
                 {
                     "date": 1753542691352,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -96,9 +96,8 @@\n \r\n     <!-- 底部固定积分消耗提醒 - 用户上传图片前显示，上传图片后隐藏 -->\r\n     <div v-if=\"shouldShowBottomPointsNotice\" class=\"bottom-points-notice\">\r\n       <div class=\"points-notice-content\">\r\n-        <van-icon name=\"gold-coin-o\" size=\"18\" color=\"#FFD700\" />\r\n         <span>{{ title }}将消耗 <strong>{{ pointsCost }}</strong> 积分</span>\r\n       </div>\r\n     </div>\r\n \r\n"
+                },
+                {
+                    "date": 1753590285077,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -36,17 +36,20 @@\n           @click=\"$emit('process')\"\r\n           type=\"primary\"\r\n           block\r\n           variant=\"floating\"\r\n-          :icon=\"processButtonIcon\"\r\n+          :icon=\"typeof processButtonIcon === 'string' ? processButtonIcon : ''\"\r\n         >\r\n-          <template v-if=\"processButtonIcon\" #icon>\r\n+          <template v-if=\"processButtonIcon && typeof processButtonIcon === 'object'\" #icon>\r\n             <component\r\n               :is=\"processButtonIcon\"\r\n               :size=\"18\"\r\n               color=\"white\"\r\n             />\r\n           </template>\r\n+          <template v-if=\"$slots['process-button-icon']\" #icon>\r\n+            <slot name=\"process-button-icon\" />\r\n+          </template>\r\n           {{ processButtonText }}\r\n         </MobileActionButton>\r\n       </div>\r\n \r\n"
+                },
+                {
+                    "date": 1753590297662,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -38,18 +38,17 @@\n           block\r\n           variant=\"floating\"\r\n           :icon=\"typeof processButtonIcon === 'string' ? processButtonIcon : ''\"\r\n         >\r\n-          <template v-if=\"processButtonIcon && typeof processButtonIcon === 'object'\" #icon>\r\n+          <template v-if=\"$slots['process-button-icon'] || (processButtonIcon && typeof processButtonIcon === 'object')\" #icon>\r\n+            <slot v-if=\"$slots['process-button-icon']\" name=\"process-button-icon\" />\r\n             <component\r\n+              v-else-if=\"processButtonIcon && typeof processButtonIcon === 'object'\"\r\n               :is=\"processButtonIcon\"\r\n               :size=\"18\"\r\n               color=\"white\"\r\n             />\r\n           </template>\r\n-          <template v-if=\"$slots['process-button-icon']\" #icon>\r\n-            <slot name=\"process-button-icon\" />\r\n-          </template>\r\n           {{ processButtonText }}\r\n         </MobileActionButton>\r\n       </div>\r\n \r\n"
                 }
             ],
             "date": 1752384788723,

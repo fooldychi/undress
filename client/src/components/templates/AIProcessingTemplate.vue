@@ -37,10 +37,12 @@
           type="primary"
           block
           variant="floating"
-          :icon="processButtonIcon"
+          :icon="typeof processButtonIcon === 'string' ? processButtonIcon : ''"
         >
-          <template v-if="processButtonIcon" #icon>
+          <template v-if="$slots['process-button-icon'] || (processButtonIcon && typeof processButtonIcon === 'object')" #icon>
+            <slot v-if="$slots['process-button-icon']" name="process-button-icon" />
             <component
+              v-else-if="processButtonIcon && typeof processButtonIcon === 'object'"
               :is="processButtonIcon"
               :size="18"
               color="white"

@@ -3,7 +3,7 @@
     function-id="face-swap"
     title-icon-name="face-swap"
     title-icon-color="var(--van-warning-color)"
-    process-button-icon-name="users"
+    process-button-icon-name="face-swap"
     :is-processing="isLoading"
     :progress="progressPercent"
     :processing-description="processingStatus"

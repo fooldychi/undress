@@ -22,6 +22,10 @@
     @download="$emit('download', $event)"
     @reset="$emit('reset')"
   >
+    <!-- 处理按钮图标插槽 -->
+    <template v-if="processButtonIconComponent" #process-button-icon>
+      <component :is="processButtonIconComponent" />
+    </template>
     <!-- 输入区域 -->
     <template #inputs>
       <!-- 图片上传面板 -->
@@ -235,7 +239,18 @@ const titleIcon = computed(() => {
 })
 
 const processButtonIcon = computed(() => {
-  if (props.processButtonIcon) {
+  // 对于 processButtonIcon，我们需要返回字符串或 null
+  // 因为它最终会传递给 VanButton 的 icon prop
+  if (props.processButtonIcon && typeof props.processButtonIcon === 'string') {
+    return props.processButtonIcon
+  }
+  // 如果有图标名称，返回 null，让 AIProcessingTemplate 处理
+  return null
+})
+
+// 处理按钮图标组件（用于插槽）
+const processButtonIconComponent = computed(() => {
+  if (props.processButtonIcon && typeof props.processButtonIcon === 'object') {
     return props.processButtonIcon
   }
   if (props.processButtonIconName) {
