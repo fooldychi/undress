@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 18,
+            "activePatchIndex": 21,
             "patches": [
                 {
                     "date": 1752384723098,
@@ -80,6 +80,18 @@
                 {
                     "date": 1753538185576,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -135,8 +135,9 @@\n   }\n \n   .mobile-page-main {\n     padding: 16px;\n+    padding-top: 0;\n   }\n \n   .mobile-page-header,\n   .mobile-page-footer {\n@@ -185,4 +186,5 @@\n \n \n \n \n+\n"
+                },
+                {
+                    "date": 1753635294836,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,8 +8,13 @@\n       @login=\"$emit('login', $event)\"\n       @logout=\"$emit('logout', $event)\"\n     />\n \n+    <!-- 通知栏（可选） -->\n+    <div v-if=\"$slots.notice\" class=\"mobile-page-notice\">\n+      <slot name=\"notice\" />\n+    </div>\n+\n     <!-- 页面内容 -->\n     <div class=\"mobile-page-content\">\n       <!-- 页面头部（可选） -->\n       <div v-if=\"$slots.header\" class=\"mobile-page-header\">\n"
+                },
+                {
+                    "date": 1753635335474,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -101,8 +101,17 @@\n     radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);\n   pointer-events: none;\n }\n \n+.mobile-page-notice {\n+  position: fixed;\n+  top: 64px; /* 导航栏高度 */\n+  left: 0;\n+  right: 0;\n+  z-index: 999;\n+  background: transparent;\n+}\n+\n .mobile-page-content {\n   padding-top: 64px; /* 匹配导航栏高度 */\n   min-height: calc(100vh - 64px); /* 匹配导航栏高度 */\n   position: relative;\n"
+                },
+                {
+                    "date": 1753635349805,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -142,8 +142,12 @@\n }\n \n /* 移动端优化 */\n @media (max-width: 768px) {\n+  .mobile-page-notice {\n+    top: 60px; /* 移动端导航栏高度 */\n+  }\n+\n   .mobile-page-content {\n     padding-top: 60px; /* 移动端导航栏高度 */\n     min-height: calc(100vh - 60px); /* 匹配移动端导航栏高度 */\n   }\n"
                 }
             ],
             "date": 1752384723098,

@@ -43,9 +43,9 @@ export const IMAGE_PROCESSING_CONFIGS = {
         ...createUploadConfig({
           tips: [
             '支持 JPG、PNG 格式',
-            '建议尺寸 512x512 以上',
-            '人脸清晰、正面效果更佳',
-            '单张照片处理'
+            '建议尺寸 1080x1080 以下',
+            '图片大小应在 10M 以下',
+            '人脸清晰、正面效果更佳'
           ]
         })
       }
@@ -86,9 +86,9 @@ export const IMAGE_PROCESSING_CONFIGS = {
         ...createUploadConfig({
           tips: [
             '支持 JPG、PNG 格式',
-            '建议尺寸 512x512 以上',
-            '人脸清晰、正面效果更佳',
-            '可一次选择多张照片'
+            '建议尺寸 1080x1080 以下',
+            '图片大小应在 10M 以下',
+            '人脸清晰、正面效果更佳'
           ]
         })
       },
@@ -105,7 +105,8 @@ export const IMAGE_PROCESSING_CONFIGS = {
         ...createUploadConfig({
           tips: [
             '支持 JPG、PNG 格式',
-            '建议尺寸 512x512 以上',
+            '建议尺寸 1080x1080 以下',
+            '图片大小应在 10M 以下',
             '图片清晰度影响换脸效果'
           ]
         })

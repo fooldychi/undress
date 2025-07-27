@@ -9,6 +9,11 @@
       @logout="$emit('logout', $event)"
     />
 
+    <!-- 通知栏（可选） -->
+    <div v-if="$slots.notice" class="mobile-page-notice">
+      <slot name="notice" />
+    </div>
+
     <!-- 页面内容 -->
     <div class="mobile-page-content">
       <!-- 页面头部（可选） -->
@@ -97,6 +102,15 @@ defineExpose({
   pointer-events: none;
 }
 
+.mobile-page-notice {
+  position: fixed;
+  top: 64px; /* 导航栏高度 */
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: transparent;
+}
+
 .mobile-page-content {
   padding-top: 64px; /* 匹配导航栏高度 */
   min-height: calc(100vh - 64px); /* 匹配导航栏高度 */
@@ -129,6 +143,10 @@ defineExpose({
 
 /* 移动端优化 */
 @media (max-width: 768px) {
+  .mobile-page-notice {
+    top: 60px; /* 移动端导航栏高度 */
+  }
+
   .mobile-page-content {
     padding-top: 60px; /* 移动端导航栏高度 */
     min-height: calc(100vh - 60px); /* 匹配移动端导航栏高度 */

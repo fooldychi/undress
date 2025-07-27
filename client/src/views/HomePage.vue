@@ -5,6 +5,17 @@
     @login="handleUserLogin"
     @logout="handleUserLogout"
   >
+    <!-- 内测通知栏 -->
+    <template #notice>
+      <van-notice-bar
+        :scrollable="true"
+        speed="50"
+        class="beta-notice"
+      >
+        ⚠️ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲。 AI应用仅供个人娱乐，请勿在互联网传播 ❕︎
+      </van-notice-bar>
+    </template>
+
     <!-- 页面头部 -->
     <template #header>
       <div class="home-header">
@@ -224,6 +235,16 @@ const handleUserLogout = () => {
   line-height: 1.5;
 }
 
+/* 内测通知栏样式 */
+.beta-notice {
+  font-size: 13px;
+  height: 40px;
+  line-height: 40px;
+  background: rgba(0, 0, 0, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 /* 功能区域样式 */
 .features-section {
   display: flex;
@@ -404,6 +425,12 @@ const handleUserLogout = () => {
     font-size: 15px;
   }
 
+  .beta-notice {
+    font-size: 12px;
+    height: 36px;
+    line-height: 36px;
+  }
+
   .features-section {
     gap: 16px;
     padding: 0 2px;
@@ -423,6 +450,12 @@ const handleUserLogout = () => {
 
 /* 深色主题适配 */
 @media (prefers-color-scheme: dark) {
+  .beta-notice {
+    background: rgba(0, 0, 0, 0.2) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.15);
+  }
+
   .undress-icon {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1));
     border-color: rgba(102, 126, 234, 0.4);
@@ -432,8 +465,6 @@ const handleUserLogout = () => {
     background: linear-gradient(135deg, rgba(240, 147, 251, 0.3), rgba(240, 147, 251, 0.1));
     border-color: rgba(240, 147, 251, 0.4);
   }
-
-
 }
 
 /* 减少动画在低性能设备上的影响 */

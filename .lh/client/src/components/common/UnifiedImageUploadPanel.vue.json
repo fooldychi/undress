@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 17,
+            "activePatchIndex": 18,
             "patches": [
                 {
                     "date": 1752393164890,
@@ -76,6 +76,10 @@
                 {
                     "date": 1753589642124,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -158,12 +158,18 @@\n \r\n // 方法\r\n const handleSingleImageChange = (imageData, file) => {\r\n   singleImage.value = imageData\r\n+  // 直接emit，避免通过watch触发\r\n+  emit('update:modelValue', imageData)\r\n+  emit('change', imageData)\r\n }\r\n \r\n const handleMultiImageChange = (images) => {\r\n   multiImages.value = images\r\n+  // 直接emit，避免通过watch触发\r\n+  emit('update:modelValue', images)\r\n+  emit('change', images)\r\n }\r\n \r\n const handleUploadError = (error) => {\r\n   emit('error', error)\r\n"
+                },
+                {
+                    "date": 1753634133026,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,14 +14,8 @@\n     </div>\r\n \r\n     <!-- 对比组件插槽 - 在panel-header和status-section之间 -->\r\n     <div v-if=\"$slots.comparison\" class=\"comparison-slot\">\r\n-      <!-- 调试信息 - 暂时禁用 -->\r\n-      <!--\r\n-      <div v-if=\"isDevelopment\" style=\"background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;\">\r\n-        📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}\r\n-      </div>\r\n-      -->\r\n       <slot name=\"comparison\" />\r\n     </div>\r\n \r\n     <!-- 上传区域 - 始终显示，除非有对比组件且明确隐藏 -->\r\n"
                 }
             ],
             "date": 1752393164890,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 25,
+            "activePatchIndex": 26,
             "patches": [
                 {
                     "date": 1752389916378,
@@ -108,6 +108,10 @@
                 {
                     "date": 1752505568161,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -431,16 +431,10 @@\n   font-size: 14px;\n   color: #646566;\n }\n \n-.result-actions {\n-  display: flex;\n-  gap: 8px;\n-  justify-content: center;\n-  flex-wrap: wrap;\n-  margin-top: 16px;\n-}\n \n+\n /* 深色主题适配 */\n @media (prefers-color-scheme: dark) {\n   .modal-header {\n     border-bottom-color: #3a3a3c;\n"
+                },
+                {
+                    "date": 1753634039123,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -36,29 +36,9 @@\n           <!-- 有媒体URL时显示内容 -->\n           <div v-if=\"resultData?.mediaUrl\" class=\"media-container\">\n             <!-- 图片结果 -->\n             <div v-if=\"isImage\" class=\"image-result\">\n-              <!-- 调试信息 -->\n-              <div v-if=\"false\" style=\"background: #f0f0f0; padding: 8px; margin-bottom: 8px; font-size: 12px;\">\n-                <div>URL: {{ resultData.mediaUrl }}</div>\n-                <div>isImage: {{ isImage }}</div>\n-                <div>isVideo: {{ isVideo }}</div>\n-              </div>\n-\n-              <!-- 直接使用img标签测试 -->\n-              <img\n-                v-if=\"resultData.mediaUrl\"\n-                :src=\"resultData.mediaUrl\"\n-                :alt=\"resultData.description || '生成结果'\"\n-                class=\"result-image-direct\"\n-                @click=\"previewImage\"\n-                @load=\"handleImageLoad\"\n-                @error=\"handleImageError\"\n-              />\n-\n-              <!-- 备用：van-image组件 -->\n               <van-image\n-                v-else\n                 :src=\"resultData.mediaUrl\"\n                 fit=\"contain\"\n                 :show-loading=\"true\"\n                 :show-error=\"true\"\n"
                 }
             ],
             "date": 1752389916378,

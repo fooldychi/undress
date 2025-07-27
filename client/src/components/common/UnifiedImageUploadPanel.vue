@@ -15,12 +15,6 @@
 
     <!-- 对比组件插槽 - 在panel-header和status-section之间 -->
     <div v-if="$slots.comparison" class="comparison-slot">
-      <!-- 调试信息 - 暂时禁用 -->
-      <!--
-      <div v-if="isDevelopment" style="background: rgba(0,255,0,0.1); padding: 5px; margin: 5px 0; border-radius: 4px; color: white; font-size: 11px;">
-        📍 插槽已激活 - shouldHideUpload: {{ shouldHideUpload }}
-      </div>
-      -->
       <slot name="comparison" />
     </div>
 

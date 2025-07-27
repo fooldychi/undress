@@ -1,8 +1,6 @@
 // 极简版 WebSocket 管理器 - 基于官方 websockets_api_example.py
 // 支持多用户多窗口、服务器选择、任务锁定机制
 
-
-
 // 生成唯一标识符
 function generateId() {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
@@ -33,6 +31,12 @@ class SimpleWebSocketManager {
     this.lockedServer = null
     this.lockTimestamp = null
 
+    // 重连机制
+    this.reconnectAttempts = 0
+    this.maxReconnectAttempts = 3
+    this.reconnectDelay = 2000 // 固定2秒延迟
+    this.reconnectTimer = null
+
     // 初始化窗口事件
     this._initWindowEvents()
   }
@@ -47,6 +51,12 @@ class SimpleWebSocketManager {
 
   // 清理资源
   _cleanup() {
+    // 清理重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
     if (this.ws) {
       this.ws.close()
       this.ws = null
@@ -54,6 +64,7 @@ class SimpleWebSocketManager {
     this.tasks.clear()
     this.lockedServer = null
     this.isConnected = false
+    this.reconnectAttempts = 0
   }
 
   // 连接到指定服务器
@@ -86,6 +97,7 @@ class SimpleWebSocketManager {
 
         this.ws.onopen = () => {
           this.isConnected = true
+          this.reconnectAttempts = 0 // 重置重连计数器
           clearTimeout(timeout)
           console.log(`✅ [${WINDOW_ID}] WebSocket连接成功`)
           resolve(true)
@@ -103,9 +115,17 @@ class SimpleWebSocketManager {
           this.isConnected = false
           console.log(`🔌 [${WINDOW_ID}] WebSocket连接关闭: ${event.code} ${event.reason}`)
 
-          // 如果是异常关闭且有等待的任务，通知它们
-          if (event.code !== 1000 && this.tasks.size > 0) {
-            this._handleConnectionLoss(`连接异常关闭: ${event.code} ${event.reason}`)
+          // 正常关闭不重连
+          if (event.code === 1000) {
+            return
+          }
+
+          // 异常关闭且有等待的任务时，尝试重连
+          if (this.tasks.size > 0) {
+            console.log(`🔄 [${WINDOW_ID}] 检测到异常关闭，启动自动重连`)
+            this._attemptReconnect()
+          } else {
+            console.log(`📝 [${WINDOW_ID}] 无待处理任务，不启动重连`)
           }
         }
 
@@ -241,7 +261,37 @@ class SimpleWebSocketManager {
     this._checkUnlock()
   }
 
-  // 新增：处理连接丢失
+  // 自动重连机制
+  _attemptReconnect() {
+    // 清理之前的重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
+    // 检查重连次数限制
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error(`❌ [${WINDOW_ID}] 重连失败，已达到最大尝试次数 (${this.maxReconnectAttempts})`)
+      this._handleConnectionLoss('重连失败')
+      return
+    }
+
+    this.reconnectAttempts++
+    console.log(`🔄 [${WINDOW_ID}] 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})，${this.reconnectDelay}ms后重试`)
+
+    this.reconnectTimer = setTimeout(async () => {
+      try {
+        await this.connectToServer(this.currentServer)
+        console.log(`✅ [${WINDOW_ID}] 重连成功`)
+      } catch (error) {
+        console.warn(`⚠️ [${WINDOW_ID}] 重连失败: ${error.message}`)
+        // 继续重连
+        this._attemptReconnect()
+      }
+    }, this.reconnectDelay)
+  }
+
+  // 处理连接丢失
   _handleConnectionLoss(reason) {
     console.error(`❌ [${WINDOW_ID}] 连接丢失: ${reason}`)
 

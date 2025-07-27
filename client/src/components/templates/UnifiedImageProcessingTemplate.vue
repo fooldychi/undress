@@ -28,49 +28,55 @@
     </template>
     <!-- 输入区域 -->
     <template #inputs>
-      <!-- 图片上传面板 -->
-      <template v-if="config.uploadPanels">
+      <!-- 当有对比结果时，只显示对比组件 -->
+      <div v-if="configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'" class="comparison-result">
+        <!-- 对比结果标题 -->
+        <div class="panel-header">
+          <van-icon
+            name="photo-o"
+            color="var(--van-success-color)"
+            size="18"
+          />
+          <span class="panel-title">处理结果对比</span>
+        </div>
+
+        <!-- 对比组件 -->
+        <div class="comparison-content">
+          <!-- 拖拽分割线对比组件 -->
+          <ImageComparison
+            v-if="config.resultConfig.comparisonType === 'slider'"
+            :original-image="originalImageForComparison"
+            :result-image="resultData"
+          />
+
+          <!-- 并排展示对比组件 -->
+          <VantImageComparison
+            v-else-if="config.resultConfig.comparisonType === 'side-by-side'"
+            :original-image="originalImageForComparison"
+            :result-image="resultData"
+          />
+        </div>
+
+        <!-- 提示信息 -->
+        <div class="tips-section">
+          <div class="tip-item">
+            <van-icon name="info-o" size="12" color="var(--van-text-color-3)" />
+            <span v-if="config.resultConfig.comparisonType === 'slider'">拖拽中间的分割线查看对比效果</span>
+            <span v-else>左侧为原图，右侧为处理结果</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 当没有结果时，显示图片上传面板 -->
+      <template v-else-if="config.uploadPanels">
         <UnifiedImageUploadPanel
           v-for="panel in config.uploadPanels"
           :key="panel.id"
           v-model="uploadData[panel.id]"
           :config="panel"
           :disabled="isProcessing"
-          :should-hide-upload="configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'"
           @change="handleUploadChange(panel.id, $event)"
-        >
-          <!-- 对比组件插槽 - 在panel-header和status-section之间 -->
-          <template #comparison>
-            <!-- 调试信息 - 暂时禁用 -->
-            <!--
-            <div v-if="isDevelopment" style="background: rgba(255,0,0,0.1); padding: 10px; margin: 10px 0; border-radius: 8px; color: white; font-size: 12px;">
-              <div>🔍 对比组件调试信息:</div>
-              <div>configLoaded: {{ configLoaded }}</div>
-              <div>resultData: {{ !!resultData }} ({{ typeof resultData }})</div>
-              <div>originalImageForComparison: {{ !!originalImageForComparison }} ({{ typeof originalImageForComparison }})</div>
-              <div>config.resultConfig?.showComparison: {{ config.resultConfig?.showComparison }}</div>
-              <div>config.resultConfig?.comparisonType: {{ config.resultConfig?.comparisonType }}</div>
-              <div>条件结果: {{ configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none' }}</div>
-            </div>
-            -->
-
-            <div v-if="configLoaded && resultData && config.resultConfig?.showComparison && config.resultConfig.comparisonType !== 'none'" class="comparison-result">
-              <!-- 拖拽分割线对比组件 -->
-              <ImageComparison
-                v-if="config.resultConfig.comparisonType === 'slider'"
-                :original-image="originalImageForComparison"
-                :result-image="resultData"
-              />
-
-              <!-- 并排展示对比组件 -->
-              <VantImageComparison
-                v-else-if="config.resultConfig.comparisonType === 'side-by-side'"
-                :original-image="originalImageForComparison"
-                :result-image="resultData"
-              />
-            </div>
-          </template>
-        </UnifiedImageUploadPanel>
+        />
       </template>
 
       <!-- 文本输入面板 -->
@@ -417,6 +423,46 @@ defineExpose({
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+/* 对比结果样式 - 与 UnifiedImageUploadPanel 保持一致 */
+.comparison-result {
+  background: rgba(15, 15, 30, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(30, 30, 60, 0.5);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.comparison-result .panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--van-text-color, #f7f8fa);
+}
+
+.comparison-result .panel-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.comparison-content {
+  margin-bottom: 16px;
+}
+
+.comparison-result .tips-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.comparison-result .tip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--van-text-color-3);
 }
 
 /* 配置加载状态 */

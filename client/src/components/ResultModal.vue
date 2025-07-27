@@ -37,27 +37,7 @@
           <div v-if="resultData?.mediaUrl" class="media-container">
             <!-- 图片结果 -->
             <div v-if="isImage" class="image-result">
-              <!-- 调试信息 -->
-              <div v-if="false" style="background: #f0f0f0; padding: 8px; margin-bottom: 8px; font-size: 12px;">
-                <div>URL: {{ resultData.mediaUrl }}</div>
-                <div>isImage: {{ isImage }}</div>
-                <div>isVideo: {{ isVideo }}</div>
-              </div>
-
-              <!-- 直接使用img标签测试 -->
-              <img
-                v-if="resultData.mediaUrl"
-                :src="resultData.mediaUrl"
-                :alt="resultData.description || '生成结果'"
-                class="result-image-direct"
-                @click="previewImage"
-                @load="handleImageLoad"
-                @error="handleImageError"
-              />
-
-              <!-- 备用：van-image组件 -->
               <van-image
-                v-else
                 :src="resultData.mediaUrl"
                 fit="contain"
                 :show-loading="true"

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 97,
+            "activePatchIndex": 114,
             "patches": [
                 {
                     "date": 1752290191013,
@@ -396,6 +396,74 @@
                 {
                     "date": 1753544832508,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -365,8 +365,31 @@\n   line-height: 1.4;\r\n   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);\r\n }\r\n \r\n+/* 大屏幕优化 */\r\n+@media (min-width: 1200px) {\r\n+  .features-section {\r\n+    max-width: 800px;\r\n+    margin: 0 auto;\r\n+  }\r\n+\r\n+  .feature-icon {\r\n+    width: 44px;\r\n+    height: 44px;\r\n+    min-width: 44px;\r\n+    min-height: 44px;\r\n+  }\r\n+}\r\n+\r\n+/* 中等屏幕优化 */\r\n+@media (min-width: 769px) and (max-width: 1199px) {\r\n+  .features-section {\r\n+    max-width: 600px;\r\n+    margin: 0 auto;\r\n+  }\r\n+}\r\n+\r\n /* 移动端优化 */\r\n @media (max-width: 768px) {\r\n   .home-header {\r\n     padding: 20px 0;\r\n@@ -388,14 +411,15 @@\n \r\n   .feature-icon {\r\n     width: 36px;\r\n     height: 36px;\r\n+    min-width: 36px;\r\n+    min-height: 36px;\r\n   }\r\n \r\n   .feature-description {\r\n     font-size: 14px;\r\n   }\r\n-\r\n }\r\n \r\n /* 深色主题适配 */\r\n @media (prefers-color-scheme: dark) {\r\n"
+                },
+                {
+                    "date": 1753635016606,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -17,8 +17,25 @@\n         </div>\r\n       </div>\r\n     </template>\r\n \r\n+    <!-- 内测通知栏 -->\r\n+    <div class=\"beta-notice\">\r\n+      <van-notice-bar\r\n+        left-icon=\"volume-o\"\r\n+        color=\"#ff6b35\"\r\n+        background=\"#fff3e0\"\r\n+        :scrollable=\"false\"\r\n+        wrapable\r\n+      >\r\n+        <template #default>\r\n+          <span class=\"notice-text\">\r\n+            🚀 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲，体验更佳！\r\n+          </span>\r\n+        </template>\r\n+      </van-notice-bar>\r\n+    </div>\r\n+\r\n     <!-- 主要内容 -->\r\n     <div class=\"features-section\">\r\n       <!-- 动态渲染功能卡片 -->\r\n       <MobileCard\r\n"
+                },
+                {
+                    "date": 1753635057449,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -240,8 +240,27 @@\n   text-align: center;\r\n   line-height: 1.5;\r\n }\r\n \r\n+/* 内测通知栏样式 */\r\n+.beta-notice {\r\n+  margin: 0 16px 20px 16px;\r\n+  border-radius: 8px;\r\n+  overflow: hidden;\r\n+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);\r\n+}\r\n+\r\n+.beta-notice .van-notice-bar {\r\n+  border-radius: 8px;\r\n+  border: 1px solid rgba(255, 107, 53, 0.2);\r\n+}\r\n+\r\n+.notice-text {\r\n+  font-weight: 500;\r\n+  font-size: 14px;\r\n+  line-height: 1.4;\r\n+}\r\n+\r\n /* 功能区域样式 */\r\n .features-section {\r\n   display: flex;\r\n   flex-direction: column;\r\n"
+                },
+                {
+                    "date": 1753635074302,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -439,8 +439,16 @@\n   .app-subtitle {\r\n     font-size: 15px;\r\n   }\r\n \r\n+  .beta-notice {\r\n+    margin: 0 12px 16px 12px;\r\n+  }\r\n+\r\n+  .notice-text {\r\n+    font-size: 13px;\r\n+  }\r\n+\r\n   .features-section {\r\n     gap: 16px;\r\n     padding: 0 2px;\r\n   }\r\n"
+                },
+                {
+                    "date": 1753635102241,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,23 +18,18 @@\n       </div>\r\n     </template>\r\n \r\n     <!-- 内测通知栏 -->\r\n-    <div class=\"beta-notice\">\r\n-      <van-notice-bar\r\n-        left-icon=\"volume-o\"\r\n-        color=\"#ff6b35\"\r\n-        background=\"#fff3e0\"\r\n-        :scrollable=\"false\"\r\n-        wrapable\r\n-      >\r\n-        <template #default>\r\n-          <span class=\"notice-text\">\r\n-            🚀 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲，体验更佳！\r\n-          </span>\r\n-        </template>\r\n-      </van-notice-bar>\r\n-    </div>\r\n+    <van-notice-bar\r\n+      left-icon=\"info-o\"\r\n+      color=\"#666\"\r\n+      background=\"#f7f8fa\"\r\n+      :scrollable=\"true\"\r\n+      speed=\"50\"\r\n+      class=\"beta-notice\"\r\n+    >\r\n+      内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲\r\n+    </van-notice-bar>\r\n \r\n     <!-- 主要内容 -->\r\n     <div class=\"features-section\">\r\n       <!-- 动态渲染功能卡片 -->\r\n"
+                },
+                {
+                    "date": 1753635114012,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -237,25 +237,14 @@\n }\r\n \r\n /* 内测通知栏样式 */\r\n .beta-notice {\r\n-  margin: 0 16px 20px 16px;\r\n-  border-radius: 8px;\r\n-  overflow: hidden;\r\n-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);\r\n+  font-size: 13px;\r\n+  height: 40px;\r\n+  line-height: 40px;\r\n+  border-bottom: 1px solid var(--van-border-color);\r\n }\r\n \r\n-.beta-notice .van-notice-bar {\r\n-  border-radius: 8px;\r\n-  border: 1px solid rgba(255, 107, 53, 0.2);\r\n-}\r\n-\r\n-.notice-text {\r\n-  font-weight: 500;\r\n-  font-size: 14px;\r\n-  line-height: 1.4;\r\n-}\r\n-\r\n /* 功能区域样式 */\r\n .features-section {\r\n   display: flex;\r\n   flex-direction: column;\r\n"
+                },
+                {
+                    "date": 1753635134240,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -424,15 +424,13 @@\n     font-size: 15px;\r\n   }\r\n \r\n   .beta-notice {\r\n-    margin: 0 12px 16px 12px;\r\n+    font-size: 12px;\r\n+    height: 36px;\r\n+    line-height: 36px;\r\n   }\r\n \r\n-  .notice-text {\r\n-    font-size: 13px;\r\n-  }\r\n-\r\n   .features-section {\r\n     gap: 16px;\r\n     padding: 0 2px;\r\n   }\r\n"
+                },
+                {
+                    "date": 1753635151265,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -448,8 +448,14 @@\n }\r\n \r\n /* 深色主题适配 */\r\n @media (prefers-color-scheme: dark) {\r\n+  .beta-notice {\r\n+    background: var(--van-background-2) !important;\r\n+    color: var(--van-text-color-2) !important;\r\n+    border-bottom-color: var(--van-border-color);\r\n+  }\r\n+\r\n   .undress-icon {\r\n     background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1));\r\n     border-color: rgba(102, 126, 234, 0.4);\r\n   }\r\n@@ -457,10 +463,8 @@\n   .faceswap-icon {\r\n     background: linear-gradient(135deg, rgba(240, 147, 251, 0.3), rgba(240, 147, 251, 0.1));\r\n     border-color: rgba(240, 147, 251, 0.4);\r\n   }\r\n-\r\n-\r\n }\r\n \r\n /* 减少动画在低性能设备上的影响 */\r\n @media (prefers-reduced-motion: reduce) {\r\n"
+                },
+                {
+                    "date": 1753635372048,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,8 +4,22 @@\n     title=\"AI Magic\"\r\n     @login=\"handleUserLogin\"\r\n     @logout=\"handleUserLogout\"\r\n   >\r\n+    <!-- 内测通知栏 -->\r\n+    <template #notice>\r\n+      <van-notice-bar\r\n+        left-icon=\"info-o\"\r\n+        color=\"#e6e6e6\"\r\n+        background=\"rgba(0, 0, 0, 0.02)\"\r\n+        :scrollable=\"true\"\r\n+        speed=\"50\"\r\n+        class=\"beta-notice\"\r\n+      >\r\n+        内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲\r\n+      </van-notice-bar>\r\n+    </template>\r\n+\r\n     <!-- 页面头部 -->\r\n     <template #header>\r\n       <div class=\"home-header\">\r\n         <div class=\"welcome-section\">\r\n@@ -17,20 +31,8 @@\n         </div>\r\n       </div>\r\n     </template>\r\n \r\n-    <!-- 内测通知栏 -->\r\n-    <van-notice-bar\r\n-      left-icon=\"info-o\"\r\n-      color=\"#666\"\r\n-      background=\"#f7f8fa\"\r\n-      :scrollable=\"true\"\r\n-      speed=\"50\"\r\n-      class=\"beta-notice\"\r\n-    >\r\n-      内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲\r\n-    </van-notice-bar>\r\n-\r\n     <!-- 主要内容 -->\r\n     <div class=\"features-section\">\r\n       <!-- 动态渲染功能卡片 -->\r\n       <MobileCard\r\n"
+                },
+                {
+                    "date": 1753635383856,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -242,9 +242,9 @@\n .beta-notice {\r\n   font-size: 13px;\r\n   height: 40px;\r\n   line-height: 40px;\r\n-  border-bottom: 1px solid var(--van-border-color);\r\n+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);\r\n }\r\n \r\n /* 功能区域样式 */\r\n .features-section {\r\n"
+                },
+                {
+                    "date": 1753635398717,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -451,11 +451,11 @@\n \r\n /* 深色主题适配 */\r\n @media (prefers-color-scheme: dark) {\r\n   .beta-notice {\r\n-    background: var(--van-background-2) !important;\r\n-    color: var(--van-text-color-2) !important;\r\n-    border-bottom-color: var(--van-border-color);\r\n+    background: rgba(255, 255, 255, 0.02) !important;\r\n+    color: rgba(255, 255, 255, 0.7) !important;\r\n+    border-bottom-color: rgba(255, 255, 255, 0.05);\r\n   }\r\n \r\n   .undress-icon {\r\n     background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1));\r\n"
+                },
+                {
+                    "date": 1753635599003,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,10 +8,8 @@\n     <!-- 内测通知栏 -->\r\n     <template #notice>\r\n       <van-notice-bar\r\n         left-icon=\"info-o\"\r\n-        color=\"#e6e6e6\"\r\n-        background=\"rgba(0, 0, 0, 0.02)\"\r\n         :scrollable=\"true\"\r\n         speed=\"50\"\r\n         class=\"beta-notice\"\r\n       >\r\n"
+                },
+                {
+                    "date": 1753635614719,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -240,9 +240,11 @@\n .beta-notice {\r\n   font-size: 13px;\r\n   height: 40px;\r\n   line-height: 40px;\r\n-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);\r\n+  background: rgba(0, 0, 0, 0.1) !important;\r\n+  color: rgba(255, 255, 255, 0.9) !important;\r\n+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);\r\n }\r\n \r\n /* 功能区域样式 */\r\n .features-section {\r\n"
+                },
+                {
+                    "date": 1753635629682,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -451,11 +451,11 @@\n \r\n /* 深色主题适配 */\r\n @media (prefers-color-scheme: dark) {\r\n   .beta-notice {\r\n-    background: rgba(255, 255, 255, 0.02) !important;\r\n-    color: rgba(255, 255, 255, 0.7) !important;\r\n-    border-bottom-color: rgba(255, 255, 255, 0.05);\r\n+    background: rgba(0, 0, 0, 0.2) !important;\r\n+    color: rgba(255, 255, 255, 0.8) !important;\r\n+    border-bottom-color: rgba(0, 0, 0, 0.15);\r\n   }\r\n \r\n   .undress-icon {\r\n     background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1));\r\n"
+                },
+                {
+                    "date": 1753636057866,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,14 +7,13 @@\n   >\r\n     <!-- 内测通知栏 -->\r\n     <template #notice>\r\n       <van-notice-bar\r\n-        left-icon=\"info-o\"\r\n         :scrollable=\"true\"\r\n         speed=\"50\"\r\n         class=\"beta-notice\"\r\n       >\r\n-        内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲\r\n+        ℹ️ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲 | AI应用仅供个人娱乐，请勿在互联网传播\r\n       </van-notice-bar>\r\n     </template>\r\n \r\n     <!-- 页面头部 -->\r\n"
+                },
+                {
+                    "date": 1753636160967,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n         :scrollable=\"true\"\r\n         speed=\"50\"\r\n         class=\"beta-notice\"\r\n       >\r\n-        ℹ️ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲 | AI应用仅供个人娱乐，请勿在互联网传播\r\n+        ❕︎ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲 | AI应用仅供个人娱乐，请勿在互联网传播 ❕︎\r\n       </van-notice-bar>\r\n     </template>\r\n \r\n     <!-- 页面头部 -->\r\n"
+                },
+                {
+                    "date": 1753636410378,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n         :scrollable=\"true\"\r\n         speed=\"50\"\r\n         class=\"beta-notice\"\r\n       >\r\n-        ❕︎ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲 | AI应用仅供个人娱乐，请勿在互联网传播 ❕︎\r\n+        ⚠️ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲 | AI应用仅供个人娱乐，请勿在互联网传播 ❕︎\r\n       </van-notice-bar>\r\n     </template>\r\n \r\n     <!-- 页面头部 -->\r\n"
+                },
+                {
+                    "date": 1753636435842,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n         :scrollable=\"true\"\r\n         speed=\"50\"\r\n         class=\"beta-notice\"\r\n       >\r\n-        ⚠️ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲 | AI应用仅供个人娱乐，请勿在互联网传播 ❕︎\r\n+        ⚠️ 内测阶段：建议在 22:00-24:00 时间段使用，保证服务器空闲。 AI应用仅供个人娱乐，请勿在互联网传播 ❕︎\r\n       </van-notice-bar>\r\n     </template>\r\n \r\n     <!-- 页面头部 -->\r\n"
                 }
             ],
             "date": 1752290191013,
