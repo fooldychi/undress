@@ -129,17 +129,11 @@ const resetProcess = () => {
 }
 
 // 下载结果
-const handleDownload = (imageUrl) => {
+const handleDownload = async (imageUrl) => {
   if (!imageUrl) return
 
-  const link = document.createElement('a')
-  link.href = imageUrl
-  link.download = `clothes_swap_result_${Date.now()}.png`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-
-  Toast.success('图片下载已开始')
+  const { downloadImage } = await import('../utils/downloadUtils.js')
+  await downloadImage(imageUrl, 'clothes_swap_result')
 }
 
 // 用户登录成功回调

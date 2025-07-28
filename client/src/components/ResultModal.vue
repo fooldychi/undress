@@ -173,25 +173,14 @@ const previewImage = () => {
 }
 
 // 下载文件
-const downloadFile = () => {
+const downloadFile = async () => {
   if (!props.resultData?.mediaUrl) {
     Toast.fail('文件地址无效')
     return
   }
 
-  try {
-    const link = document.createElement('a')
-    link.href = props.resultData.mediaUrl
-    link.download = `result_${Date.now()}`
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    Toast.success('开始下载')
-  } catch (error) {
-    console.error('下载失败:', error)
-    Toast.fail('下载失败')
-  }
+  const { downloadFile: downloadUtil } = await import('../utils/downloadUtils.js')
+  await downloadUtil(props.resultData.mediaUrl, 'AI_Magic_result')
 }
 
 // 分享结果

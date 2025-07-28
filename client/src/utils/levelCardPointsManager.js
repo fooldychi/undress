@@ -5,6 +5,7 @@
 
 import { pointsApi, levelCardApi } from '../services/api.js'
 import { authApi } from '../services/api.js'
+import eventBus, { EVENTS } from './eventBus.js'
 
 class LevelCardPointsManager {
   constructor() {
@@ -150,6 +151,20 @@ class LevelCardPointsManager {
         // 清除缓存，强制下次获取最新数据
         this.pointsInfo = null
         this.lastUpdateTime = 0
+
+        // 触发积分消耗事件，通知其他组件更新
+        eventBus.emit(EVENTS.POINTS_CONSUMED, {
+          consumed: amount,
+          remaining: response.data.remaining_points || 0,
+          description,
+          mediaUrl
+        })
+
+        // 触发积分更新事件，让积分显示组件刷新
+        eventBus.emit(EVENTS.POINTS_UPDATED, {
+          current: response.data.remaining_points || 0,
+          consumed: amount
+        })
 
         return {
           success: true,

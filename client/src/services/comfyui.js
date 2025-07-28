@@ -3,6 +3,7 @@ import undressWorkflow from '../workflows/undress.json'
 import faceSwapWorkflow from '../workflows/faceswap2.0.json'
 import comfyUIConfig from '../config/comfyui.config.js'
 import levelCardPointsManager from '../utils/levelCardPointsManager.js'
+import eventBus, { EVENTS } from '../utils/eventBus.js'
 import { updateAPIConfig } from './api.js'
 import loadBalancer from './loadBalancer.js'
 import { getWorkflowNodeConfig, getWorkflowInfo } from '../utils/workflowConfig.js'
@@ -1509,6 +1510,13 @@ class UniversalWorkflowProcessor {
       this.config.displayName,
       resultImageUrl
     )
+
+    // 触发AI处理完成事件，通知其他组件
+    eventBus.emit(EVENTS.AI_PROCESS_COMPLETE, {
+      type: this.config.type,
+      pointsConsumed: this.config.pointsCost,
+      resultUrl: resultImageUrl
+    })
 
     // 构建额外的图片URL（如原图等）
     const additionalImages = await this.buildAdditionalImageUrls(result)

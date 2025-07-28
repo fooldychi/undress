@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 13,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1752395497153,
@@ -60,6 +60,10 @@
                 {
                     "date": 1753543854611,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,9 +23,9 @@\n <script setup>\n import { ref, onMounted, onUnmounted } from 'vue'\n import { Toast } from 'vant'\n import { UnifiedImageProcessingTemplate } from '../components/mobile'\n-import { UndressWomanIcon } from '../components/icons'\n+\n import { processUndressImage } from '../services/comfyui.js'\n import { handleError } from '../services/globalErrorHandler.js'\n \n console.log('ClothesSwapUnified组件已加载，ComfyUI服务已导入')\n"
+                },
+                {
+                    "date": 1753637298532,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -128,19 +128,13 @@\n   Toast.success('已重置，可以重新选择图片')\n }\n \n // 下载结果\n-const handleDownload = (imageUrl) => {\n+const handleDownload = async (imageUrl) => {\n   if (!imageUrl) return\n \n-  const link = document.createElement('a')\n-  link.href = imageUrl\n-  link.download = `clothes_swap_result_${Date.now()}.png`\n-  document.body.appendChild(link)\n-  link.click()\n-  document.body.removeChild(link)\n-\n-  Toast.success('图片下载已开始')\n+  const { downloadImage } = await import('../utils/downloadUtils.js')\n+  await downloadImage(imageUrl, 'clothes_swap_result')\n }\n \n // 用户登录成功回调\n const handleUserLogin = (data) => {\n"
                 }
             ],
             "date": 1752395497153,

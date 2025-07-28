@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 63,
+            "activePatchIndex": 64,
             "patches": [
                 {
                     "date": 1752348807217,
@@ -260,6 +260,10 @@
                 {
                     "date": 1753590313617,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   <UnifiedImageProcessingTemplate\r\n     function-id=\"face-swap\"\r\n     title-icon-name=\"face-swap\"\r\n     title-icon-color=\"var(--van-warning-color)\"\r\n-    process-button-icon-name=\"users\"\r\n+    process-button-icon-name=\"face-swap\"\r\n     :is-processing=\"isLoading\"\r\n     :progress=\"progressPercent\"\r\n     :processing-description=\"processingStatus\"\r\n     :processing-info=\"{ promptId, processingTime }\"\r\n"
+                },
+                {
+                    "date": 1753637938788,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -117,9 +117,9 @@\n       const duration = Math.round((endTime - startTime.value) / 1000)\r\n       processingTime.value = `${duration}秒`\r\n \r\n       // 显示成功toast\r\n-      const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''\r\n+      const pointsInfo = result.pointsConsumed ? `\\n消耗${result.pointsConsumed}点积分` : ''\r\n       Toast.success(`🎉 换脸完成！${pointsInfo}`)\r\n       console.log('✅ 换脸处理完成')\r\n     } else {\r\n       throw new Error(result.error || '换脸处理失败')\r\n"
                 }
             ],
             "date": 1752348807217,

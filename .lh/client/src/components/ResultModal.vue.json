@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 26,
+            "activePatchIndex": 28,
             "patches": [
                 {
                     "date": 1752389916378,
@@ -112,6 +112,14 @@
                 {
                     "date": 1753634039123,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -36,29 +36,9 @@\n           <!-- 有媒体URL时显示内容 -->\n           <div v-if=\"resultData?.mediaUrl\" class=\"media-container\">\n             <!-- 图片结果 -->\n             <div v-if=\"isImage\" class=\"image-result\">\n-              <!-- 调试信息 -->\n-              <div v-if=\"false\" style=\"background: #f0f0f0; padding: 8px; margin-bottom: 8px; font-size: 12px;\">\n-                <div>URL: {{ resultData.mediaUrl }}</div>\n-                <div>isImage: {{ isImage }}</div>\n-                <div>isVideo: {{ isVideo }}</div>\n-              </div>\n-\n-              <!-- 直接使用img标签测试 -->\n-              <img\n-                v-if=\"resultData.mediaUrl\"\n-                :src=\"resultData.mediaUrl\"\n-                :alt=\"resultData.description || '生成结果'\"\n-                class=\"result-image-direct\"\n-                @click=\"previewImage\"\n-                @load=\"handleImageLoad\"\n-                @error=\"handleImageError\"\n-              />\n-\n-              <!-- 备用：van-image组件 -->\n               <van-image\n-                v-else\n                 :src=\"resultData.mediaUrl\"\n                 fit=\"contain\"\n                 :show-loading=\"true\"\n                 :show-error=\"true\"\n"
+                },
+                {
+                    "date": 1753637235988,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -172,26 +172,47 @@\n   })\n }\n \n // 下载文件\n-const downloadFile = () => {\n+const downloadFile = async () => {\n   if (!props.resultData?.mediaUrl) {\n     Toast.fail('文件地址无效')\n     return\n   }\n \n   try {\n+    // 获取文件扩展名\n+    const url = props.resultData.mediaUrl\n+    const extension = url.split('.').pop()?.toLowerCase() || 'jpg'\n+    const fileName = `AI_Magic_${Date.now()}.${extension}`\n+\n+    // 使用 fetch 获取图片数据，确保强制下载\n+    const response = await fetch(url)\n+    if (!response.ok) {\n+      throw new Error('网络请求失败')\n+    }\n+\n+    const blob = await response.blob()\n+    const blobUrl = window.URL.createObjectURL(blob)\n+\n+    // 创建下载链接\n     const link = document.createElement('a')\n-    link.href = props.resultData.mediaUrl\n-    link.download = `result_${Date.now()}`\n-    link.target = '_blank'\n+    link.href = blobUrl\n+    link.download = fileName\n+    link.style.display = 'none'\n+\n+    // 添加到DOM，点击，然后移除\n     document.body.appendChild(link)\n     link.click()\n     document.body.removeChild(link)\n-    Toast.success('开始下载')\n+\n+    // 清理blob URL\n+    window.URL.revokeObjectURL(blobUrl)\n+\n+    Toast.success('图片已保存到本地')\n   } catch (error) {\n     console.error('下载失败:', error)\n-    Toast.fail('下载失败')\n+    Toast.fail('下载失败，请重试')\n   }\n }\n \n // 分享结果\n"
+                },
+                {
+                    "date": 1753637328524,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -178,42 +178,10 @@\n     Toast.fail('文件地址无效')\n     return\n   }\n \n-  try {\n-    // 获取文件扩展名\n-    const url = props.resultData.mediaUrl\n-    const extension = url.split('.').pop()?.toLowerCase() || 'jpg'\n-    const fileName = `AI_Magic_${Date.now()}.${extension}`\n-\n-    // 使用 fetch 获取图片数据，确保强制下载\n-    const response = await fetch(url)\n-    if (!response.ok) {\n-      throw new Error('网络请求失败')\n-    }\n-\n-    const blob = await response.blob()\n-    const blobUrl = window.URL.createObjectURL(blob)\n-\n-    // 创建下载链接\n-    const link = document.createElement('a')\n-    link.href = blobUrl\n-    link.download = fileName\n-    link.style.display = 'none'\n-\n-    // 添加到DOM，点击，然后移除\n-    document.body.appendChild(link)\n-    link.click()\n-    document.body.removeChild(link)\n-\n-    // 清理blob URL\n-    window.URL.revokeObjectURL(blobUrl)\n-\n-    Toast.success('图片已保存到本地')\n-  } catch (error) {\n-    console.error('下载失败:', error)\n-    Toast.fail('下载失败，请重试')\n-  }\n+  const { downloadFile: downloadUtil } = await import('../utils/downloadUtils.js')\n+  await downloadUtil(props.resultData.mediaUrl, 'AI_Magic_result')\n }\n \n // 分享结果\n const shareResult = () => {\n"
                 }
             ],
             "date": 1752389916378,

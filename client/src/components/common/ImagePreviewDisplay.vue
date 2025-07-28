@@ -12,19 +12,19 @@
             @error="onImageError"
             @click="previewImage"
           />
-          
+
           <!-- 加载状态 -->
           <div v-if="loading" class="loading-overlay">
             <van-loading size="24" color="white" />
           </div>
-          
+
           <!-- 错误状态 -->
           <div v-if="error" class="error-overlay">
             <van-icon name="photo-fail" size="32" color="rgba(255, 255, 255, 0.6)" />
             <span class="error-text">图片加载失败</span>
           </div>
         </div>
-        
+
         <!-- 图片信息 -->
         <div v-if="showImageInfo && imageInfo" class="image-info">
           <div class="info-item">
@@ -37,7 +37,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 操作按钮 -->
       <div v-if="showActions" class="action-buttons">
         <van-button
@@ -50,7 +50,7 @@
         >
           下载图片
         </van-button>
-        
+
         <van-button
           v-if="previewEnabled"
           type="default"
@@ -61,7 +61,7 @@
         >
           预览图片
         </van-button>
-        
+
         <van-button
           v-if="editEnabled"
           type="warning"
@@ -137,7 +137,7 @@ const imageStyle = computed(() => {
 const onImageLoad = (event) => {
   loading.value = false
   error.value = false
-  
+
   const img = event.target
   imageInfo.value = {
     width: img.naturalWidth,
@@ -163,15 +163,12 @@ const previewImage = () => {
 
 const downloadImage = async () => {
   try {
-    const link = document.createElement('a')
-    link.href = props.imageUrl
-    link.download = `image-${Date.now()}.jpg`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    
-    Toast.success('开始下载图片')
-    emit('download', props.imageUrl)
+    const { downloadImage: downloadUtil } = await import('../../utils/downloadUtils.js')
+    const success = await downloadUtil(props.imageUrl, 'AI_Magic_image')
+
+    if (success) {
+      emit('download', props.imageUrl)
+    }
   } catch (error) {
     console.error('下载失败:', error)
     Toast.fail('下载失败，请重试')
@@ -195,7 +192,7 @@ const getImageSize = (img) => {
   canvas.width = img.naturalWidth
   canvas.height = img.naturalHeight
   ctx.drawImage(img, 0, 0)
-  
+
   try {
     const dataURL = canvas.toDataURL('image/jpeg', 0.8)
     return Math.round((dataURL.length - 'data:image/jpeg;base64,'.length) * 3 / 4)
@@ -311,15 +308,15 @@ onUnmounted(() => {
   .preview-container {
     gap: 12px;
   }
-  
+
   .action-buttons {
     gap: 6px;
   }
-  
+
   .action-btn {
     font-size: 13px;
   }
-  
+
   .info-item {
     font-size: 11px;
   }

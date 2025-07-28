@@ -51,7 +51,7 @@
               <div class="points-number">{{ pointsInfo?.total_points || 0 }}</div>
               <div class="points-label">总积分</div>
             </div>
-            
+
             <!-- 购买等级卡按钮 - 移到积分概览内 -->
             <div class="purchase-btn-container">
               <van-button
@@ -211,10 +211,11 @@
 </template>
 
 <script>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Toast } from 'vant'
 import { levelCardApi, pointsApi, authApi } from '../services/api.js'
 import BaseInput from './BaseInput.vue'
+import eventBus, { EVENTS } from '../utils/eventBus.js'
 
 export default {
   name: 'PointsModal',
@@ -472,6 +473,26 @@ export default {
         resetBindForm()
         showPurchaseModal.value = false
       }
+    })
+
+    // 监听积分更新事件
+    const handlePointsUpdateEvent = async () => {
+      console.log('🔄 PointsModal 收到积分更新事件，刷新积分信息')
+      if (props.show && isLoggedIn.value) {
+        await loadPointsInfo()
+      }
+    }
+
+    // 组件挂载时添加事件监听
+    onMounted(() => {
+      eventBus.on(EVENTS.POINTS_UPDATED, handlePointsUpdateEvent)
+      eventBus.on(EVENTS.POINTS_CONSUMED, handlePointsUpdateEvent)
+    })
+
+    // 组件卸载时移除事件监听
+    onUnmounted(() => {
+      eventBus.off(EVENTS.POINTS_UPDATED, handlePointsUpdateEvent)
+      eventBus.off(EVENTS.POINTS_CONSUMED, handlePointsUpdateEvent)
     })
 
     return {
@@ -932,22 +953,22 @@ export default {
     justify-content: space-between; /* 在小屏幕上均匀分布 */
     gap: 2px; /* 减小间距 */
   }
-  
+
   .process-step {
     min-width: 40px; /* 减小最小宽度 */
   }
-  
+
   .process-arrow {
     margin: 0 1px; /* 减小箭头边距 */
     font-size: 12px; /* 减小箭头大小 */
   }
-  
+
   .step-number {
     width: 18px; /* 减小步骤数字圆圈大小 */
     height: 18px;
     font-size: 9px;
   }
-  
+
   .step-text {
     font-size: 9px; /* 减小文字大小 */
   }

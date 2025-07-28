@@ -126,8 +126,8 @@ const processImages = async () => {
       processingTime.value = `${duration}秒`
 
       // 显示成功toast
-      const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
-      Toast.success(`🎉 换脸完成！${pointsInfo}可以拖拽中间线对比目标图像和换脸结果`)
+      const pointsInfo = result.pointsConsumed ? `\n消耗${result.pointsConsumed}点积分` : ''
+      Toast.success(`🎉 换脸完成！${pointsInfo}\n可以拖拽中间线对比目标图像和换脸结果`)
       console.log('✅ 换脸处理完成')
     } else {
       throw new Error(result.error || '换脸处理失败')
@@ -174,17 +174,11 @@ const resetProcess = () => {
 }
 
 // 下载结果
-const handleDownload = (imageUrl) => {
+const handleDownload = async (imageUrl) => {
   if (!imageUrl) return
 
-  const link = document.createElement('a')
-  link.href = imageUrl
-  link.download = `faceswap_result_${Date.now()}.png`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-
-  Toast.success('图片下载已开始')
+  const { downloadImage } = await import('../utils/downloadUtils.js')
+  await downloadImage(imageUrl, 'faceswap_result')
 }
 
 // 用户登录成功回调

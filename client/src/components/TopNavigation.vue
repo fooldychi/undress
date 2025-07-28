@@ -83,6 +83,7 @@ import { authApi } from '../services/api.js'
 import levelCardPointsManager from '../utils/levelCardPointsManager.js'
 import PointsModal from './PointsModal.vue'
 import AuthModal from './AuthModal.vue'
+import eventBus, { EVENTS } from '../utils/eventBus.js'
 
 // 定义props
 const props = defineProps({
@@ -309,10 +310,26 @@ const validateTokenSilently = async () => {
 
 // 移除跨标签页同步逻辑
 
+// 监听积分更新事件
+const handlePointsUpdateEvent = async () => {
+  console.log('🔄 收到积分更新事件，刷新积分显示')
+  await updatePointsStatus()
+}
+
 // 组件挂载时初始化
 onMounted(() => {
   initUserInfo()
   updatePointsStatus()
+
+  // 监听积分相关事件
+  eventBus.on(EVENTS.POINTS_UPDATED, handlePointsUpdateEvent)
+  eventBus.on(EVENTS.POINTS_CONSUMED, handlePointsUpdateEvent)
+})
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  eventBus.off(EVENTS.POINTS_UPDATED, handlePointsUpdateEvent)
+  eventBus.off(EVENTS.POINTS_CONSUMED, handlePointsUpdateEvent)
 })
 
 // 暴露给父组件的方法

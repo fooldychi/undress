@@ -118,7 +118,7 @@ const processImages = async () => {
       processingTime.value = `${duration}秒`
 
       // 显示成功toast
-      const pointsInfo = result.pointsConsumed ? `（消耗${result.pointsConsumed}点）` : ''
+      const pointsInfo = result.pointsConsumed ? `\n消耗${result.pointsConsumed}点积分` : ''
       Toast.success(`🎉 换脸完成！${pointsInfo}`)
       console.log('✅ 换脸处理完成')
     } else {
