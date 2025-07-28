@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 32,
+            "activePatchIndex": 35,
             "patches": [
                 {
                     "date": 1752283330589,
@@ -136,6 +136,18 @@
                 {
                     "date": 1753593466923,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,15 +1,14 @@\n // 导入ComfyUI工作流服务\r\n import { processUndressImage } from './comfyui.js'\r\n \r\n-// ComfyUI API服务配置 - 延长超时时间\r\n+// ComfyUI API服务配置 - 无超时设计\r\n const API_CONFIG = {\r\n   // ComfyUI服务器URL - 将从配置服务获取\r\n   BASE_URL: 'https://dzqgp58z0s-8188.cnb.run', // 默认值，将被配置服务覆盖\r\n   // 客户端ID，用于标识请求来源\r\n-  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b', // 默认值，将被配置服务覆盖\r\n-  // 请求超时时间（毫秒）\r\n-  TIMEOUT: 600000 // 从5分钟延长到10分钟\r\n+  CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b' // 默认值，将被配置服务覆盖\r\n+  // 🎯 移除TIMEOUT配置 - 系统已实现\"无超时\"设计，任务处理时间由服务器控制\r\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n"
+                },
+                {
+                    "date": 1753711064974,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,10 +11,10 @@\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量或默认端口\r\n-  BASE_URL: import.meta.env.DEV ? '' : `http://localhost:${import.meta.env.VITE_SERVER_PORT || 3007}`,\r\n+  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量\r\n+  BASE_URL: import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api').replace('/api', ''),\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1753712160973,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,10 +11,10 @@\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量\r\n-  BASE_URL: import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api').replace('/api', ''),\r\n+  // 后端服务器URL - 开发环境使用代理，生产环境使用服务器IP\r\n+  BASE_URL: import.meta.env.DEV ? '' : 'http://114.132.50.71:3007',\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1753712518193,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,9 @@\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n   // 后端服务器URL - 开发环境使用代理，生产环境使用服务器IP\r\n-  BASE_URL: import.meta.env.DEV ? '' : 'http://114.132.50.71:3007',\r\n+  BASE_URL: import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007',\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
                 }
             ],
             "date": 1752283330589,

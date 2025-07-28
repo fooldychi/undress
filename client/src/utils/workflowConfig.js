@@ -9,7 +9,11 @@ export async function getWorkflowNodeConfig(workflowType) {
   try {
     console.log(`🔄 获取${workflowType}工作流节点配置...`)
 
-    const response = await fetch('/api/workflow-config/public')
+    // 构建正确的API URL
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const apiUrl = `${baseUrl}/api/workflow-config/public`;
+
+    const response = await fetch(apiUrl)
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
@@ -113,7 +117,11 @@ export function getDefaultNodeConfig(workflowType) {
  */
 export async function isWorkflowEnabled(workflowType) {
   try {
-    const response = await fetch('/api/workflow-config/public')
+    // 构建正确的API URL
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const apiUrl = `${baseUrl}/api/workflow-config/public`;
+
+    const response = await fetch(apiUrl)
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
@@ -139,7 +147,11 @@ export async function isWorkflowEnabled(workflowType) {
  */
 export async function getWorkflowInfo(workflowType) {
   try {
-    const response = await fetch('/api/workflow-config/public')
+    // 构建正确的API URL
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const apiUrl = `${baseUrl}/api/workflow-config/public`;
+
+    const response = await fetch(apiUrl)
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }

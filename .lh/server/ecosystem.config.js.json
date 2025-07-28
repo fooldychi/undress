@@ -1,0 +1,18 @@
+{
+    "sourceFile": "server/ecosystem.config.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753705792480,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753705792480,
+            "name": "Commit-0",
+            "content": "module.exports = {\n  apps: [{\n    name: 'aimagic-server',\n    script: 'src\\\\app.js',\n    instances: 1,\n    autorestart: true,\n    watch: false,\n    max_memory_restart: '1G',\n    env: {\n      NODE_ENV: 'development',\n      PORT: 3007\n    },\n    env_production: {\n      NODE_ENV: 'production',\n      PORT: 3007\n    },\n    // Windows路径格式的日志配置\n    error_file: '.\\\\logs\\\\err.log',\n    out_file: '.\\\\logs\\\\out.log',\n    log_file: '.\\\\logs\\\\combined.log',\n    time: true,\n\n    // 进程管理配置\n    min_uptime: '10s',\n    max_restarts: 10,\n\n    // 监控配置\n    exec_mode: 'fork',\n\n    // 环境变量文件\n    env_file: '.env.production',\n\n    // 启动延迟\n    wait_ready: true,\n    listen_timeout: 3000,\n    kill_timeout: 5000,\n\n    // Windows特定配置\n    windowsHide: true,\n\n    // 内存监控\n    max_memory_restart: '1G',\n\n    // 自动重启配置\n    restart_delay: 4000,\n\n    // 日志轮转\n    log_date_format: 'YYYY-MM-DD HH:mm Z',\n\n    // 合并日志\n    merge_logs: true,\n\n    // 进程标题\n    name: 'aimagic-server-prod',\n\n    // Windows服务配置\n    node_args: '--max-old-space-size=1024'\n  }],\n\n  deploy: {\n    production: {\n      user: 'Administrator',\n      host: '114.132.50.71',\n      ref: 'origin/main',\n      repo: 'git@github.com:your-repo/aimagic.git',\n      path: 'C:\\\\inetpub\\\\wwwroot\\\\aimagic',\n      'pre-deploy-local': '',\n      'post-deploy': 'npm install --production && pm2 reload ecosystem.config.js --env production',\n      'pre-setup': ''\n    }\n  }\n};\n"
+        }
+    ]
+}

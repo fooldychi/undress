@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/scripts/deploy.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753702096938,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753702096938,
+            "name": "Commit-0",
+            "content": "#!/usr/bin/env node\r\n\r\n/**\r\n * GitHub Pages 部署脚本\r\n * 用于将构建后的静态文件部署到 GitHub Pages\r\n */\r\n\r\nimport { execSync } from 'child_process'\r\nimport fs from 'fs'\r\nimport path from 'path'\r\n\r\nconst REPO_URL = 'git@github.com:fooldychi/undress.git'\r\nconst BRANCH = 'gh-pages'\r\n\r\nconsole.log('🚀 开始部署到 GitHub Pages...')\r\n\r\ntry {\r\n  // 1. 构建项目\r\n  console.log('📦 构建项目...')\r\n  execSync('npm run build', { stdio: 'inherit' })\r\n\r\n  // 2. 进入构建目录\r\n  process.chdir('dist')\r\n\r\n  // 3. 初始化 git 仓库\r\n  console.log('🔧 初始化 Git 仓库...')\r\n  execSync('git init', { stdio: 'inherit' })\r\n  execSync('git checkout -b main', { stdio: 'inherit' })\r\n  execSync('git add -A', { stdio: 'inherit' })\r\n  execSync('git commit -m \"deploy: GitHub Pages\"', { stdio: 'inherit' })\r\n\r\n  // 4. 推送到 gh-pages 分支\r\n  console.log('📤 推送到 GitHub Pages...')\r\n  execSync(`git push -f ${REPO_URL} main:${BRANCH}`, { stdio: 'inherit' })\r\n\r\n  console.log('✅ 部署成功！')\r\n  console.log('🌐 网站将在几分钟后可用：')\r\n  console.log('   - 自定义域名: https://undress.icomfy.co/')\r\n  console.log('   - GitHub Pages: https://fooldychi.github.io/undress/')\r\n  console.log('   - 域名测试页面: https://undress.icomfy.co/domain-test.html')\r\n\r\n} catch (error) {\r\n  console.error('❌ 部署失败:', error.message)\r\n  process.exit(1)\r\n}\r\n"
+        }
+    ]
+}

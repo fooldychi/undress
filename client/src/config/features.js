@@ -131,8 +131,12 @@ export async function fetchFeaturesFromAPI() {
   try {
     console.log('🔄 从API获取功能配置...');
 
+    // 构建正确的API URL
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const apiUrl = `${baseUrl}/api/workflow-config/features`;
+
     // 调用后台API获取启用的功能
-    const response = await fetch('/api/workflow-config/features');
+    const response = await fetch(apiUrl);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

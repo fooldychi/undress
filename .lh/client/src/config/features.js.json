@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1752436588345,
@@ -28,6 +28,18 @@
                 {
                     "date": 1753544372561,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -143,11 +143,37 @@\n     if (!result.success) {\n       throw new Error(result.message || '获取功能配置失败');\n     }\n \n-    console.log(`✅ 获取到 ${result.data.length} 个启用的功能`);\n-    return result.data;\n+    // 修复API返回的图标配置\n+    const fixedFeatures = result.data.map(feature => {\n+      const fixedFeature = { ...feature };\n \n+      // 如果图标配置仍然是旧格式，转换为新格式\n+      if (fixedFeature.icon && fixedFeature.icon.type === 'custom') {\n+        if (fixedFeature.icon.component === 'UndressWomanIcon') {\n+          fixedFeature.icon = {\n+            type: 'svg',\n+            name: 'undress-woman',\n+            size: fixedFeature.icon.size || 28,\n+            color: fixedFeature.icon.color || '#667eea'\n+          };\n+        } else if (fixedFeature.icon.component === 'FaceSwapIcon') {\n+          fixedFeature.icon = {\n+            type: 'svg',\n+            name: 'face-swap',\n+            size: fixedFeature.icon.size || 28,\n+            color: fixedFeature.icon.color || '#f093fb'\n+          };\n+        }\n+      }\n+\n+      return fixedFeature;\n+    });\n+\n+    console.log(`✅ 获取到 ${fixedFeatures.length} 个启用的功能`);\n+    return fixedFeatures;\n+\n   } catch (error) {\n     console.warn('⚠️ 从API获取功能配置失败，使用默认配置:', error.message);\n \n     // 降级到静态配置\n"
+                },
+                {
+                    "date": 1753711124583,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -130,10 +130,14 @@\n export async function fetchFeaturesFromAPI() {\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n+    // 构建正确的API URL\n+    const baseUrl = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api').replace('/api', '');\n+    const apiUrl = `${baseUrl}/api/workflow-config/features`;\n+\n     // 调用后台API获取启用的功能\n-    const response = await fetch('/api/workflow-config/features');\n+    const response = await fetch(apiUrl);\n \n     if (!response.ok) {\n       throw new Error(`HTTP ${response.status}: ${response.statusText}`);\n     }\n"
+                },
+                {
+                    "date": 1753712175152,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -131,9 +131,9 @@\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n     // 构建正确的API URL\n-    const baseUrl = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api').replace('/api', '');\n+    const baseUrl = import.meta.env.DEV ? '' : 'http://114.132.50.71:3007';\n     const apiUrl = `${baseUrl}/api/workflow-config/features`;\n \n     // 调用后台API获取启用的功能\n     const response = await fetch(apiUrl);\n"
+                },
+                {
+                    "date": 1753712533395,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -131,9 +131,9 @@\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n     // 构建正确的API URL\n-    const baseUrl = import.meta.env.DEV ? '' : 'http://114.132.50.71:3007';\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\n     const apiUrl = `${baseUrl}/api/workflow-config/features`;\n \n     // 调用后台API获取启用的功能\n     const response = await fetch(apiUrl);\n"
                 }
             ],
             "date": 1752436588345,

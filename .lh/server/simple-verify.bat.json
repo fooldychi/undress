@@ -1,0 +1,22 @@
+{
+    "sourceFile": "server/simple-verify.bat",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1753709868964,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753709880109,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -101,8 +101,9 @@\n     echo [SUCCESS] All critical files found!\n     echo [INFO] Ready for packaging\n     echo.\n     echo You can now run: simple-package.bat\n+    echo After packaging, upload to server and run: deploy-simple.bat\n )\n \n echo.\n echo Press any key to continue...\n"
+                }
+            ],
+            "date": 1753709868964,
+            "name": "Commit-0",
+            "content": "@echo off\necho ========================================\necho    AIMagic Simple Verification Script\necho ========================================\necho Verification Time: %date% %time%\necho ========================================\necho.\n\nset ERROR_COUNT=0\n\necho [INFO] Starting file verification...\necho.\n\nREM Check core files\necho === Core Files ===\nif exist \"src\\app.js\" (\n    echo [OK] src\\app.js\n) else (\n    echo [ERROR] src\\app.js - Missing\n    set /a ERROR_COUNT+=1\n)\n\nif exist \"production-package.json\" (\n    echo [OK] production-package.json\n) else if exist \"package.json\" (\n    echo [OK] package.json\n) else (\n    echo [ERROR] package.json - Missing\n    set /a ERROR_COUNT+=1\n)\n\nif exist \".env.production\" (\n    echo [OK] .env.production\n) else (\n    echo [ERROR] .env.production - Missing\n    set /a ERROR_COUNT+=1\n)\n\nif exist \"ecosystem.config.js\" (\n    echo [OK] ecosystem.config.js\n) else (\n    echo [ERROR] ecosystem.config.js - Missing\n    set /a ERROR_COUNT+=1\n)\n\necho.\necho === Source Directories ===\nif exist \"src\" (\n    echo [OK] src directory\n) else (\n    echo [ERROR] src directory - Missing\n    set /a ERROR_COUNT+=1\n)\n\nif exist \"src\\config\" (\n    echo [OK] src\\config\n) else (\n    echo [WARN] src\\config - Missing\n)\n\nif exist \"src\\routes\" (\n    echo [OK] src\\routes\n) else (\n    echo [WARN] src\\routes - Missing\n)\n\nif exist \"src\\controllers\" (\n    echo [OK] src\\controllers\n) else (\n    echo [WARN] src\\controllers - Missing\n)\n\nif exist \"src\\models\" (\n    echo [OK] src\\models\n) else (\n    echo [WARN] src\\models - Missing\n)\n\necho.\necho === Deployment Scripts ===\nif exist \"deploy-simple.bat\" (\n    echo [OK] deploy-simple.bat\n) else (\n    echo [ERROR] deploy-simple.bat - Missing\n    set /a ERROR_COUNT+=1\n)\n\necho.\necho ========================================\necho          Verification Results\necho ========================================\n\nif %ERROR_COUNT% GTR 0 (\n    echo [ERROR] Found %ERROR_COUNT% critical errors!\n    echo [INFO] Please fix these errors before packaging\n    echo.\n    echo Critical files missing. Cannot proceed with packaging.\n    pause\n    exit /b 1\n) else (\n    echo [SUCCESS] All critical files found!\n    echo [INFO] Ready for packaging\n    echo.\n    echo You can now run: simple-package.bat\n)\n\necho.\necho Press any key to continue...\npause >nul\n"
+        }
+    ]
+}
