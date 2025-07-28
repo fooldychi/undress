@@ -44,8 +44,8 @@ export default defineConfig(({ command, mode }) => {
       assetsDir: 'assets'
     },
 
-    // 基础路径配置 - 自定义域名使用根路径
-    base: '/',
+    // 基础路径配置 - GitHub Pages子目录部署
+    base: process.env.NODE_ENV === 'production' ? '/undress/' : '/',
 
     // 环境变量配置
     define: {

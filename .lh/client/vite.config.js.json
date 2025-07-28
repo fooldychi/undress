@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1752284292222,
@@ -28,6 +28,10 @@
                 {
                     "date": 1752354037917,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -15,9 +15,8 @@\n \r\n     // 开发服务器配置\r\n     server: {\r\n       port: clientPort,\r\n-      host: '0.0.0.0',\r\n       open: true,\r\n       proxy: {\r\n         '/api': {\r\n           target: `http://localhost:${serverPort}`,\r\n"
+                },
+                {
+                    "date": 1753714218364,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -43,10 +43,10 @@\n       sourcemap: false,\r\n       assetsDir: 'assets'\r\n     },\r\n \r\n-    // 基础路径配置 - 自定义域名使用根路径\r\n-    base: '/',\r\n+    // 基础路径配置 - GitHub Pages子目录部署\r\n+    base: process.env.NODE_ENV === 'production' ? '/undress/' : '/',\r\n \r\n     // 环境变量配置\r\n     define: {\r\n       __VUE_PROD_DEVTOOLS__: false,\r\n"
                 }
             ],
             "date": 1752284292222,
