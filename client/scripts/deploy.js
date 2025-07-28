@@ -9,7 +9,7 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
-const REPO_URL = 'https://github.com/fooldychi/undress.git'
+const REPO_URL = 'git@github.com:fooldychi/undress.git'
 const BRANCH = 'gh-pages'
 
 console.log('🚀 开始部署到 GitHub Pages...')
