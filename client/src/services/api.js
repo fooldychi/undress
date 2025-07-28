@@ -178,7 +178,11 @@ export const comfyApi = {
 
 // 后端API请求函数（带重试机制）
 async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
-  const url = `${BACKEND_API_CONFIG.BASE_URL}${endpoint}`
+  // 使用统一的API配置管理
+  const baseUrl = getBackendAPIConfig().BASE_URL
+  const url = `${baseUrl}${endpoint}`
+
+  console.log(`🚀 后端API请求: ${options.method || 'POST'} ${url}`)
 
   const defaultOptions = {
     method: 'POST',
@@ -304,7 +308,7 @@ export const authApi = {
   // 用户注册
   register: async (username, password) => {
     try {
-      const response = await makeBackendRequest('/api/auth/register', {
+      const response = await apiRequest(API_ENDPOINTS.AUTH_REGISTER, {
         method: 'POST',
         body: JSON.stringify({ username, password })
       })
@@ -325,7 +329,7 @@ export const authApi = {
   // 用户登录
   login: async (username, password) => {
     try {
-      const response = await makeBackendRequest('/api/auth/login', {
+      const response = await apiRequest(API_ENDPOINTS.AUTH_LOGIN, {
         method: 'POST',
         body: JSON.stringify({ username, password })
       })
@@ -346,7 +350,7 @@ export const authApi = {
   // 获取当前用户信息
   getCurrentUser: async () => {
     try {
-      const response = await makeBackendRequest('/api/auth/me', {
+      const response = await apiRequest(API_ENDPOINTS.AUTH_ME, {
         method: 'GET'
       })
 
@@ -393,7 +397,7 @@ export const pointsApi = {
   // 获取用户积分信息
   getUserPoints: async () => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/user-points', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_USER_POINTS, {
         method: 'GET'
       })
       return response
@@ -412,7 +416,7 @@ export const pointsApi = {
         recent: recent.toString()
       })
 
-      const response = await makeBackendRequest(`/api/level-cards/point-logs?${params}`, {
+      const response = await apiRequest(`${API_ENDPOINTS.LEVEL_CARDS_POINT_LOGS}?${params}`, {
         method: 'GET'
       })
       return response
@@ -425,7 +429,7 @@ export const pointsApi = {
   // 获取用户绑定的等级卡信息
   getUserCards: async () => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/my-cards', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_MY_CARDS, {
         method: 'GET'
       })
       return response
@@ -438,7 +442,7 @@ export const pointsApi = {
   // 消耗积分
   consumePoints: async (amount, description = '积分消费', mediaUrl = null) => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/consume-points', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_CONSUME_POINTS, {
         method: 'POST',
         body: JSON.stringify({ amount, description, mediaUrl })
       })
@@ -455,7 +459,7 @@ export const systemApi = {
   // 健康检查
   healthCheck: async () => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/types', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_TYPES, {
         method: 'GET'
       })
       return response
@@ -471,7 +475,7 @@ export const levelCardApi = {
   // 获取等级卡类型列表
   getCardTypes: async () => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/types', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_TYPES, {
         method: 'GET'
       })
       return response
@@ -484,7 +488,7 @@ export const levelCardApi = {
   // 绑定等级卡
   bindCard: async (cardNumber, cardPassword) => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/bind', {
+      const response = await apiRequest('/api/level-cards/bind', {
         method: 'POST',
         body: JSON.stringify({ cardNumber, cardPassword })
       })
@@ -498,7 +502,7 @@ export const levelCardApi = {
   // 获取用户绑定的等级卡列表
   getMyCards: async () => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/my-cards', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_MY_CARDS, {
         method: 'GET'
       })
       return response
@@ -511,7 +515,7 @@ export const levelCardApi = {
   // 获取用户积分信息（基于等级卡）
   getUserPoints: async () => {
     try {
-      const response = await makeBackendRequest('/api/level-cards/user-points', {
+      const response = await apiRequest(API_ENDPOINTS.LEVEL_CARDS_USER_POINTS, {
         method: 'GET'
       })
       return response
@@ -527,7 +531,7 @@ export const userApi = {
   // 获取用户详细信息
   getUserProfile: async (userId) => {
     try {
-      const response = await makeBackendRequest(`/api/users/${userId}`, {
+      const response = await apiRequest(`/api/users/${userId}`, {
         method: 'GET'
       })
       return response
@@ -540,7 +544,7 @@ export const userApi = {
   // 更新用户信息
   updateUserProfile: async (userId, userData) => {
     try {
-      const response = await makeBackendRequest(`/api/users/${userId}`, {
+      const response = await apiRequest(`/api/users/${userId}`, {
         method: 'PUT',
         body: JSON.stringify(userData)
       })
