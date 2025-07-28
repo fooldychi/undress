@@ -44,8 +44,10 @@ export default defineConfig(({ command, mode }) => {
       assetsDir: 'assets'
     },
 
-    // 基础路径配置 - GitHub Pages子目录部署
-    base: process.env.NODE_ENV === 'production' ? '/undress/' : '/',
+    // 基础路径配置 - 根据部署目标动态设置
+    // 如果设置了GITHUB_PAGES_SUBDIRECTORY环境变量，使用子目录路径
+    // 否则使用根路径（适用于自定义域名）
+    base: process.env.GITHUB_PAGES_SUBDIRECTORY === 'true' ? '/undress/' : '/',
 
     // 环境变量配置
     define: {

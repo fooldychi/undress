@@ -1,0 +1,18 @@
+{
+    "sourceFile": "client/package.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753714495568,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753714495568,
+            "name": "Commit-0",
+            "content": "{\r\n  \"name\": \"imagic\",\r\n  \"private\": true,\r\n  \"version\": \"0.0.0\",\r\n  \"type\": \"module\",\r\n  \"scripts\": {\r\n    \"dev\": \"vite\",\r\n    \"build\": \"vite build\",\r\n    \"preview\": \"vite preview\",\r\n    \"proxy\": \"node proxy-server.js\",\r\n    \"dev:full\": \"concurrently \\\"npm run proxy\\\" \\\"npm run dev\\\"\",\r\n    \"build:github\": \"cross-env GITHUB_PAGES_SUBDIRECTORY=true vite build --mode production\",\r\n    \"build:custom\": \"vite build --mode production\",\r\n    \"deploy\": \"node scripts/deploy.js\",\r\n    \"deploy:github\": \"npm run build:github && node scripts/deploy.js\",\r\n    \"deploy:custom\": \"npm run build:custom && node scripts/deploy.js\"\r\n  },\r\n  \"dependencies\": {\r\n    \"cors\": \"^2.8.5\",\r\n    \"express\": \"^4.18.2\",\r\n    \"form-data\": \"^4.0.0\",\r\n    \"http-proxy-middleware\": \"^2.0.6\",\r\n    \"lucide-vue-next\": \"^0.525.0\",\r\n    \"multer\": \"^1.4.5-lts.1\",\r\n    \"node-fetch\": \"^2.6.7\",\r\n    \"vant\": \"^3.4.3\",\r\n    \"vue\": \"^3.4.0\",\r\n    \"vue-router\": \"^4.2.5\"\r\n  },\r\n  \"devDependencies\": {\r\n    \"@vitejs/plugin-vue\": \"^5.0.0\",\r\n    \"concurrently\": \"^7.6.0\",\r\n    \"cross-env\": \"^7.0.3\",\r\n    \"vite\": \"^5.0.0\"\r\n  }\r\n}\r\n"
+        }
+    ]
+}

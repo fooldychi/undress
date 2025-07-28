@@ -9,8 +9,8 @@
     "preview": "vite preview",
     "proxy": "node proxy-server.js",
     "dev:full": "concurrently \"npm run proxy\" \"npm run dev\"",
-    "build:github": "vite build --mode production",
-    "build:custom": "cross-env CUSTOM_DOMAIN=true vite build --mode production",
+    "build:github": "cross-env GITHUB_PAGES_SUBDIRECTORY=true vite build --mode production",
+    "build:custom": "vite build --mode production",
     "deploy": "node scripts/deploy.js",
     "deploy:github": "npm run build:github && node scripts/deploy.js",
     "deploy:custom": "npm run build:custom && node scripts/deploy.js"
