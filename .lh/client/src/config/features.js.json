@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 9,
+            "activePatchIndex": 10,
             "patches": [
                 {
                     "date": 1752436588345,
@@ -44,6 +44,10 @@
                 {
                     "date": 1753719415003,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -131,9 +131,9 @@\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n     // 构建正确的API URL\n-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');\n     const apiUrl = `${baseUrl}/api/workflow-config/features`;\n \n     // 调用后台API获取启用的功能\n     const response = await fetch(apiUrl);\n"
+                },
+                {
+                    "date": 1753720338087,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -121,8 +121,11 @@\n export function getIconStyle(iconClass) {\n   return ICON_STYLES[iconClass] || {}\n }\n \n+// 导入统一API配置\n+import { apiRequest, API_ENDPOINTS } from '../utils/apiConfig.js'\n+\n /**\n  * 从后台API获取启用的功能配置\n  * 根据工作流启用状态动态返回功能列表\n  * @returns {Promise<Array>} 功能配置列表\n@@ -130,21 +133,11 @@\n export async function fetchFeaturesFromAPI() {\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n-    // 构建正确的API URL\n-    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');\n-    const apiUrl = `${baseUrl}/api/workflow-config/features`;\n+    // 使用统一的API配置\n+    const result = await apiRequest(API_ENDPOINTS.WORKFLOW_CONFIG_FEATURES);\n \n-    // 调用后台API获取启用的功能\n-    const response = await fetch(apiUrl);\n-\n-    if (!response.ok) {\n-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);\n-    }\n-\n-    const result = await response.json();\n-\n     if (!result.success) {\n       throw new Error(result.message || '获取功能配置失败');\n     }\n \n"
                 }
             ],
             "date": 1752436588345,

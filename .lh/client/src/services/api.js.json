@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 36,
+            "activePatchIndex": 39,
             "patches": [
                 {
                     "date": 1752283330589,
@@ -152,6 +152,18 @@
                 {
                     "date": 1753719401455,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,10 +11,10 @@\n }\r\n \r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 开发环境使用代理，生产环境使用服务器IP\r\n-  BASE_URL: import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007',\r\n+  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量或默认IP\r\n+  BASE_URL: import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', ''),\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1753720269217,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,12 +9,33 @@\n   CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b' // 默认值，将被配置服务覆盖\r\n   // 🎯 移除TIMEOUT配置 - 系统已实现\"无超时\"设计，任务处理时间由服务器控制\r\n }\r\n \r\n+// 统一API配置管理\r\n+function getAPIBaseURL() {\r\n+  if (import.meta.env.MODE === 'development') {\r\n+    return '' // 开发环境使用代理\r\n+  }\r\n+\r\n+  // 生产环境：从环境变量获取，确保使用HTTP协议\r\n+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api'\r\n+  const baseUrl = apiUrl.replace('/api', '')\r\n+\r\n+  // 强制使用HTTP协议（防止意外的HTTPS配置）\r\n+  if (baseUrl.startsWith('https://')) {\r\n+    console.warn('⚠️ 检测到HTTPS配置，强制转换为HTTP:', baseUrl)\r\n+    return baseUrl.replace('https://', 'http://')\r\n+  }\r\n+\r\n+  return baseUrl\r\n+}\r\n+\r\n // 后端API服务配置\r\n const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量或默认IP\r\n-  BASE_URL: import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', ''),\r\n+  // 后端服务器URL - 统一管理\r\n+  get BASE_URL() {\r\n+    return getAPIBaseURL()\r\n+  },\r\n   // 请求超时时间（毫秒）\r\n   TIMEOUT: 30000 // 30秒\r\n }\r\n \r\n"
+                },
+                {
+                    "date": 1753720404887,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,8 @@\n // 导入ComfyUI工作流服务\r\n import { processUndressImage } from './comfyui.js'\r\n+// 导入统一API配置\r\n+import { getBackendAPIConfig, buildAPIURL, apiRequest, API_ENDPOINTS } from '../utils/apiConfig.js'\r\n \r\n // ComfyUI API服务配置 - 无超时设计\r\n const API_CONFIG = {\r\n   // ComfyUI服务器URL - 将从配置服务获取\r\n"
+                },
+                {
+                    "date": 1753720420812,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,37 +11,11 @@\n   CLIENT_ID: 'abc1373d4ad648a3a81d0587fbe5534b' // 默认值，将被配置服务覆盖\r\n   // 🎯 移除TIMEOUT配置 - 系统已实现\"无超时\"设计，任务处理时间由服务器控制\r\n }\r\n \r\n-// 统一API配置管理\r\n-function getAPIBaseURL() {\r\n-  if (import.meta.env.MODE === 'development') {\r\n-    return '' // 开发环境使用代理\r\n-  }\r\n+// 后端API服务配置 - 使用统一配置管理\r\n+const BACKEND_API_CONFIG = getBackendAPIConfig()\r\n \r\n-  // 生产环境：从环境变量获取，确保使用HTTP协议\r\n-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api'\r\n-  const baseUrl = apiUrl.replace('/api', '')\r\n-\r\n-  // 强制使用HTTP协议（防止意外的HTTPS配置）\r\n-  if (baseUrl.startsWith('https://')) {\r\n-    console.warn('⚠️ 检测到HTTPS配置，强制转换为HTTP:', baseUrl)\r\n-    return baseUrl.replace('https://', 'http://')\r\n-  }\r\n-\r\n-  return baseUrl\r\n-}\r\n-\r\n-// 后端API服务配置\r\n-const BACKEND_API_CONFIG = {\r\n-  // 后端服务器URL - 统一管理\r\n-  get BASE_URL() {\r\n-    return getAPIBaseURL()\r\n-  },\r\n-  // 请求超时时间（毫秒）\r\n-  TIMEOUT: 30000 // 30秒\r\n-}\r\n-\r\n // 通用请求函数\r\n async function makeRequest(endpoint, options = {}) {\r\n   const url = `${API_CONFIG.BASE_URL}${endpoint}`\r\n \r\n"
                 }
             ],
             "date": 1752283330589,

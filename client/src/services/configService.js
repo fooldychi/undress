@@ -1,6 +1,7 @@
 // 配置服务 - 从服务端API获取配置数据
 import { updateComfyUIConfig, getCurrentConfig } from './comfyui.js'
 import { updateAPIConfig } from './api.js'
+import { buildAPIURL, apiRequest, API_ENDPOINTS } from '../utils/apiConfig.js'
 
 // 配置服务类
 class ConfigService {
@@ -17,22 +18,8 @@ class ConfigService {
     try {
       console.log('🔄 从服务端获取配置...')
 
-      // 构建正确的API URL
-      const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '')
-      const apiUrl = `${baseUrl}/api/public-config`
-
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-
-      const result = await response.json()
+      // 使用统一的API配置
+      const result = await apiRequest(API_ENDPOINTS.PUBLIC_CONFIG)
 
       if (result.success && result.data) {
         console.log('✅ 服务端配置获取成功:', result.data)

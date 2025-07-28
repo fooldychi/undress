@@ -122,6 +122,9 @@ export function getIconStyle(iconClass) {
   return ICON_STYLES[iconClass] || {}
 }
 
+// 导入统一API配置
+import { apiRequest, API_ENDPOINTS } from '../utils/apiConfig.js'
+
 /**
  * 从后台API获取启用的功能配置
  * 根据工作流启用状态动态返回功能列表
@@ -131,18 +134,8 @@ export async function fetchFeaturesFromAPI() {
   try {
     console.log('🔄 从API获取功能配置...');
 
-    // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
-    const apiUrl = `${baseUrl}/api/workflow-config/features`;
-
-    // 调用后台API获取启用的功能
-    const response = await fetch(apiUrl);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result = await response.json();
+    // 使用统一的API配置
+    const result = await apiRequest(API_ENDPOINTS.WORKFLOW_CONFIG_FEATURES);
 
     if (!result.success) {
       throw new Error(result.message || '获取功能配置失败');

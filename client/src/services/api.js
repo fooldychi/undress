@@ -1,5 +1,7 @@
 // 导入ComfyUI工作流服务
 import { processUndressImage } from './comfyui.js'
+// 导入统一API配置
+import { getBackendAPIConfig, buildAPIURL, apiRequest, API_ENDPOINTS } from '../utils/apiConfig.js'
 
 // ComfyUI API服务配置 - 无超时设计
 const API_CONFIG = {
@@ -10,13 +12,8 @@ const API_CONFIG = {
   // 🎯 移除TIMEOUT配置 - 系统已实现"无超时"设计，任务处理时间由服务器控制
 }
 
-// 后端API服务配置
-const BACKEND_API_CONFIG = {
-  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量或默认IP
-  BASE_URL: import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', ''),
-  // 请求超时时间（毫秒）
-  TIMEOUT: 30000 // 30秒
-}
+// 后端API服务配置 - 使用统一配置管理
+const BACKEND_API_CONFIG = getBackendAPIConfig()
 
 // 通用请求函数
 async function makeRequest(endpoint, options = {}) {

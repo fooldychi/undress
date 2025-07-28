@@ -1,4 +1,5 @@
 // 工作流节点配置工具
+import { apiRequest, API_ENDPOINTS } from './apiConfig.js'
 
 /**
  * 获取工作流节点配置
@@ -9,16 +10,8 @@ export async function getWorkflowNodeConfig(workflowType) {
   try {
     console.log(`🔄 获取${workflowType}工作流节点配置...`)
 
-    // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
-    const apiUrl = `${baseUrl}/api/workflow-config/public`;
-
-    const response = await fetch(apiUrl)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
+    // 使用统一的API配置
+    const result = await apiRequest(API_ENDPOINTS.WORKFLOW_CONFIG_PUBLIC)
     if (!result.success) {
       throw new Error(result.message || '获取配置失败')
     }
@@ -117,16 +110,8 @@ export function getDefaultNodeConfig(workflowType) {
  */
 export async function isWorkflowEnabled(workflowType) {
   try {
-    // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
-    const apiUrl = `${baseUrl}/api/workflow-config/public`;
-
-    const response = await fetch(apiUrl)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
+    // 使用统一的API配置
+    const result = await apiRequest(API_ENDPOINTS.WORKFLOW_CONFIG_PUBLIC)
     if (!result.success) {
       throw new Error(result.message || '获取配置失败')
     }
@@ -147,16 +132,8 @@ export async function isWorkflowEnabled(workflowType) {
  */
 export async function getWorkflowInfo(workflowType) {
   try {
-    // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
-    const apiUrl = `${baseUrl}/api/workflow-config/public`;
-
-    const response = await fetch(apiUrl)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
+    // 使用统一的API配置
+    const result = await apiRequest(API_ENDPOINTS.WORKFLOW_CONFIG_PUBLIC)
     if (!result.success) {
       throw new Error(result.message || '获取配置失败')
     }
