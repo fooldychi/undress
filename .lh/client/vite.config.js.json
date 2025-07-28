@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 7,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1752284292222,
@@ -36,6 +36,10 @@
                 {
                     "date": 1753714473531,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -43,10 +43,12 @@\n       sourcemap: false,\r\n       assetsDir: 'assets'\r\n     },\r\n \r\n-    // 基础路径配置 - GitHub Pages子目录部署\r\n-    base: process.env.NODE_ENV === 'production' ? '/undress/' : '/',\r\n+    // 基础路径配置 - 根据部署目标动态设置\r\n+    // 如果设置了GITHUB_PAGES_SUBDIRECTORY环境变量，使用子目录路径\r\n+    // 否则使用根路径（适用于自定义域名）\r\n+    base: process.env.GITHUB_PAGES_SUBDIRECTORY === 'true' ? '/undress/' : '/',\r\n \r\n     // 环境变量配置\r\n     define: {\r\n       __VUE_PROD_DEVTOOLS__: false,\r\n"
+                },
+                {
+                    "date": 1753716149231,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -43,12 +43,10 @@\n       sourcemap: false,\r\n       assetsDir: 'assets'\r\n     },\r\n \r\n-    // 基础路径配置 - 根据部署目标动态设置\r\n-    // 如果设置了GITHUB_PAGES_SUBDIRECTORY环境变量，使用子目录路径\r\n-    // 否则使用根路径（适用于自定义域名）\r\n-    base: process.env.GITHUB_PAGES_SUBDIRECTORY === 'true' ? '/undress/' : '/',\r\n+    // 基础路径配置 - GitHub Pages子目录部署\r\n+    base: '/undress/',\r\n \r\n     // 环境变量配置\r\n     define: {\r\n       __VUE_PROD_DEVTOOLS__: false,\r\n"
                 }
             ],
             "date": 1752284292222,
