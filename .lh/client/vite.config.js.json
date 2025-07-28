@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 8,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752284292222,
@@ -40,6 +40,10 @@
                 {
                     "date": 1753716149231,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -43,12 +43,10 @@\n       sourcemap: false,\r\n       assetsDir: 'assets'\r\n     },\r\n \r\n-    // 基础路径配置 - 根据部署目标动态设置\r\n-    // 如果设置了GITHUB_PAGES_SUBDIRECTORY环境变量，使用子目录路径\r\n-    // 否则使用根路径（适用于自定义域名）\r\n-    base: process.env.GITHUB_PAGES_SUBDIRECTORY === 'true' ? '/undress/' : '/',\r\n+    // 基础路径配置 - GitHub Pages子目录部署\r\n+    base: '/undress/',\r\n \r\n     // 环境变量配置\r\n     define: {\r\n       __VUE_PROD_DEVTOOLS__: false,\r\n"
+                },
+                {
+                    "date": 1753718073559,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,21 @@\n import { defineConfig, loadEnv } from 'vite'\r\n import vue from '@vitejs/plugin-vue'\r\n \r\n+// 部署配置\r\n+const deploymentConfig = {\r\n+  // 自定义域名部署 (undress.icomfy.co)\r\n+  custom: {\r\n+    base: '/',\r\n+    publicPath: '/'\r\n+  },\r\n+  // GitHub Pages 子目录部署 (fooldychi.github.io/undress/)\r\n+  github: {\r\n+    base: '/undress/',\r\n+    publicPath: '/undress/'\r\n+  }\r\n+}\r\n+\r\n // https://vitejs.dev/config/\r\n export default defineConfig(({ command, mode }) => {\r\n   // 加载环境变量\r\n   const env = loadEnv(mode, process.cwd(), '')\r\n@@ -9,8 +23,16 @@\n   // 从环境变量获取端口，如果没有则使用默认值\r\n   const clientPort = parseInt(env.CLIENT_PORT) || 3001\r\n   const serverPort = parseInt(env.SERVER_PORT) || 3007\r\n \r\n+  // 确定部署类型\r\n+  const deployType = env.VITE_DEPLOY_TYPE || 'custom'\r\n+  const config = deploymentConfig[deployType] || deploymentConfig.custom\r\n+\r\n+  console.log(`🚀 构建模式: ${mode}`)\r\n+  console.log(`📦 部署类型: ${deployType}`)\r\n+  console.log(`🌐 基础路径: ${config.base}`)\r\n+\r\n   return {\r\n     plugins: [vue()],\r\n \r\n     // 开发服务器配置\r\n@@ -43,15 +65,17 @@\n       sourcemap: false,\r\n       assetsDir: 'assets'\r\n     },\r\n \r\n-    // 基础路径配置 - GitHub Pages子目录部署\r\n-    base: '/undress/',\r\n+    // 动态基础路径配置\r\n+    base: config.base,\r\n \r\n     // 环境变量配置\r\n     define: {\r\n       __VUE_PROD_DEVTOOLS__: false,\r\n-      __VUE_OPTIONS_API__: true\r\n+      __VUE_OPTIONS_API__: true,\r\n+      __DEPLOY_TYPE__: JSON.stringify(deployType),\r\n+      __PUBLIC_PATH__: JSON.stringify(config.publicPath)\r\n     }\r\n   }\r\n })\r\n \r\n"
                 }
             ],
             "date": 1752284292222,

@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1753714495568,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753718089510,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,10 +8,10 @@\n     \"build\": \"vite build\",\r\n     \"preview\": \"vite preview\",\r\n     \"proxy\": \"node proxy-server.js\",\r\n     \"dev:full\": \"concurrently \\\"npm run proxy\\\" \\\"npm run dev\\\"\",\r\n-    \"build:github\": \"cross-env GITHUB_PAGES_SUBDIRECTORY=true vite build --mode production\",\r\n-    \"build:custom\": \"vite build --mode production\",\r\n+    \"build:github\": \"cross-env VITE_DEPLOY_TYPE=github vite build --mode production\",\r\n+    \"build:custom\": \"cross-env VITE_DEPLOY_TYPE=custom vite build --mode production\",\r\n     \"deploy\": \"node scripts/deploy.js\",\r\n     \"deploy:github\": \"npm run build:github && node scripts/deploy.js\",\r\n     \"deploy:custom\": \"npm run build:custom && node scripts/deploy.js\"\r\n   },\r\n"
                 }
             ],
             "date": 1753714495568,

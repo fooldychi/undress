@@ -25,7 +25,14 @@ try {
   // 3. 初始化 git 仓库
   console.log('🔧 初始化 Git 仓库...')
   execSync('git init', { stdio: 'inherit' })
-  execSync('git checkout -b main', { stdio: 'inherit' })
+
+  // 检查是否已存在main分支
+  try {
+    execSync('git checkout main', { stdio: 'inherit' })
+  } catch (error) {
+    execSync('git checkout -b main', { stdio: 'inherit' })
+  }
+
   execSync('git add -A', { stdio: 'inherit' })
   execSync('git commit -m "deploy: GitHub Pages"', { stdio: 'inherit' })
 

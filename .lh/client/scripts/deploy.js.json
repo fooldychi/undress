@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1753702096938,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753718228616,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,9 +24,16 @@\n \r\n   // 3. 初始化 git 仓库\r\n   console.log('🔧 初始化 Git 仓库...')\r\n   execSync('git init', { stdio: 'inherit' })\r\n-  execSync('git checkout -b main', { stdio: 'inherit' })\r\n+\r\n+  // 检查是否已存在main分支\r\n+  try {\r\n+    execSync('git checkout main', { stdio: 'inherit' })\r\n+  } catch (error) {\r\n+    execSync('git checkout -b main', { stdio: 'inherit' })\r\n+  }\r\n+\r\n   execSync('git add -A', { stdio: 'inherit' })\r\n   execSync('git commit -m \"deploy: GitHub Pages\"', { stdio: 'inherit' })\r\n \r\n   // 4. 推送到 gh-pages 分支\r\n"
                 }
             ],
             "date": 1753702096938,
