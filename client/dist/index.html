@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Imagic - AI图像处理平台</title>
+  <meta name="description" content="专业的AI图像处理平台，提供换脸、换装等多种AI图像处理服务" />
+  <meta name="keywords" content="AI图像处理,换脸,换装,人工智能,图像生成" />
+
+  <!-- 允许混合内容 - 允许HTTPS网站调用HTTP API -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"/>
+
+  <!-- 预加载关键资源 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- 移动端优化 -->
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- PWA支持 -->
+  <meta name="theme-color" content="#1976d2">
+
+  <!-- 防止页面缩放 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <style>
+    /* 加载动画样式 */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: white;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .loading-subtitle {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    /* 隐藏加载动画 */
+    .loading-hidden {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    /* 基础样式重置 */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #f5f5f5;
+    }
+
+    #app {
+      min-height: 100vh;
+    }
+
+    /* 错误页面样式 */
+    .error-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .error-content {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 600px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .error-title {
+      margin: 0 0 20px 0;
+      font-size: 2rem;
+    }
+
+    .error-message {
+      font-size: 1.1rem;
+      margin: 0 0 20px 0;
+    }
+
+    .error-actions {
+      margin: 20px 0;
+    }
+
+    .error-button {
+      background: #fff;
+      color: #ee5a24;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-right: 10px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .error-button:hover {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .error-button.secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-C86wnvRP.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DcStsasH.css">
+</head>
+<body>
+  <!-- 加载动画 -->
+  <div id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Imagic</div>
+    <div class="loading-subtitle">正在加载AI图像处理平台...</div>
+  </div>
+
+  <!-- Vue应用挂载点 -->
+  <div id="app"></div>
+
+  <!-- 加载脚本 -->
+
+  <!-- 加载完成后隐藏加载动画 -->
+  <script>
+    // 监听Vue应用加载完成
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+          loading.classList.add('loading-hidden');
+          setTimeout(function() {
+            loading.remove();
+          }, 300);
+        }
+      }, 500);
+    });
+
+    // 错误处理
+    window.addEventListener('error', function(event) {
+      console.error('页面加载错误:', event.error);
+    });
+
+    // 未处理的Promise拒绝
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('未处理的Promise拒绝:', event.reason);
+    });
+  </script>
+</body>
+</html>
