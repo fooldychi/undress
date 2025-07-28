@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 8,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1752436588345,
@@ -40,6 +40,10 @@
                 {
                     "date": 1753712533395,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -131,9 +131,9 @@\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n     // 构建正确的API URL\n-    const baseUrl = import.meta.env.DEV ? '' : 'http://114.132.50.71:3007';\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\n     const apiUrl = `${baseUrl}/api/workflow-config/features`;\n \n     // 调用后台API获取启用的功能\n     const response = await fetch(apiUrl);\n"
+                },
+                {
+                    "date": 1753719415003,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -131,9 +131,9 @@\n   try {\n     console.log('🔄 从API获取功能配置...');\n \n     // 构建正确的API URL\n-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');\n     const apiUrl = `${baseUrl}/api/workflow-config/features`;\n \n     // 调用后台API获取启用的功能\n     const response = await fetch(apiUrl);\n"
                 }
             ],
             "date": 1752436588345,

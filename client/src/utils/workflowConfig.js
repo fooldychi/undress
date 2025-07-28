@@ -10,7 +10,7 @@ export async function getWorkflowNodeConfig(workflowType) {
     console.log(`🔄 获取${workflowType}工作流节点配置...`)
 
     // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
     const apiUrl = `${baseUrl}/api/workflow-config/public`;
 
     const response = await fetch(apiUrl)
@@ -118,7 +118,7 @@ export function getDefaultNodeConfig(workflowType) {
 export async function isWorkflowEnabled(workflowType) {
   try {
     // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
     const apiUrl = `${baseUrl}/api/workflow-config/public`;
 
     const response = await fetch(apiUrl)
@@ -148,7 +148,7 @@ export async function isWorkflowEnabled(workflowType) {
 export async function getWorkflowInfo(workflowType) {
   try {
     // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
     const apiUrl = `${baseUrl}/api/workflow-config/public`;
 
     const response = await fetch(apiUrl)

@@ -17,7 +17,11 @@ class ConfigService {
     try {
       console.log('🔄 从服务端获取配置...')
 
-      const response = await fetch('/api/config', {
+      // 构建正确的API URL
+      const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '')
+      const apiUrl = `${baseUrl}/api/public-config`
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

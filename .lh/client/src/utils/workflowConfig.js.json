@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 10,
+            "activePatchIndex": 13,
             "patches": [
                 {
                     "date": 1752812618314,
@@ -48,6 +48,18 @@
                 {
                     "date": 1753712574741,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -147,9 +147,9 @@\n  */\r\n export async function getWorkflowInfo(workflowType) {\r\n   try {\r\n     // 构建正确的API URL\r\n-    const baseUrl = import.meta.env.DEV ? '' : 'http://114.132.50.71:3007';\r\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\r\n     const apiUrl = `${baseUrl}/api/workflow-config/public`;\r\n \r\n     const response = await fetch(apiUrl)\r\n     if (!response.ok) {\r\n"
+                },
+                {
+                    "date": 1753719442453,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,9 +9,9 @@\n   try {\r\n     console.log(`🔄 获取${workflowType}工作流节点配置...`)\r\n \r\n     // 构建正确的API URL\r\n-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\r\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');\r\n     const apiUrl = `${baseUrl}/api/workflow-config/public`;\r\n \r\n     const response = await fetch(apiUrl)\r\n     if (!response.ok) {\r\n"
+                },
+                {
+                    "date": 1753719456183,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -117,9 +117,9 @@\n  */\r\n export async function isWorkflowEnabled(workflowType) {\r\n   try {\r\n     // 构建正确的API URL\r\n-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\r\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');\r\n     const apiUrl = `${baseUrl}/api/workflow-config/public`;\r\n \r\n     const response = await fetch(apiUrl)\r\n     if (!response.ok) {\r\n"
+                },
+                {
+                    "date": 1753719469527,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -147,9 +147,9 @@\n  */\r\n export async function getWorkflowInfo(workflowType) {\r\n   try {\r\n     // 构建正确的API URL\r\n-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';\r\n+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');\r\n     const apiUrl = `${baseUrl}/api/workflow-config/public`;\r\n \r\n     const response = await fetch(apiUrl)\r\n     if (!response.ok) {\r\n"
                 }
             ],
             "date": 1752812618314,

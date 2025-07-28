@@ -132,7 +132,7 @@ export async function fetchFeaturesFromAPI() {
     console.log('🔄 从API获取功能配置...');
 
     // 构建正确的API URL
-    const baseUrl = import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007';
+    const baseUrl = import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', '');
     const apiUrl = `${baseUrl}/api/workflow-config/features`;
 
     // 调用后台API获取启用的功能

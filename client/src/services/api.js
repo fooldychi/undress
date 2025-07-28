@@ -12,8 +12,8 @@ const API_CONFIG = {
 
 // 后端API服务配置
 const BACKEND_API_CONFIG = {
-  // 后端服务器URL - 开发环境使用代理，生产环境使用服务器IP
-  BASE_URL: import.meta.env.MODE === 'development' ? '' : 'http://114.132.50.71:3007',
+  // 后端服务器URL - 开发环境使用代理，生产环境使用环境变量或默认IP
+  BASE_URL: import.meta.env.MODE === 'development' ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007').replace('/api', ''),
   // 请求超时时间（毫秒）
   TIMEOUT: 30000 // 30秒
 }
