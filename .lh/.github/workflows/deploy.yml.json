@@ -1,0 +1,22 @@
+{
+    "sourceFile": ".github/workflows/deploy.yml",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1753757152814,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753757188677,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -39,9 +39,19 @@\n \n       - name: Upload artifact\n         uses: actions/upload-pages-artifact@v3\n         with:\n-          path: './client/dist'\n+          path: '.'\n+          exclude: |\n+            client/\n+            server/\n+            admin/\n+            scripts/\n+            .github/\n+            *.md\n+            *.js\n+            *.bat\n+            node_modules/\n \n       - name: Deploy to GitHub Pages\n         id: deployment\n         uses: actions/deploy-pages@v4\n"
+                }
+            ],
+            "date": 1753757152814,
+            "name": "Commit-0",
+            "content": "name: Deploy to GitHub Pages\n\non:\n  push:\n    branches: [ main ]\n  workflow_dispatch:\n\npermissions:\n  contents: read\n  pages: write\n  id-token: write\n\nconcurrency:\n  group: \"pages\"\n  cancel-in-progress: false\n\njobs:\n  deploy:\n    environment:\n      name: github-pages\n      url: ${{ steps.deployment.outputs.page_url }}\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout\n        uses: actions/checkout@v4\n\n      - name: List files for debugging\n        run: |\n          echo \"Root directory:\"\n          ls -la\n          echo \"Client dist directory:\"\n          ls -la client/dist/ || echo \"client/dist not found\"\n          echo \"Checking if files exist:\"\n          test -f client/dist/index.html && echo \"✅ index.html exists\" || echo \"❌ index.html missing\"\n          test -d client/dist/assets && echo \"✅ assets directory exists\" || echo \"❌ assets directory missing\"\n\n      - name: Setup Pages\n        uses: actions/configure-pages@v4\n\n      - name: Upload artifact\n        uses: actions/upload-pages-artifact@v3\n        with:\n          path: './client/dist'\n\n      - name: Deploy to GitHub Pages\n        id: deployment\n        uses: actions/deploy-pages@v4\n"
+        }
+    ]
+}

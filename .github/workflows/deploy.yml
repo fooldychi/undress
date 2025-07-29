@@ -24,13 +24,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: List files for debugging
+        run: |
+          echo "Root directory:"
+          ls -la
+          echo "Client dist directory:"
+          ls -la client/dist/ || echo "client/dist not found"
+          echo "Checking if files exist:"
+          test -f client/dist/index.html && echo "✅ index.html exists" || echo "❌ index.html missing"
+          test -d client/dist/assets && echo "✅ assets directory exists" || echo "❌ assets directory missing"
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './client/dist'
+          path: '.'
+          exclude: |
+            client/
+            server/
+            admin/
+            scripts/
+            .github/
+            *.md
+            *.js
+            *.bat
+            node_modules/
 
       - name: Deploy to GitHub Pages
         id: deployment
