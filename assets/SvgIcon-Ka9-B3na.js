@@ -1,4 +1,4 @@
-import{_ as g,h as d,o as p,B as u,b as c,d as l,z as i}from"./index-CpAjMWv_.js";import"./UnifiedImageProcessingTemplate.vue_vue_type_style_index_0_scoped_1007aace_lang-BMAaSHsD.js";const h={"undress-woman":{name:"一键褪衣",category:"ai-tools",svg:`<svg width="24" height="24" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+import{_ as g,h as d,o as p,B as u,b as c,d as l,z as i}from"./index-CrFC4Yab.js";import"./UnifiedImageProcessingTemplate.vue_vue_type_style_index_0_scoped_1007aace_lang-CSApLT67.js";const h={"undress-woman":{name:"一键褪衣",category:"ai-tools",svg:`<svg width="24" height="24" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
       <path d="M375.42912 281.33376c0-18.85184-15.29856-34.12992-34.12992-34.12992s-34.12992 15.28832-34.0992 34.12992a34.11968 34.11968 0 1 0 68.22912 0z" fill="currentColor"/>
       <path d="M682.67008 281.33376m-34.12992 0a34.12992 34.12992 0 1 0 68.25984 0 34.12992 34.12992 0 1 0-68.25984 0Z" fill="currentColor"/>
       <path d="M546.12992 819.2A34.16064 34.16064 0 0 0 512 785.05984 34.14016 34.14016 0 1 0 546.12992 819.2z" fill="currentColor"/>
