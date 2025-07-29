@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1752352410803,
@@ -20,6 +20,10 @@
                 {
                     "date": 1753718108770,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -16,9 +16,9 @@\n   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n \n   <!-- 移动端优化 -->\n   <meta name=\"format-detection\" content=\"telephone=no\">\n-  <meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n+  <meta name=\"mobile-web-app-capable\" content=\"yes\">\n   <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n \n   <!-- PWA支持 -->\n   <meta name=\"theme-color\" content=\"#1976d2\">\n"
+                },
+                {
+                    "date": 1753754343256,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,9 +8,9 @@\n   <meta name=\"description\" content=\"专业的AI图像处理平台，提供换脸、换装等多种AI图像处理服务\" />\n   <meta name=\"keywords\" content=\"AI图像处理,换脸,换装,人工智能,图像生成\" />\n \n   <!-- 允许混合内容 - 允许HTTPS网站调用HTTP API -->\n-  <meta http-equiv=\"Content-Security-Policy\" content=\"upgrade-insecure-requests\"/>\n+  <meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: data: blob:; connect-src 'self' http://114.132.50.71:3007 https://114.132.50.71:3007;\"/>\n \n   <!-- 预加载关键资源 -->\n   <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n"
                 }
             ],
             "date": 1752352410803,

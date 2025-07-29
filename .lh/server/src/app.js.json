@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 43,
+            "activePatchIndex": 44,
             "patches": [
                 {
                     "date": 1752317973745,
@@ -180,6 +180,10 @@
                 {
                     "date": 1753701713515,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -47,8 +47,9 @@\n     const ADMIN_PORT = process.env.ADMIN_PORT || 3003;\n \n     // 允许的域名列表 - 使用环境变量配置端口\n     const allowedOrigins = [\n+      'https://undress.icomfy.co',  // 生产环境自定义域名\n       'http://localhost:3000',\n       `http://localhost:${CLIENT_PORT}`,  // 客户端端口\n       `http://localhost:${ADMIN_PORT}`,   // 后台管理系统端口\n       'http://localhost:5173',  // Vite 默认端口\n"
+                },
+                {
+                    "date": 1753754371775,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -45,11 +45,12 @@\n     // 从环境变量获取端口配置\n     const CLIENT_PORT = process.env.CLIENT_PORT || 3001;\n     const ADMIN_PORT = process.env.ADMIN_PORT || 3003;\n \n-    // 允许的域名列表 - 使用环境变量配置端口\n+    // 允许的域名列表 - 强制使用 HTTP 协议\n     const allowedOrigins = [\n-      'https://undress.icomfy.co',  // 生产环境自定义域名\n+      'http://undress.icomfy.co',   // 生产环境自定义域名 - 强制 HTTP\n+      'https://undress.icomfy.co',  // 保留 HTTPS 支持（向后兼容）\n       'http://localhost:3000',\n       `http://localhost:${CLIENT_PORT}`,  // 客户端端口\n       `http://localhost:${ADMIN_PORT}`,   // 后台管理系统端口\n       'http://localhost:5173',  // Vite 默认端口\n"
                 }
             ],
             "date": 1752317973745,

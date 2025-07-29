@@ -179,7 +179,14 @@ export const comfyApi = {
 // 后端API请求函数（带重试机制）
 async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
   // 使用统一的API配置管理
-  const baseUrl = getBackendAPIConfig().BASE_URL
+  let baseUrl = getBackendAPIConfig().BASE_URL
+
+  // 强制确保使用 HTTP 协议
+  if (baseUrl.startsWith('https://114.132.50.71')) {
+    baseUrl = baseUrl.replace('https://', 'http://')
+    console.log('🔄 强制转换后端API为 HTTP:', baseUrl)
+  }
+
   const url = `${baseUrl}${endpoint}`
 
   console.log(`🚀 后端API请求: ${options.method || 'POST'} ${url}`)
@@ -188,6 +195,7 @@ async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Upgrade-Insecure-Requests': '0', // 防止自动升级到 HTTPS
     },
     ...options
   }

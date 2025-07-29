@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1753720973172,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1753754283425,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,22 +11,29 @@\n     console.log('🔧 开发环境：使用代理模式')\n     return '' // 开发环境使用代理\n   }\n \n-  // 生产环境：从环境变量获取\n-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api'\n-  let baseUrl = apiUrl.replace('/api', '')\n+  // 生产环境：强制使用 HTTP 协议\n+  let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007'\n \n-  // 强制使用HTTP协议（防止意外的HTTPS配置）\n+  // 移除可能的 /api 后缀\n+  baseUrl = baseUrl.replace(/\\/api\\/?$/, '')\n+\n+  // 强制转换为 HTTP 协议\n   if (baseUrl.startsWith('https://')) {\n-    console.warn('⚠️ 检测到HTTPS配置，强制转换为HTTP:', baseUrl)\n+    console.warn('⚠️ 强制转换 HTTPS 为 HTTP:', baseUrl)\n     baseUrl = baseUrl.replace('https://', 'http://')\n   }\n \n-  // 确保没有尾部斜杠\n+  // 确保使用 HTTP 协议\n+  if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {\n+    baseUrl = 'http://' + baseUrl\n+  }\n+\n+  // 移除末尾斜杠\n   baseUrl = baseUrl.replace(/\\/$/, '')\n \n-  console.log('🌐 生产环境API基础URL:', baseUrl)\n+  console.log('🌐 强制HTTP API基础URL:', baseUrl)\n   return baseUrl\n }\n \n /**\n"
+                },
+                {
+                    "date": 1753754300546,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -94,11 +94,25 @@\n  * @param {Object} options - 请求选项\n  * @returns {Promise} fetch Promise\n  */\n export async function apiRequest(endpoint, options = {}) {\n-  const url = buildAPIURL(endpoint)\n-  const config = createFetchConfig(options)\n+  let url = buildAPIURL(endpoint)\n \n+  // 强制确保 URL 使用 HTTP 协议\n+  if (url.startsWith('https://114.132.50.71')) {\n+    url = url.replace('https://', 'http://')\n+    console.log('🔄 强制转换为 HTTP:', url)\n+  }\n+\n+  const config = createFetchConfig({\n+    ...options,\n+    // 添加请求头防止升级\n+    headers: {\n+      'Upgrade-Insecure-Requests': '0',\n+      ...options.headers\n+    }\n+  })\n+\n   console.log(`🚀 API请求: ${config.method} ${url}`)\n \n   try {\n     const response = await fetch(url, config)\n"
                 }
             ],
             "date": 1753720973172,

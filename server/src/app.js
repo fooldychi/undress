@@ -46,9 +46,10 @@ app.use(cors({
     const CLIENT_PORT = process.env.CLIENT_PORT || 3001;
     const ADMIN_PORT = process.env.ADMIN_PORT || 3003;
 
-    // 允许的域名列表 - 使用环境变量配置端口
+    // 允许的域名列表 - 强制使用 HTTP 协议
     const allowedOrigins = [
-      'https://undress.icomfy.co',  // 生产环境自定义域名
+      'http://undress.icomfy.co',   // 生产环境自定义域名 - 强制 HTTP
+      'https://undress.icomfy.co',  // 保留 HTTPS 支持（向后兼容）
       'http://localhost:3000',
       `http://localhost:${CLIENT_PORT}`,  // 客户端端口
       `http://localhost:${ADMIN_PORT}`,   // 后台管理系统端口

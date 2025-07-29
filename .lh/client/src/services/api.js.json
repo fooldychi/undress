@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 47,
+            "activePatchIndex": 48,
             "patches": [
                 {
                     "date": 1752283330589,
@@ -196,6 +196,10 @@
                 {
                     "date": 1753721078115,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -349,9 +349,9 @@\n \r\n   // 获取当前用户信息\r\n   getCurrentUser: async () => {\r\n     try {\r\n-      const response = await apiRequest('/api/auth/me', {\r\n+      const response = await apiRequest(API_ENDPOINTS.AUTH_ME, {\r\n         method: 'GET'\r\n       })\r\n \r\n       // 更新本地存储的用户信息\r\n"
+                },
+                {
+                    "date": 1753754324726,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -178,17 +178,25 @@\n \r\n // 后端API请求函数（带重试机制）\r\n async function makeBackendRequest(endpoint, options = {}, retryCount = 0) {\r\n   // 使用统一的API配置管理\r\n-  const baseUrl = getBackendAPIConfig().BASE_URL\r\n+  let baseUrl = getBackendAPIConfig().BASE_URL\r\n+\r\n+  // 强制确保使用 HTTP 协议\r\n+  if (baseUrl.startsWith('https://114.132.50.71')) {\r\n+    baseUrl = baseUrl.replace('https://', 'http://')\r\n+    console.log('🔄 强制转换后端API为 HTTP:', baseUrl)\r\n+  }\r\n+\r\n   const url = `${baseUrl}${endpoint}`\r\n \r\n   console.log(`🚀 后端API请求: ${options.method || 'POST'} ${url}`)\r\n \r\n   const defaultOptions = {\r\n     method: 'POST',\r\n     headers: {\r\n       'Content-Type': 'application/json',\r\n+      'Upgrade-Insecure-Requests': '0', // 防止自动升级到 HTTPS\r\n     },\r\n     ...options\r\n   }\r\n \r\n"
                 }
             ],
             "date": 1752283330589,

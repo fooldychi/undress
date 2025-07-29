@@ -12,20 +12,27 @@ export function getAPIBaseURL() {
     return '' // 开发环境使用代理
   }
 
-  // 生产环境：从环境变量获取
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007/api'
-  let baseUrl = apiUrl.replace('/api', '')
+  // 生产环境：强制使用 HTTP 协议
+  let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://114.132.50.71:3007'
 
-  // 强制使用HTTP协议（防止意外的HTTPS配置）
+  // 移除可能的 /api 后缀
+  baseUrl = baseUrl.replace(/\/api\/?$/, '')
+
+  // 强制转换为 HTTP 协议
   if (baseUrl.startsWith('https://')) {
-    console.warn('⚠️ 检测到HTTPS配置，强制转换为HTTP:', baseUrl)
+    console.warn('⚠️ 强制转换 HTTPS 为 HTTP:', baseUrl)
     baseUrl = baseUrl.replace('https://', 'http://')
   }
 
-  // 确保没有尾部斜杠
+  // 确保使用 HTTP 协议
+  if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+    baseUrl = 'http://' + baseUrl
+  }
+
+  // 移除末尾斜杠
   baseUrl = baseUrl.replace(/\/$/, '')
 
-  console.log('🌐 生产环境API基础URL:', baseUrl)
+  console.log('🌐 强制HTTP API基础URL:', baseUrl)
   return baseUrl
 }
 
@@ -88,8 +95,22 @@ export function createFetchConfig(options = {}) {
  * @returns {Promise} fetch Promise
  */
 export async function apiRequest(endpoint, options = {}) {
-  const url = buildAPIURL(endpoint)
-  const config = createFetchConfig(options)
+  let url = buildAPIURL(endpoint)
+
+  // 强制确保 URL 使用 HTTP 协议
+  if (url.startsWith('https://114.132.50.71')) {
+    url = url.replace('https://', 'http://')
+    console.log('🔄 强制转换为 HTTP:', url)
+  }
+
+  const config = createFetchConfig({
+    ...options,
+    // 添加请求头防止升级
+    headers: {
+      'Upgrade-Insecure-Requests': '0',
+      ...options.headers
+    }
+  })
 
   console.log(`🚀 API请求: ${config.method} ${url}`)
 
